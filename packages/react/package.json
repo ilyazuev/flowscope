@@ -21,7 +21,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && cp src/styles.css dist/styles.css",
+    "copy:assets": "node -e \"const fs=require('fs'); const path=require('path'); const pairs=[['src/styles.css','dist/styles.css']]; for (const [s,d] of pairs){ fs.mkdirSync(path.dirname(d),{recursive:true}); fs.copyFileSync(s,d);} \"",
+    "build": "tsc && yarn copy:assets",
+    "build_OLD": "tsc && cp src/styles.css dist/styles.css",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "vitest run",
