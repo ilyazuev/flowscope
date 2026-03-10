@@ -5,6 +5,108 @@
 import type { Project } from './project-store';
 
 /**
+ * sql iDAF demo project.
+ * Demonstrates sql lineage.
+ */
+export const DEFAULT_IDAF_PROJECT: Project = {
+   id: 'default-idaf-project',
+   name: 'iDAF sql',
+   activeFileId: 'sql-file-1',
+   dialect: 'oracleIdaf',
+   runMode: 'current',
+   selectedFileIds: [],
+   schemaSQL: ``,
+   templateMode: 'raw',
+   files: [
+    {
+      id: 'sql-file-1',
+      name: 'Test_SQL_1.sql',
+      path: 'Test_SQL_1.sql',
+      language: 'sql',
+      content: `
+WITH
+params AS (
+    SELECT
+        DATE '2026-01-01' AS dt_from,
+        DATE '2026-02-01' AS dt_to
+    FROM dual
+),
+ord AS (
+    SELECT
+        o.order_id,
+        o.order_no,
+        o.customer_id,
+        o.order_dt,
+        o.status_cd,
+        o.currency_cd
+    FROM DWHKIT.IZ_TEST_1_ORDER o
+    CROSS JOIN params p
+    WHERE o.order_dt >= p.dt_from
+      AND o.order_dt <  p.dt_to
+      AND o.status_cd IN ('PAID','SHIPPED')
+),
+items AS (
+    SELECT
+        oi.order_id,
+        oi.product_id,
+        oi.qty,
+        oi.unit_price,
+        oi.discount_amt,
+        (oi.qty * oi.unit_price - oi.discount_amt) AS line_amount
+    FROM DWHKIT.IZ_TEST_1_ORDER_ITEM oi
+    JOIN ord o ON o.order_id = oi.order_id
+),
+enriched AS (
+    SELECT
+        c.customer_id,
+        c.customer_no,
+        c.full_name,
+        o.order_id,
+        o.order_no,
+        o.order_dt,
+        p.product_id,
+        p.sku,
+        p.category,
+        i.qty,
+        i.line_amount
+    FROM ord o
+    JOIN DWHKIT.IZ_TEST_1_CUSTOMER c ON c.customer_id = o.customer_id
+    JOIN items i ON i.order_id = o.order_id
+    JOIN IZ_TEST_1_PRODUCT p ON p.product_id = i.product_id
+),
+cat_rank AS (
+    SELECT
+        customer_id,
+        category,
+        SUM(line_amount) AS cat_amount,
+        ROW_NUMBER() OVER (
+            PARTITION BY customer_id
+            ORDER BY SUM(line_amount) DESC, category
+        ) AS rn
+    FROM enriched
+    GROUP BY customer_id, category
+)
+SELECT
+    e.customer_no,
+    e.full_name,
+    COUNT(DISTINCT e.order_id) AS orders_cnt,
+    COUNT(*) AS lines_cnt,
+    SUM(e.line_amount) AS revenue_amt,
+    MAX(CASE WHEN cr.rn = 1 THEN cr.category END) AS top_category
+FROM enriched e
+LEFT JOIN cat_rank cr
+    ON cr.customer_id = e.customer_id
+GROUP BY
+    e.customer_no,
+    e.full_name
+ORDER BY
+    revenue_amt DESC;
+      `
+      }
+   ]
+}
+
+/**
  * dbt Jaffle Shop demo project.
  * Demonstrates dbt templating features: ref(), source(), config(), var().
  * Uses a realistic staging → intermediate → marts structure.

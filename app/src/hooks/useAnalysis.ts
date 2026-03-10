@@ -396,7 +396,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
         let analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>>;
         let fileSyncRetries = 0;
 
-        if (currentProject.runMode === 'IZ_TEST') {
+        if (currentProject.dialect === 'oracleIdaf') {
           const baseIdafUrl = "https://localhost/idaf";
           const res = await fetch(`${baseIdafUrl}/usecaseDevLineage?testParam1=qwe456`);
           if (!res.ok) {

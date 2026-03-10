@@ -4,7 +4,7 @@ import { STORAGE_KEYS, FILE_EXTENSIONS, SHARE_LIMITS, DEFAULT_FILE_LANGUAGE } fr
 import type { SharePayload } from './share';
 import { parseTemplateMode } from '@/types';
 import type { TemplateMode } from '@/types';
-import { DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
+import { DEFAULT_IDAF_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
 import { useBackend } from './backend-context';
 import { useBackendFiles } from '@/hooks/useBackendFiles';
 
@@ -103,7 +103,7 @@ export function isValidDialect(value: unknown): value is Dialect {
   return typeof value === 'string' && VALID_DIALECTS.includes(value as Dialect);
 }
 
-export type RunMode = 'current' | 'all' | 'custom' | 'IZ_TEST';
+export type RunMode = 'current' | 'all' | 'custom';
 // Re-export TemplateMode from shared types for backward compatibility
 export type { TemplateMode } from '@/types';
 
@@ -193,7 +193,7 @@ const loadProjectsFromStorage = (): Project[] => {
   } catch (error) {
     console.error('Failed to load projects from storage:', error);
   }
-  return [DEFAULT_PROJECT, DEFAULT_DBT_PROJECT];
+  return [DEFAULT_IDAF_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT];
 };
 
 const saveProjectsToStorage = (projects: Project[]) => {

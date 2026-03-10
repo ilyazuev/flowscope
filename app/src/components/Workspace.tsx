@@ -319,7 +319,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
           <div className="flex items-center gap-3">
             <FlowScopeLogo className="w-8 h-8 text-foreground/30 dark:text-white/30" />
             <div className="flex items-baseline gap-1">
-              <span className="text-lg font-semibold text-foreground">iDAF - FlowScope</span>
+              <span className="text-lg font-semibold text-foreground">iDAF - FlowScope - Extra Lineage</span>
               <span className="text-xs font-mono text-muted-foreground"></span>
             </div>
           </div>
@@ -364,7 +364,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
               )}
             </>
           )}
-          <TooltipProvider>
+          {/* <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
@@ -381,7 +381,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                 <p>View on GitHub</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
+          </TooltipProvider> */}
           <ThemeToggle />
         </div>
       </header>
