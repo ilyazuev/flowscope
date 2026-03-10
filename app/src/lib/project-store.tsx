@@ -33,6 +33,7 @@ function validateProjectName(name: string, existingNames: string[]): string | nu
 }
 
 export type Dialect =
+  | 'oracleIdaf'
   | 'generic'
   | 'ansi'
   | 'bigquery'
@@ -49,6 +50,7 @@ export type Dialect =
 
 /** Human-readable labels for each dialect. */
 const DIALECT_LABELS: Record<Dialect, string> = {
+  oracleIdaf: 'Oracle iDAF',
   generic: 'Generic SQL',
   ansi: 'ANSI SQL',
   bigquery: 'BigQuery',
@@ -66,6 +68,7 @@ const DIALECT_LABELS: Record<Dialect, string> = {
 
 /** All valid dialect values for runtime validation. */
 export const VALID_DIALECTS: readonly Dialect[] = [
+  'oracleIdaf',
   'generic',
   'ansi',
   'bigquery',

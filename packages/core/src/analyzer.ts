@@ -42,6 +42,7 @@ const MAX_SQL_LENGTH = 10 * 1024 * 1024;
 
 /** Valid SQL dialects. */
 const VALID_DIALECTS: readonly Dialect[] = [
+  'oracleIdaf',
   'generic',
   'ansi',
   'bigquery',

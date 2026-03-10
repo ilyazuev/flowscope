@@ -4,6 +4,7 @@
  */
 
 export type Dialect =
+  | 'oracleIdaf'
   | 'generic'
   | 'ansi'
   | 'bigquery'

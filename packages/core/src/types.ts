@@ -7,6 +7,7 @@
 
 /** SQL dialect for parsing and analysis. */
 export type Dialect =
+  | 'oracleIdaf'
   | 'generic'
   | 'ansi'
   | 'bigquery'
