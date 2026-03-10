@@ -96,6 +96,55 @@ export const DIALECT_OPTIONS: readonly { value: Dialect; label: string }[] = VAL
   label: DIALECT_LABELS[value],
 }));
 
+// ------------------------------ DATABASES ------------------------------
+export type Option = { value: string; label: string };
+
+async function DATABASES(): Promise<Option[]> {
+  return ["SPTE", "DB1", "DB2"].map(v => ({ value: v, label: v }));
+}
+
+type DatabasesContextValue = {
+  databases: Option[];
+  databases_loading: boolean;
+};
+
+const DatabasesContext = createContext<DatabasesContextValue | undefined>(undefined);
+
+export function DatabasesProvider({ children }: { children: React.ReactNode }) {
+  const [databases, setDatabases] = useState<Option[]>([]);
+  const [databases_loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await DATABASES();
+        if (active) setDatabases(data);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <DatabasesContext.Provider value={{ databases, databases_loading }}>
+      {children}
+    </DatabasesContext.Provider>
+  );
+}
+
+export function useDatabases() {
+  const ctx = useContext(DatabasesContext);
+  if (!ctx) throw new Error("useDatabases must be used within <DatabasesProvider>");
+  return ctx;
+}
+
+
+export async function USER_NAMES(): Promise<Array<Option>> {
+  return ["USER1", "USER2", "USER3"].map(v => ({ value: v, label: v }));
+}
+
 /**
  * Type guard to check if a value is a valid Dialect.
  */

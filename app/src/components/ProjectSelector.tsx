@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, Plus, FolderOpen, Trash, Server } from 'lucide-react';
 import { toast } from 'sonner';
 import { clearAnalysisWorkerCache } from '@/lib/analysis-worker';
-import { useProject, isValidDialect, DIALECT_OPTIONS } from '@/lib/project-store';
+import { useProject, isValidDialect, DIALECT_OPTIONS, useDatabases, DatabasesProvider } from '@/lib/project-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,6 +46,58 @@ function handleDropdownSectionClick(e: React.MouseEvent): void {
   e.stopPropagation();
 }
 
+function DbSelect() {
+  const { databases, databases_loading } = useDatabases();
+  const {
+    currentProject,
+    setDatabase,
+    setUserName,
+  } = useProject();
+  return (
+    <>
+    {currentProject && 
+                 <>
+                    <Select 
+                     disabled={databases_loading}
+                  value={currentProject.database}
+                  onValueChange={(v) => {
+                    setDatabase(currentProject.id, v);
+                  }}
+                >
+                  <SelectTrigger className="h-7 flex-1 text-xs">
+                    <SelectValue placeholder="Database" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {databases.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                    <Select
+                  value={currentProject.userName}
+                  onValueChange={(v) => {
+                    setUserName(currentProject.id, v);
+                  }}
+                >
+                  <SelectTrigger className="h-7 flex-1 text-xs">
+                    <SelectValue placeholder="UserName" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIALECT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>           
+              </>              
+
+            }
+          </>);
+}
+
 export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectSelectorProps) {
   const {
     projects,
@@ -57,8 +109,6 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
     renameProject,
     setProjectDialect,
     setTemplateMode,
-    setDatabase,
-    setUserName,
     isBackendMode,
     backendWatchDirs,
   } = useProject();
@@ -225,42 +275,9 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
                 {currentProject.database}
                 {
                   currentProject.dialect == 'oracleIdaf' && currentProject.database && currentProject.userName && (
-                    <>
-                    <Select
-                  value={currentProject.database}
-                  onValueChange={(v) => {
-                    setDatabase(currentProject.id, v);
-                  }}
-                >
-                  <SelectTrigger className="h-7 flex-1 text-xs">
-                    <SelectValue placeholder="Database" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIALECT_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                    <Select
-                  value={currentProject.userName}
-                  onValueChange={(v) => {
-                    setUserName(currentProject.id, v);
-                  }}
-                >
-                  <SelectTrigger className="h-7 flex-1 text-xs">
-                    <SelectValue placeholder="UserName" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIALECT_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>                
-                </>
+                    <DatabasesProvider>
+                      <DbSelect/>
+                    </DatabasesProvider>
                   )
                 }
               </div>
