@@ -100,7 +100,7 @@ export function isValidDialect(value: unknown): value is Dialect {
   return typeof value === 'string' && VALID_DIALECTS.includes(value as Dialect);
 }
 
-export type RunMode = 'current' | 'all' | 'custom';
+export type RunMode = 'current' | 'all' | 'custom' | 'IZ_TEST';
 // Re-export TemplateMode from shared types for backward compatibility
 export type { TemplateMode } from '@/types';
 

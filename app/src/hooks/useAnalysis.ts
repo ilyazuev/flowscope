@@ -396,8 +396,15 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
         let analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>>;
         let fileSyncRetries = 0;
 
-        // Use adapter if available, otherwise fall back to direct worker calls
-        if (adapter) {
+        if (currentProject.runMode === 'IZ_TEST') {
+          const baseIdafUrl = "https://localhost/idaf";
+          const res = await fetch(`${baseIdafUrl}/usecaseDevLineage?testParam1=qwe456`);
+          if (!res.ok) {
+            throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
+          }
+          analysisResponse = await res.json();
+          console.log("Received from iDAF");
+        } else if (adapter) { // Use adapter if available, otherwise fall back to direct worker calls
           while (true) {
             try {
               analysisResponse = await adapter.analyze(adapterPayload, { knownCacheKey });
