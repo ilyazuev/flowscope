@@ -13,6 +13,8 @@ export const DEFAULT_IDAF_PROJECT: Project = {
    name: 'iDAF sql',
    activeFileId: 'sql-file-1',
    dialect: 'oracleIdaf',
+   database: 'SPTE',
+   userName: 'DWHKIT',
    runMode: 'current',
    selectedFileIds: [],
    schemaSQL: ``,

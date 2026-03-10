@@ -121,6 +121,8 @@ export interface Project {
   files: ProjectFile[];
   activeFileId: string | null;
   dialect: Dialect;
+  database?: string;
+  userName?: string;
   runMode: RunMode;
   selectedFileIds: string[];
   schemaSQL: string; // User-provided CREATE TABLE statements for schema augmentation
@@ -138,6 +140,8 @@ interface ProjectContextType {
   setProjectDialect: (projectId: string, dialect: Dialect) => void;
   setRunMode: (projectId: string, mode: RunMode) => void;
   setTemplateMode: (projectId: string, mode: TemplateMode) => void;
+  setDatabase: (projectId: string, database: string) => void;
+  setUserName: (projectId: string, userName: string) => void;
   toggleFileSelection: (projectId: string, fileId: string) => void;
 
   // File actions for active project
@@ -441,6 +445,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const setDatabase = useCallback((projectId: string, database: string) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        return { ...p, database: database };
+      })
+    );
+  }, []);
+
+  const setUserName = useCallback((projectId: string, userName: string) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        return { ...p, userName: userName };
+      })
+    );
+  }, []);
+
   const toggleFileSelection = useCallback((projectId: string, fileId: string) => {
     if (projectId === BACKEND_PROJECT_ID) {
       setBackendSelectedFileIds((prev) => {
@@ -697,6 +719,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setProjectDialect,
     setRunMode,
     setTemplateMode,
+    setDatabase,
+    setUserName,
     toggleFileSelection,
     createFile,
     updateFile,

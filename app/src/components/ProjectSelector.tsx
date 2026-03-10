@@ -57,6 +57,8 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
     renameProject,
     setProjectDialect,
     setTemplateMode,
+    setDatabase,
+    setUserName,
     isBackendMode,
     backendWatchDirs,
   } = useProject();
@@ -220,6 +222,47 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
                     ))}
                   </SelectContent>
                 </Select>
+                {currentProject.database}
+                {
+                  currentProject.dialect == 'oracleIdaf' && currentProject.database && currentProject.userName && (
+                    <>
+                    <Select
+                  value={currentProject.database}
+                  onValueChange={(v) => {
+                    setDatabase(currentProject.id, v);
+                  }}
+                >
+                  <SelectTrigger className="h-7 flex-1 text-xs">
+                    <SelectValue placeholder="Database" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIALECT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                    <Select
+                  value={currentProject.userName}
+                  onValueChange={(v) => {
+                    setUserName(currentProject.id, v);
+                  }}
+                >
+                  <SelectTrigger className="h-7 flex-1 text-xs">
+                    <SelectValue placeholder="UserName" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIALECT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>                
+                </>
+                  )
+                }
               </div>
             </div>
           )}

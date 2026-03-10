@@ -135,9 +135,6 @@ export function EditorToolbar({
                 <DropdownMenuRadioItem value="custom" className="text-xs">
                   Run Selected ({selectedCount})
                 </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="IZ_TEST" className="text-xs">
-                  Run IZ_TEST
-                </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
