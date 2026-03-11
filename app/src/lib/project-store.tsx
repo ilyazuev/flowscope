@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  ReactNode,
+} from 'react';
 import type { FileSource, SchemaMetadata } from '@pondpilot/flowscope-core';
 import { STORAGE_KEYS, FILE_EXTENSIONS, SHARE_LIMITS, DEFAULT_FILE_LANGUAGE } from './constants';
 import type { SharePayload } from './share';
@@ -96,39 +104,70 @@ export const DIALECT_OPTIONS: readonly { value: Dialect; label: string }[] = VAL
   label: DIALECT_LABELS[value],
 }));
 
-// ------------------------------ DATABASES ------------------------------
-export type Option = { value: string; label: string };
+// ------------------------------ DATABASES and USERS ------------------------------
+export type DatabaseUsers = Record<string, string[]>;
 
-async function DATABASES(): Promise<Option[]> {
-  return ["SPTE", "DB1", "DB2"].map(v => ({ value: v, label: v }));
+let _cache: DatabaseUsers | null = null;
+
+export async function DATABASES(): Promise<DatabaseUsers> {
+  // Simulate error example: // throw new Error("Backend is down");
+  // TODO replace with real REST fetch
+  console.log('export async function DATABASES(): Promise<DatabaseUsers> {');
+  return {
+    SPTE: ['USER1', 'USER2'],
+    DB1: ['USER3', 'USER4', 'USER5'],
+    DB2: ['USER6', 'USER7'],
+  };
+}
+
+export async function loadDatabases(): Promise<DatabaseUsers> {
+  if (_cache) return _cache;
+  _cache = await DATABASES();
+  return _cache;
+}
+
+export async function refreshDatabases(): Promise<DatabaseUsers> {
+  _cache = null;
+  return loadDatabases();
 }
 
 type DatabasesContextValue = {
-  databases: Option[];
-  databases_loading: boolean;
+  databases: DatabaseUsers;
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
 };
 
-const DatabasesContext = createContext<DatabasesContextValue | undefined>(undefined);
+const DatabasesContext = createContext<DatabasesContextValue | null>(null);
 
-export function DatabasesProvider({ children }: { children: React.ReactNode }) {
-  const [databases, setDatabases] = useState<Option[]>([]);
-  const [databases_loading, setLoading] = useState(true);
+export function DatabasesProvider({ children }: { children: ReactNode }) {
+  const [databases, setDatabases] = useState<DatabaseUsers>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await loadDatabases();
+      setDatabases(result);
+    } catch (error) {
+      setError((error instanceof Error ? error.message : String(error)) ?? 'Unknown error');
+    }
+    setLoading(false);
+  }
+
+  async function refresh() {
+    await refreshDatabases();
+    await load();
+  }
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const data = await DATABASES();
-        if (active) setDatabases(data);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => { active = false; };
+    load().then();
   }, []);
 
   return (
-    <DatabasesContext.Provider value={{ databases, databases_loading }}>
+    <DatabasesContext.Provider value={{ databases, loading, error, refresh }}>
       {children}
     </DatabasesContext.Provider>
   );
@@ -136,14 +175,11 @@ export function DatabasesProvider({ children }: { children: React.ReactNode }) {
 
 export function useDatabases() {
   const ctx = useContext(DatabasesContext);
-  if (!ctx) throw new Error("useDatabases must be used within <DatabasesProvider>");
+  if (!ctx) throw new Error('useDatabases must be used inside provider');
   return ctx;
 }
 
-
-export async function USER_NAMES(): Promise<Array<Option>> {
-  return ["USER1", "USER2", "USER3"].map(v => ({ value: v, label: v }));
-}
+// ------------------------------ DATABASES and USERS ------------------------------
 
 /**
  * Type guard to check if a value is a valid Dialect.

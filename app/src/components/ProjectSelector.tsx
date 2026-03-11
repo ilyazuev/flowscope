@@ -1,8 +1,14 @@
-import { useState } from 'react';
-import { ChevronDown, Plus, FolderOpen, Trash, Server } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, Plus, FolderOpen, Trash, Server, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { clearAnalysisWorkerCache } from '@/lib/analysis-worker';
-import { useProject, isValidDialect, DIALECT_OPTIONS, useDatabases, DatabasesProvider } from '@/lib/project-store';
+import {
+  useProject,
+  isValidDialect,
+  DIALECT_OPTIONS,
+  useDatabases,
+  DatabasesProvider,
+} from '@/lib/project-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,55 +53,63 @@ function handleDropdownSectionClick(e: React.MouseEvent): void {
 }
 
 function DbSelect() {
-  const { databases, databases_loading } = useDatabases();
-  const {
-    currentProject,
-    setDatabase,
-    setUserName,
-  } = useProject();
+  const { databases, loading, error, refresh } = useDatabases();
+  const { currentProject, setDatabase, setUserName } = useProject();
+
+  if (!currentProject) return null;
+
+  if (error) {
+    return (
+      <div className="flex gap-2 text-red-500" style={{ alignItems: 'center', maxWidth: "400px" }}>
+        <RefreshCw className="size-3.5" onClick={refresh} />
+        <span className="text-red-500 text-xs">Error loading databases: {error}</span>
+      </div>
+    );
+  }
+
+  const dbNames = Object.keys(databases);
+  const users = currentProject.database ? (databases[currentProject.database] ?? []) : [];
+
   return (
     <>
-    {currentProject && 
-                 <>
-                    <Select 
-                     disabled={databases_loading}
-                  value={currentProject.database}
-                  onValueChange={(v) => {
-                    setDatabase(currentProject.id, v);
-                  }}
-                >
-                  <SelectTrigger className="h-7 flex-1 text-xs">
-                    <SelectValue placeholder="Database" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {databases.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                    <Select
-                  value={currentProject.userName}
-                  onValueChange={(v) => {
-                    setUserName(currentProject.id, v);
-                  }}
-                >
-                  <SelectTrigger className="h-7 flex-1 text-xs">
-                    <SelectValue placeholder="UserName" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIALECT_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>           
-              </>              
-
-            }
-          </>);
+      <Select
+        disabled={loading}
+        value={currentProject.database ?? ''}
+        onValueChange={(db) => {
+          setDatabase(currentProject.id, db);
+          setUserName(currentProject.id, databases[db]?.[0] ?? '');
+        }}
+      >
+        <SelectTrigger className="h-7 flex-1 text-xs">
+          <SelectValue placeholder="Database" />
+        </SelectTrigger>
+        <SelectContent>
+          {dbNames.map((db) => (
+            <SelectItem key={db} value={db}>
+              {db}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        disabled={!currentProject.database}
+        value={currentProject.userName ?? ''}
+        onValueChange={(u) => setUserName(currentProject.id, u)}
+      >
+        <SelectTrigger className="h-7 flex-1 text-xs">
+          <SelectValue placeholder="User" />
+        </SelectTrigger>
+        <SelectContent>
+          {users.map((u) => (
+            <SelectItem key={u} value={u}>
+              {u}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <RefreshCw className="size-3.5" style={{ alignSelf: 'center' }} onClick={refresh} />
+    </>
+  );
 }
 
 export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectSelectorProps) {
@@ -272,14 +286,11 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
                     ))}
                   </SelectContent>
                 </Select>
-                {currentProject.database}
-                {
-                  currentProject.dialect == 'oracleIdaf' && currentProject.database && currentProject.userName && (
-                    <DatabasesProvider>
-                      <DbSelect/>
-                    </DatabasesProvider>
-                  )
-                }
+                {currentProject.dialect == 'oracleIdaf' && (
+                  <DatabasesProvider>
+                    <DbSelect />
+                  </DatabasesProvider>
+                )}
               </div>
             </div>
           )}
