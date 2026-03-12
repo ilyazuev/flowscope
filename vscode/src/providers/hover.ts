@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 import * as vscode from 'vscode';
 import { analyzeSql, isWasmInitialized } from '../analysis';
 import type { Dialect, Node, StatementLineage } from '../types';

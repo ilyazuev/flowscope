@@ -105,30 +105,50 @@ export const DIALECT_OPTIONS: readonly { value: Dialect; label: string }[] = VAL
 }));
 
 // ------------------------------ DATABASES and USERS ------------------------------
-export type DatabaseUsers = Record<string, string[]>;
+type DatabaseUsers = Record<string, string[]>;
 
 let _cache: DatabaseUsers | null = null;
+let _inflight: Promise<DatabaseUsers> | null = null;
 
-export async function DATABASES(): Promise<DatabaseUsers> {
-  // Simulate error example: // throw new Error("Backend is down");
-  // TODO replace with real REST fetch
+async function DATABASES(): Promise<DatabaseUsers> {
+  const baseIdafUrl = 'https://localhost/idaf';
   console.log('export async function DATABASES(): Promise<DatabaseUsers> {');
-  return {
-    SPTE: ['USER1', 'USER2'],
-    DB1: ['USER3', 'USER4', 'USER5'],
-    DB2: ['USER6', 'USER7'],
-  };
+  let res;
+  try {
+    res = await fetch(`${baseIdafUrl}/usecaseDevLineage?action=loadDatabases`); // Simulate error example: // throw new Error("Backend is down");
+    if (!res.ok) {
+      // noinspection ExceptionCaughtLocallyJS
+      throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
+    }
+    const result = await res.json();
+    if ('errorMessage' in result && result.errorMessage) {
+      // noinspection ExceptionCaughtLocallyJS
+      throw new Error(result.errorMessage);
+    }
+    return result;
+  } catch (error) {
+    throw new Error((error instanceof Error ? error.message : String(error)) ?? 'Unknown error');
+  }
 }
 
-export async function loadDatabases(): Promise<DatabaseUsers> {
+async function loadDatabases(): Promise<DatabaseUsers> {
   if (_cache) return _cache;
-  _cache = await DATABASES();
-  return _cache;
+  if (_inflight) return _inflight;
+  _inflight = DATABASES()
+    .then((data) => {
+      _cache = data;
+      _inflight = null;
+      return data;
+    })
+    .catch((err) => {
+      _inflight = null;
+      throw err;
+    });
+  return _inflight;
 }
 
-export async function refreshDatabases(): Promise<DatabaseUsers> {
+function invalidateCache() {
   _cache = null;
-  return loadDatabases();
 }
 
 type DatabasesContextValue = {
@@ -158,7 +178,7 @@ export function DatabasesProvider({ children }: { children: ReactNode }) {
   }
 
   async function refresh() {
-    await refreshDatabases();
+    invalidateCache();
     await load();
   }
 

@@ -60,7 +60,7 @@ function DbSelect() {
 
   if (error) {
     return (
-      <div className="flex gap-2 text-red-500" style={{ alignItems: 'center', maxWidth: "400px" }}>
+      <div className="flex gap-2 text-red-500" style={{ alignItems: 'center', maxWidth: '400px' }}>
         <RefreshCw className="size-3.5" onClick={refresh} />
         <span className="text-red-500 text-xs">Error loading databases: {error}</span>
       </div>
@@ -70,10 +70,11 @@ function DbSelect() {
   const dbNames = Object.keys(databases);
   const users = currentProject.database ? (databases[currentProject.database] ?? []) : [];
 
-  return (
+  return loading ? (
+    <div className="blink">Loading databases...</div>
+  ) : (
     <>
       <Select
-        disabled={loading}
         value={currentProject.database ?? ''}
         onValueChange={(db) => {
           setDatabase(currentProject.id, db);
@@ -92,7 +93,6 @@ function DbSelect() {
         </SelectContent>
       </Select>
       <Select
-        disabled={!currentProject.database}
         value={currentProject.userName ?? ''}
         onValueChange={(u) => setUserName(currentProject.id, u)}
       >
