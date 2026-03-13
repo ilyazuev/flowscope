@@ -18,6 +18,7 @@
     "wasm"
   ],
   "scripts": {
+    "build:ts": "tsc",
     "build": "yarn build:wasm && yarn sync:wasm-src && tsc && yarn copy:wasm",
     "build_OLD": "yarn build:wasm && tsc && yarn copy:wasm",
     "build:wasm": "wasm-pack build ../../crates/flowscope-wasm --target web --out-dir ../../packages/core/wasm && node -e \"require('fs').writeFileSync('../../packages/core/wasm/.gitignore', '# Keep wasm artifacts available for publishing\\n')\"",

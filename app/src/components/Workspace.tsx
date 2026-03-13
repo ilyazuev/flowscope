@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Share2, Github } from 'lucide-react';
+import { Share2 /*, Github*/ } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLineageActions, useLineageState } from '@pondpilot/flowscope-react';
 import { Button } from './ui/button';
@@ -317,7 +317,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
         <div className="flex items-center gap-2">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <FlowScopeLogo className="w-8 h-8 text-foreground/30 dark:text-white/30" />
+            <FlowScopeLogo/> {/*className="w-8 h-8 text-foreground/30 dark:text-white/30"*/}
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-semibold text-foreground">iDAF - FlowScope - Extra Lineage</span>
               <span className="text-xs font-mono text-muted-foreground"></span>

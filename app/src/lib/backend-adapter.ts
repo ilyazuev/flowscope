@@ -23,6 +23,12 @@ import type { AnalysisWorkerResult, AnalyzeWorkerOptions } from './analysis-work
 /**
  * Payload for running analysis.
  */
+export interface AnalysisPayloadEx {
+  analysisPayload: AnalysisPayload;
+  database?: string;
+  userName?: string;
+}
+
 export interface AnalysisPayload {
   files: Array<{ name: string; content: string }>;
   dialect: Dialect;

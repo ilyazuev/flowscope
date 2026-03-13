@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { useLineage } from '@pondpilot/flowscope-react';
 import { analyzeWithWorker, getCachedAnalysis, syncAnalysisFiles } from '@/lib/analysis-worker';
-import type { BackendAdapter, AnalysisPayload } from '@/lib/backend-adapter';
+import { BackendAdapter, AnalysisPayload, AnalysisPayloadEx } from '@/lib/backend-adapter';
 import { useProject } from '@/lib/project-store';
 import type { Project } from '@/lib/project-store';
 import { useAnalysisStore } from '@/lib/analysis-store';
@@ -397,12 +397,23 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
         let fileSyncRetries = 0;
 
         if (currentProject.dialect === 'oracleIdaf') {
+          const adapterPayloadEx: AnalysisPayloadEx = {
+              analysisPayload: adapterPayload,
+              database: currentProject.database,
+              userName: currentProject.userName,
+          }
           const baseIdafUrl = "https://localhost/idaf";
-          const res = await fetch(`${baseIdafUrl}/usecaseDevLineage?testParam1=qwe456`);
+          const base64 = btoa(JSON.stringify(adapterPayloadEx));
+          const res = await fetch(`${baseIdafUrl}/usecaseDevLineage?analysis=${encodeURIComponent(base64)}`);
           if (!res.ok) {
+            // noinspection ExceptionCaughtLocallyJS
             throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
           }
           analysisResponse = await res.json();
+          if ('errorMessage' in analysisResponse && analysisResponse.errorMessage) {
+            // noinspection ExceptionCaughtLocallyJS
+            throw new Error(analysisResponse.errorMessage as string);
+          }
           console.log("Received from iDAF");
         } else if (adapter) { // Use adapter if available, otherwise fall back to direct worker calls
           while (true) {
