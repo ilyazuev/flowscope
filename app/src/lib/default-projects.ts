@@ -26,9 +26,12 @@ export const DEFAULT_IDAF_PROJECT: Project = {
       path: 'Test_SQL_1.sql',
       language: 'sql',
       content: `
+-- noinspection SqlNoDataSourceInspection @ table/"IZ_TEST_1_ORDER"
 WITH
 params AS (
     SELECT
+        1 order_id,
+        'extra' order_extra,
         DATE '2026-01-01' AS dt_from,
         DATE '2026-02-01' AS dt_to
     FROM dual
@@ -54,9 +57,11 @@ items AS (
         oi.qty,
         oi.unit_price,
         oi.discount_amt,
-        (oi.qty * oi.unit_price - oi.discount_amt) AS line_amount
+        (oi.qty * oi.unit_price - oi.discount_amt) AS line_amount,
+        p.order_extra
     FROM DWHKIT.IZ_TEST_1_ORDER_ITEM oi
     JOIN ord o ON o.order_id = oi.order_id
+    LEFT JOIN params p ON p.order_id = o.order_id -- check 2 CTE joins
 ),
 enriched AS (
     SELECT
@@ -70,9 +75,11 @@ enriched AS (
         p.sku,
         p.category,
         i.qty,
-        i.line_amount
+        i.line_amount,
+        tbl_ord.status_cd
     FROM ord o
     JOIN DWHKIT.IZ_TEST_1_CUSTOMER c ON c.customer_id = o.customer_id
+    LEFT JOIN DWHKIT.IZ_TEST_1_ORDER tbl_ord ON tbl_ord.customer_id = c.customer_id -- test double table join
     JOIN items i ON i.order_id = o.order_id
     JOIN IZ_TEST_1_PRODUCT p ON p.product_id = i.product_id
 ),
