@@ -698,6 +698,44 @@ function buildFlowEdges(
     });
   }
 
+  const seenJoinDependencyEdges = new Set<string>();
+
+  statement.edges
+    .filter((edge) => edge.type === JOIN_DEPENDENCY_EDGE_TYPE)
+    .forEach((edge) => {
+      const sourceId = edge.from;
+      const targetId = edge.to;
+
+      if (sourceId === targetId) {
+        return;
+      }
+
+      const edgeKey = `${sourceId}_to_${targetId}`; // if (seenEdges.has(edgeKey)) { return; }
+
+      seenEdges.add(edgeKey);
+      seenJoinDependencyEdges.add(edgeKey);
+
+      if( targetId.startsWith("output") ) {
+        seenJoinDependencyEdges.add(`edge_${sourceId}_to_output`);
+      }
+
+      const sourceNode = tableNodeMap.get(sourceId);
+      const joinType = formatJoinType(edge.joinType || sourceNode?.joinType);
+
+      flowEdges.push({
+        id: edge.id,
+        source: sourceId,
+        target: targetId,
+        type: 'animated',
+        label: joinType,
+        data: {
+          type: 'joinDependency',
+          joinType: edge.joinType || sourceNode?.joinType,
+          joinCondition: edge.joinCondition || sourceNode?.joinCondition,
+        },
+      });
+    });
+
   const selectSourceTableIds = new Set<string>();
 
   for (const edge of statement.edges) {
@@ -770,47 +808,18 @@ function buildFlowEdges(
     }
   }
 
-  statement.edges
-    .filter((edge) => edge.type === JOIN_DEPENDENCY_EDGE_TYPE)
-    .forEach((edge) => {
-      const sourceId = edge.from;
-      const targetId = edge.to;
-
-      if (sourceId === targetId) {
-        return;
-      }
-
-      const edgeKey = `${sourceId}_to_${targetId}`;
-      if (seenEdges.has(edgeKey)) {
-        return;
-      }
-
-      seenEdges.add(edgeKey);
-
-      const sourceNode = tableNodeMap.get(sourceId);
-      const joinType = formatJoinType(edge.joinType || sourceNode?.joinType);
-
-      flowEdges.push({
-        id: edge.id,
-        source: sourceId,
-        target: targetId,
-        type: 'animated',
-        label: joinType,
-        data: {
-          type: 'joinDependency',
-          joinType: edge.joinType || sourceNode?.joinType,
-          joinCondition: edge.joinCondition || sourceNode?.joinCondition,
-        },
-      });
-    });
-
   if (isSelect && selectSourceTableIds.size > 0) {
     selectSourceTableIds.forEach((tableId) => {
       const tableNode = tableNodeMap.get(tableId);
       const joinType = formatJoinType(tableNode?.joinType);
 
+      const edgeKey = `edge_${tableId}_to_output`;
+      if (seenJoinDependencyEdges.has(edgeKey)) {
+        return;
+      }
+
       flowEdges.push({
-        id: `edge_${tableId}_to_output`,
+        id: edgeKey,
         source: tableId,
         target: outputNodeId,
         type: 'animated',
