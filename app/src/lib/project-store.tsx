@@ -5,7 +5,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  ReactNode,
 } from 'react';
 import type { FileSource, SchemaMetadata } from '@pondpilot/flowscope-core';
 import { STORAGE_KEYS, FILE_EXTENSIONS, SHARE_LIMITS, DEFAULT_FILE_LANGUAGE } from './constants';
@@ -104,102 +103,7 @@ export const DIALECT_OPTIONS: readonly { value: Dialect; label: string }[] = VAL
   label: DIALECT_LABELS[value],
 }));
 
-// ------------------------------ DATABASES and USERS ------------------------------
-type DatabaseUsers = Record<string, string[]>;
 
-let _cache: DatabaseUsers | null = null;
-let _inflight: Promise<DatabaseUsers> | null = null;
-
-async function DATABASES(): Promise<DatabaseUsers> {
-  const baseIdafUrl = 'https://localhost/idaf';
-  console.log('export async function DATABASES(): Promise<DatabaseUsers> {');
-  let res;
-  try {
-    res = await fetch(`${baseIdafUrl}/usecaseDevLineage?action=loadDatabases`); // Simulate error example: // throw new Error("Backend is down");
-    if (!res.ok) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
-    }
-    const result = await res.json();
-    if ('errorMessage' in result && result.errorMessage) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error(result.errorMessage);
-    }
-    return result;
-  } catch (error) {
-    throw new Error((error instanceof Error ? error.message : String(error)) ?? 'Unknown error');
-  }
-}
-
-async function loadDatabases(): Promise<DatabaseUsers> {
-  if (_cache) return _cache;
-  if (_inflight) return _inflight;
-  _inflight = DATABASES()
-    .then((data) => {
-      _cache = data;
-      _inflight = null;
-      return data;
-    })
-    .catch((err) => {
-      _inflight = null;
-      throw err;
-    });
-  return _inflight;
-}
-
-function invalidateCache() {
-  _cache = null;
-}
-
-type DatabasesContextValue = {
-  databases: DatabaseUsers;
-  loading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
-};
-
-const DatabasesContext = createContext<DatabasesContextValue | null>(null);
-
-export function DatabasesProvider({ children }: { children: ReactNode }) {
-  const [databases, setDatabases] = useState<DatabaseUsers>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await loadDatabases();
-      setDatabases(result);
-    } catch (error) {
-      setError((error instanceof Error ? error.message : String(error)) ?? 'Unknown error');
-    }
-    setLoading(false);
-  }
-
-  async function refresh() {
-    invalidateCache();
-    await load();
-  }
-
-  useEffect(() => {
-    load().then();
-  }, []);
-
-  return (
-    <DatabasesContext.Provider value={{ databases, loading, error, refresh }}>
-      {children}
-    </DatabasesContext.Provider>
-  );
-}
-
-export function useDatabases() {
-  const ctx = useContext(DatabasesContext);
-  if (!ctx) throw new Error('useDatabases must be used inside provider');
-  return ctx;
-}
-
-// ------------------------------ DATABASES and USERS ------------------------------
 
 /**
  * Type guard to check if a value is a valid Dialect.

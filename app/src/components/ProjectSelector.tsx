@@ -6,8 +6,6 @@ import {
   useProject,
   isValidDialect,
   DIALECT_OPTIONS,
-  useDatabases,
-  DatabasesProvider,
 } from '@/lib/project-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -29,6 +27,7 @@ import {
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ProjectMenuItem } from './ProjectMenuItem';
 import { isValidTemplateMode, TEMPLATE_MODE_OPTIONS } from '@/types';
+import { DatabasesProvider, useDatabases } from '@/lib/utils_idaf.tsx';
 
 interface ProjectSelectorProps {
   open?: boolean;
