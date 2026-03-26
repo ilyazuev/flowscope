@@ -62,7 +62,7 @@ export function EditorArea({
 
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
-  const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
+  const { isAnalyzing, error, runAnalysis, runExecuteSql, setError } = useAnalysis(backendReady, { adapter });
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -178,6 +178,18 @@ export function EditorArea({
     }
   }, [activeFile, runAnalysis]);
 
+  const handleExecuteSql = useCallback(() => {
+    if (activeFile && currentProject) {
+      const originalMode = currentProject.runMode;
+      setRunMode(currentProject.id, 'current');
+      runExecuteSql(activeFile.content, activeFile.path).finally(() => {
+        // Restore original mode after analysis
+        setRunMode(currentProject.id, originalMode);
+      });
+    }
+  }, [activeFile, currentProject, runExecuteSql, setRunMode]);
+
+
   const handleAnalyzeActiveOnly = useCallback(() => {
     if (activeFile && currentProject) {
       // Temporarily switch to 'current' mode for this run
@@ -229,6 +241,7 @@ export function EditorArea({
         isAnalyzing={isAnalyzing}
         backendReady={backendReady}
         onAnalyze={handleAnalyze}
+        onExecuteSql={handleExecuteSql}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
         fileSelectorOpen={fileSelectorOpen}

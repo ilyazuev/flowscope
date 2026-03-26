@@ -1,4 +1,4 @@
-import { AnalysisPayload, AnalysisPayloadEx } from '@/lib/backend-adapter.ts';
+import { AnalysisPayload, AnalysisPayloadEx, SqlPayload, SqlPayloadResponse } from '@/lib/backend-adapter.ts';
 import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
@@ -28,6 +28,23 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
   return analysisResponse;
 }
 
+export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProject: Project) {
+  const base64 = btoa(JSON.stringify(sqlPayload));
+  const res = await fetch(
+    `${baseIdafUrl}/idaf/usecaseDevLineage?action=toCsv&analysis=${encodeURIComponent(base64)}`
+  );
+  if (!res.ok) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
+  }
+  const sqlPayloadResponse: SqlPayloadResponse = await res.json();
+  if ('errorMessage' in sqlPayloadResponse && sqlPayloadResponse.errorMessage) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(sqlPayloadResponse.errorMessage as string);
+  }
+  console.log('Received csv from iDAF');
+  return sqlPayloadResponse;
+}
 
 // ------------------------------ DATABASES and USERS ------------------------------
 type DatabaseUsers = Record<string, string[]>;

@@ -1,14 +1,14 @@
 import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { useLineage } from '@pondpilot/flowscope-react';
 import { analyzeWithWorker, getCachedAnalysis, syncAnalysisFiles } from '@/lib/analysis-worker';
-import { BackendAdapter, AnalysisPayload } from '@/lib/backend-adapter';
+import { BackendAdapter, AnalysisPayload, SqlPayload } from '@/lib/backend-adapter';
 import { useProject } from '@/lib/project-store';
 import type { Project } from '@/lib/project-store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { FILE_LIMITS, ANALYSIS_SQL_PREVIEW_LIMITS } from '@/lib/constants';
 import { AnalysisErrorCode, isAnalysisError } from '@/types';
 import type { AnalysisState, AnalysisContext, FileValidationResult } from '@/types';
-import { devLineageAnalyze } from '@/lib/utils_idaf.tsx';
+import { devLineageAnalyze, devLineageExecuteSql } from '@/lib/utils_idaf.tsx';
 
 // Maximum retry attempts for file sync errors to prevent infinite loops
 const MAX_FILE_SYNC_RETRIES = 1;
@@ -321,6 +321,64 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
     adapter,
   ]);
 
+  const runExecuteSql = useCallback(
+    async (activeFileContent?: string, activeFilePath?: string) => {
+      if (!backendReady || !currentProject) return;
+      if (currentProject.dialect != 'oracleIdaf') {
+        return;
+      }
+
+      const requestId = analysisRequestRef.current + 1;
+      analysisRequestRef.current = requestId;
+      setAnalyzing(true);
+      setError(null);
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      try {
+        if (!activeFileContent) {
+          setError('No project context available');
+          return;
+        }
+        const sqlPayload: SqlPayload = {
+          path: activeFilePath,
+          content: activeFileContent,
+          database: currentProject.database,
+          userName: currentProject.userName,
+        }
+
+        const sqlPayloadResponse = await devLineageExecuteSql(sqlPayload, currentProject);
+        if(!sqlPayloadResponse.csv) {
+          setError('No data response');
+        }
+        console.log(sqlPayloadResponse.csv);
+      } catch (error) {
+        if (analysisRequestRef.current !== requestId) {
+          return;
+        }
+        setError(error instanceof Error ? error.message : 'Analysis failed');
+        console.error(error);
+      } finally {
+        if (analysisRequestRef.current === requestId) {
+          setAnalyzing(false);
+        }
+      }
+  },
+    [
+      backendReady,
+      currentProject,
+      activeProjectId,
+      storeResult,
+      setMetrics,
+      getMetrics,
+      getResult,
+      buildAnalysisContext,
+      validateFiles,
+      setAnalyzing,
+      setError,
+      hideCTEs,
+      adapter,
+    ])
+
   const runAnalysis = useCallback(
     async (activeFileContent?: string, activeFilePath?: string) => {
       if (!backendReady || !currentProject) return;
@@ -506,6 +564,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
   return {
     ...state,
     runAnalysis,
+    runExecuteSql,
     setError,
   };
 }

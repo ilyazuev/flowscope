@@ -38,6 +38,18 @@ export interface AnalysisPayload {
   templateMode?: TemplateMode;
 }
 
+export interface SqlPayload {
+  path?: string;
+  content: string;
+  database?: string;
+  userName?: string;
+}
+
+export interface SqlPayloadResponse {
+  csv?: string;
+  errorMessage?: string;
+}
+
 /**
  * Result from analysis operations.
  */

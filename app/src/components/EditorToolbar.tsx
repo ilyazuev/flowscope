@@ -21,6 +21,7 @@ interface EditorToolbarProps {
   isAnalyzing: boolean;
   backendReady: boolean;
   onAnalyze: () => void;
+  onExecuteSql: () => void;
   allFileCount: number;
   selectedCount: number;
   fileSelectorOpen: boolean;
@@ -37,6 +38,7 @@ export function EditorToolbar({
   isAnalyzing,
   backendReady,
   onAnalyze,
+  onExecuteSql,
   allFileCount,
   selectedCount,
   fileSelectorOpen,
@@ -93,6 +95,19 @@ export function EditorToolbar({
 
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center rounded-full overflow-hidden shadow-xs">
+          <Button
+            onClick={onExecuteSql}
+            disabled={!backendReady || isAnalyzing}
+            size="sm"
+            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3"
+          >
+            {isAnalyzing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5 fill-current" />
+            )}
+            <span className="hidden sm:inline">Execute Sql</span>
+          </Button>
           <Button
             onClick={onAnalyze}
             disabled={!backendReady || isAnalyzing}
