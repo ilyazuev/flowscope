@@ -435,36 +435,63 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
       <NavigationProvider projectId={activeProjectId} onNavigateToEditor={handleNavigateToEditor}>
         <FocusRegistryProvider>
           <div className="flex-1 overflow-hidden">
-            <ResizablePanelGroup direction="horizontal">
-              {/* Left: Editor */}
-              <ResizablePanel
-                ref={editorPanelRef}
-                defaultSize={EDITOR_PANEL_DEFAULT_SIZE}
-                minSize={25}
-                collapsible
-                collapsedSize={0}
-                data-testid="editor-panel"
-              >
-                <EditorArea
-                  backendReady={backendReady}
-                  fileSelectorOpen={fileSelectorOpen}
-                  onFileSelectorOpenChange={setFileSelectorOpen}
-                />
-              </ResizablePanel>
-
-              <ResizableHandle withHandle />
-
-              {/* Right: Visualization */}
+            <ResizablePanelGroup direction="vertical">
               <ResizablePanel
                 defaultSize={67}
                 minSize={30}
                 collapsible
                 collapsedSize={0}
+                data-testid="main-panel"
+              >
+
+                <ResizablePanelGroup direction="horizontal">
+                  {/* Left: Editor */}
+                  <ResizablePanel
+                    ref={editorPanelRef}
+                    defaultSize={EDITOR_PANEL_DEFAULT_SIZE}
+                    minSize={25}
+                    collapsible
+                    collapsedSize={0}
+                    data-testid="editor-panel"
+                  >
+                    <EditorArea
+                      backendReady={backendReady}
+                      fileSelectorOpen={fileSelectorOpen}
+                      onFileSelectorOpenChange={setFileSelectorOpen}
+                    />
+                  </ResizablePanel>
+
+                  <ResizableHandle withHandle />
+
+                  {/* Right: Visualization */}
+                  <ResizablePanel
+                    defaultSize={87}
+                    minSize={30}
+                    collapsible
+                    collapsedSize={0}
+                    data-testid="analysis-panel"
+                  >
+                    <AnalysisView graphContainerRef={graphContainerRef} />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+
+              </ResizablePanel>
+
+              <ResizableHandle withHandleHoriz />
+
+              <ResizablePanel
+                defaultSize={23}
+                minSize={10}
+                collapsible
+                collapsedSize={0}
                 data-testid="analysis-panel"
               >
-                <AnalysisView graphContainerRef={graphContainerRef} />
+                <div>123123</div>
               </ResizablePanel>
+
+
             </ResizablePanelGroup>
+
           </div>
         </FocusRegistryProvider>
       </NavigationProvider>
