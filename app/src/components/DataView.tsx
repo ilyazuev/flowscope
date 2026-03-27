@@ -4,6 +4,7 @@ import perspective_viewer from '@perspective-dev/viewer';
 import '@perspective-dev/viewer-datagrid';
 import '@perspective-dev/viewer-d3fc';
 import '@perspective-dev/viewer/dist/css/themes.css';
+import { resolveTheme, useThemeStore } from '@/lib/theme-store.ts';
 
 import SERVER_WASM from '@perspective-dev/server/dist/wasm/perspective-server.wasm?url';
 import CLIENT_WASM from '@perspective-dev/viewer/dist/wasm/perspective-viewer.wasm?url';
@@ -18,7 +19,11 @@ type PerspectiveViewerElement = HTMLElement & {
   load: (table: unknown) => Promise<void>;
   restore: (config: Record<string, unknown>) => Promise<void>;
   delete?: () => Promise<void>;
+  restyleElement?: () => Promise<void>;
+  flush?: () => Promise<void>;
 };
+
+type PerspectiveWorker = Awaited<ReturnType<typeof perspective.worker>>;
 
 type PerspectiveTable = {
   delete?: () => Promise<void>;
@@ -26,23 +31,51 @@ type PerspectiveTable = {
 
 export function DataView() {
   const viewerRef = useRef<PerspectiveViewerElement | null>(null);
-  const workerRef = useRef<Awaited<ReturnType<typeof perspective.worker>> | null>(null);
+  const workerRef = useRef<PerspectiveWorker | null>(null);
   const tableRef = useRef<PerspectiveTable | null>(null);
+  const initializedRef = useRef(false);
 
   const [status, setStatus] = useState<string | null>('Initialization...');
   const [error, setError] = useState<string | null>(null);
+
+  const theme = useThemeStore((state) => state.theme);
+  const isDark = resolveTheme(theme) === 'dark';
+
+  const applyTheme = async (
+    viewer: PerspectiveViewerElement
+  ) => {
+    viewer.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
+    console.log('123123');
+    if (viewer.restyleElement) {
+      await viewer.restyleElement();
+    }
+    if (viewer.flush) {
+      await viewer.flush();
+    }
+  };
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (viewer && initializedRef.current) {
+      void applyTheme(viewer);
+    }
+  }, [isDark]);
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
       const viewer = viewerRef.current;
-      if (!viewer) return;
+      if (!viewer || initializedRef.current) {
+        return;
+      }
 
       setError(null);
       setStatus('Loading data...');
 
       try {
+
+
         const response = await fetch('/mock/customers.csv');
         if (!response.ok) {
           // noinspection ExceptionCaughtLocallyJS
@@ -66,6 +99,7 @@ export function DataView() {
         if (cancelled) return;
 
         await viewer.load(table);
+
         await viewer.restore({
           plugin: 'Datagrid',
           settings: true,
@@ -75,11 +109,11 @@ export function DataView() {
             edit_mode: 'EDIT',
           },
         });
-
+        void applyTheme(viewer);
+        initializedRef.current = true;
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown error';
         setError(message);
-        setStatus('Error');
       } finally {
         setStatus(null);
       }
@@ -91,6 +125,8 @@ export function DataView() {
       cancelled = true;
       void tableRef.current?.delete?.();
       void viewerRef.current?.delete?.();
+      tableRef.current = null;
+      viewerRef.current = null;
     };
   }, []);
 
@@ -100,6 +136,7 @@ export function DataView() {
       {error && <pre style={{ color: 'crimson', whiteSpace: 'pre-wrap' }}>{error}</pre>}
       <perspective-viewer
         ref={(node) => {
+          node?.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
           viewerRef.current = node as PerspectiveViewerElement | null;
         }}
         style={{ width: '100%', height: '100%', display: !error && !status ? 'block' : 'none' }}
