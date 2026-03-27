@@ -69,10 +69,10 @@ export function DataView() {
         await viewer.restore({
           plugin: 'Datagrid',
           settings: true,
+          title: '123213',
           plugin_config: {
             editable: true,
             edit_mode: 'EDIT',
-            title: '123213'
           },
         });
 
