@@ -24,6 +24,7 @@ import type { GlobalShortcut } from '@/hooks';
 import { useThemeStore, type Theme } from '@/lib/theme-store';
 import { useViewStateStore } from '@/lib/view-state-store';
 import { getShortcutDisplay } from '@/lib/shortcuts';
+import { DataView } from '@/components/DataView.tsx';
 
 interface WorkspaceProps {
   backendReady: boolean;
@@ -486,7 +487,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                 collapsedSize={0}
                 data-testid="analysis-panel"
               >
-                <div>123123</div>
+                <DataView/>
               </ResizablePanel>
 
 

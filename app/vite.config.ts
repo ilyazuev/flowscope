@@ -17,7 +17,14 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['@pondpilot/flowscope-core', '@pondpilot/flowscope-react'],
+    exclude: [
+      '@pondpilot/flowscope-core',
+      '@pondpilot/flowscope-react',
+      '@perspective-dev/client',
+      '@perspective-dev/viewer',
+      '@perspective-dev/viewer-datagrid',
+      '@perspective-dev/viewer-d3fc',
+    ],
   },
   build: {
     target: 'esnext',
@@ -25,5 +32,5 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
-  base: process.env.VITE_BASE ?? "/",
+  base: process.env.VITE_BASE ?? '/',
 });
