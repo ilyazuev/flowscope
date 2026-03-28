@@ -63,8 +63,10 @@ export interface AnalysisState {
 
 export interface DataLoadState {
   isDataLoading: boolean;
+  requestId: number;
+  csv?: string | null;
   dataLoadingError: string | null;
-  lastLoadAt: number | null;
+  _lastLoadAt: number | null;
 }
 
 export interface KeyboardShortcutHandler {

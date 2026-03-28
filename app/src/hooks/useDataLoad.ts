@@ -11,9 +11,20 @@ export function useDataLoad() {
   const dataLoadRequestRef = useRef(0);
   const [state, setState] = useState<DataLoadState>({
     isDataLoading: false,
+    requestId: 0,
+    csv: null,
     dataLoadingError: null,
-    lastLoadAt: null,
+    _lastLoadAt: null,
   });
+
+
+  const setRequestId = useCallback(() => {
+    setState((prev) => ({ ...prev, requestId: prev.requestId + 1 }));
+  }, []);
+
+  const setCsv = useCallback((csv?: string|null) => {
+    setState((prev) => ({ ...prev, csv }));
+  }, []);
 
   const setDataLoading = useCallback((isDataLoading: boolean) => {
     setState((prev) => ({ ...prev, isDataLoading }));
@@ -30,10 +41,10 @@ export function useDataLoad() {
         return;
       }
 
-      const requestId = dataLoadRequestRef.current + 1;
-      dataLoadRequestRef.current = requestId;
       setDataLoading(true);
-      setDataLoadingError(null);
+      clear();
+      const requestId = state.requestId;
+      dataLoadRequestRef.current = requestId;
 
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       try {
@@ -52,12 +63,13 @@ export function useDataLoad() {
         if (!sqlPayloadResponse.csv) {
           setDataLoadingError('No data response');
         }
+        setCsv(sqlPayloadResponse.csv);
         console.log(sqlPayloadResponse.csv);
       } catch (error) {
         if (dataLoadRequestRef.current !== requestId) {
           return;
         }
-        setDataLoadingError(error instanceof Error ? error.message : 'Analysis failed');
+        setDataLoadingError(error instanceof Error ? error.message : 'Data load failed');
         console.error(error);
       } finally {
         if (dataLoadRequestRef.current === requestId) {
@@ -75,9 +87,16 @@ export function useDataLoad() {
     ]
   );
 
+  const clear = useCallback(() => {
+    setCsv(null);
+    setRequestId();
+    setDataLoadingError(null);
+  }, []);
+
   return {
     ...state,
     runExecuteSql,
     setDataLoadingError,
+    clear,
   };
 }
