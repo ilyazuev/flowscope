@@ -69,6 +69,35 @@ export function DataView() {
     setError(dataLoadingError);
   }, [dataLoadingError]);
 
+  const loadCsvToViewer = async (csv: string) => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    if (!workerRef.current) {
+      workerRef.current = await perspective.worker();
+    }
+
+    await tableRef.current?.delete?.();
+
+    const table = await workerRef.current.table(csv, {
+      format: 'csv',
+    });
+
+    tableRef.current = table as PerspectiveTable;
+
+    await viewer.load(table);
+    await viewer.restore({
+      plugin: 'Datagrid',
+      settings: true,
+      title: '123213',
+      plugin_config: {
+        editable: true,
+        edit_mode: 'EDIT',
+      },
+    });
+
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -92,29 +121,8 @@ export function DataView() {
 
         if (cancelled) return;
 
-        if (!workerRef.current) {
-          workerRef.current = await perspective.worker();
-        }
+        await loadCsvToViewer(csv);
 
-        await tableRef.current?.delete?.();
-
-        const table = await workerRef.current.table(csv, {
-          format: 'csv',
-        });
-
-        tableRef.current = table as PerspectiveTable;
-
-        await viewer.load(table);
-
-        await viewer.restore({
-          plugin: 'Datagrid',
-          settings: true,
-          title: '123213',
-          plugin_config: {
-            editable: true,
-            edit_mode: 'EDIT',
-          },
-        });
         setStatus(null);
         initializedRef.current = true;
       } catch (e) {
@@ -126,13 +134,11 @@ export function DataView() {
     void run();
 
     return () => {
-      cancelled = true;
-      if (initializedRef.current) {
-        void tableRef.current?.delete?.();
-        void viewerRef.current?.delete?.();
-        tableRef.current = null;
-        viewerRef.current = null;
-      }
+      cancelled = true; // if (initializedRef.current) {}
+      void tableRef.current?.delete?.();
+      void viewerRef.current?.delete?.();
+      tableRef.current = null;
+      viewerRef.current = null;
     };
   }, []);
 
@@ -152,9 +158,7 @@ export function DataView() {
           setStatus('No data');
           return;
         }
-
-        console.log(csv);
-        //await loadCsvToViewer(externalCsv, 'Loading external data...');
+        await loadCsvToViewer(csv);
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown error';
         setError(message);

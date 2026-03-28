@@ -64,7 +64,6 @@ export function useDataLoad() {
           setDataLoadingError('No data response');
         }
         setCsv(sqlPayloadResponse.csv);
-        console.log(sqlPayloadResponse.csv);
       } catch (error) {
         if (dataLoadRequestRef.current !== requestId) {
           return;
