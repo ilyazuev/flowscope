@@ -61,6 +61,12 @@ export interface AnalysisState {
   lastAnalyzedAt: number | null;
 }
 
+export interface DataLoadState {
+  isDataLoading: boolean;
+  dataLoadingError: string | null;
+  lastLoadAt: number | null;
+}
+
 export interface KeyboardShortcutHandler {
   key: string;
   modifiers: ReadonlyArray<'metaKey' | 'ctrlKey' | 'shiftKey' | 'altKey'>;

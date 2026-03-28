@@ -13,6 +13,7 @@ import type { SqlViewMode } from './EditorToolbar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import type { RunMode } from '@/lib/project-store';
+import { useDataLoad } from '@/hooks/useDataLoad.ts';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -62,7 +63,8 @@ export function EditorArea({
 
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
-  const { isAnalyzing, error, runAnalysis, runExecuteSql, setError } = useAnalysis(backendReady, { adapter });
+  const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
+  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError } = useDataLoad();
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -74,6 +76,17 @@ export function EditorArea({
       setError(null);
     }
   }, [error, setError]);
+
+  // Show error toast when error occurs
+  useEffect(() => {
+    if (dataLoadingError) {
+      toast.error('Data Loading Error', {
+        description: dataLoadingError,
+        duration: 5000,
+      });
+      setDataLoadingError(null);
+    }
+  }, [dataLoadingError, setDataLoadingError]);
 
   // Debounce schema SQL to prevent rapid re-analysis during editing
   const debouncedSchemaSQL = useDebounce(currentProject?.schemaSQL ?? '', 300);
@@ -180,15 +193,9 @@ export function EditorArea({
 
   const handleExecuteSql = useCallback(() => {
     if (activeFile && currentProject) {
-      const originalMode = currentProject.runMode;
-      setRunMode(currentProject.id, 'current');
-      runExecuteSql(activeFile.content, activeFile.path).finally(() => {
-        // Restore original mode after analysis
-        setRunMode(currentProject.id, originalMode);
-      });
+      void runExecuteSql(activeFile.content, activeFile.path);
     }
-  }, [activeFile, currentProject, runExecuteSql, setRunMode]);
-
+  }, [activeFile, currentProject, runExecuteSql]);
 
   const handleAnalyzeActiveOnly = useCallback(() => {
     if (activeFile && currentProject) {
@@ -239,6 +246,7 @@ export function EditorArea({
         runMode={currentProject.runMode}
         onRunModeChange={(mode: RunMode) => setRunMode(currentProject.id, mode)}
         isAnalyzing={isAnalyzing}
+        isDataLoading={isDataLoading}
         backendReady={backendReady}
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}

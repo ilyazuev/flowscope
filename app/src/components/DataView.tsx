@@ -45,7 +45,6 @@ export function DataView() {
     viewer: PerspectiveViewerElement
   ) => {
     viewer.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
-    console.log('123123');
     if (viewer.restyleElement) {
       await viewer.restyleElement();
     }
