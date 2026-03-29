@@ -8,6 +8,7 @@ import { DataLoadState } from '@/types';
 export function useDataLoad() {
 
   const { currentProject, activeProjectId } = useProject();
+  const requestIdRef = useRef(0);
   const dataLoadRequestRef = useRef(0);
   const [state, setState] = useState<DataLoadState>({
     isDataLoading: false,
@@ -17,6 +18,10 @@ export function useDataLoad() {
     _lastLoadAt: null,
   });
 
+  const nextRequestId = () => {
+    requestIdRef.current += 1;
+    return requestIdRef.current;
+  };
 
   const setRequestId = useCallback(() => {
     setState((prev) => ({ ...prev, requestId: prev.requestId + 1 }));
@@ -43,7 +48,7 @@ export function useDataLoad() {
 
       setDataLoading(true);
       clear();
-      const requestId = state.requestId;
+      const requestId = nextRequestId();
       dataLoadRequestRef.current = requestId;
 
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -96,6 +101,7 @@ export function useDataLoad() {
     ...state,
     runExecuteSql,
     setDataLoadingError,
+    setDataLoading,
     clear,
   };
 }

@@ -8,7 +8,7 @@ import { resolveTheme, useThemeStore } from '@/lib/theme-store.ts';
 
 import SERVER_WASM from '@perspective-dev/server/dist/wasm/perspective-server.wasm?url';
 import CLIENT_WASM from '@perspective-dev/viewer/dist/wasm/perspective-viewer.wasm?url';
-import { useDataLoad } from '@/hooks/useDataLoad.ts';
+import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 
 // noinspection JSVoidFunctionReturnValueUsed
 await Promise.all([
@@ -35,7 +35,7 @@ export function DataView() {
   const workerRef = useRef<PerspectiveWorker | null>(null);
   const tableRef = useRef<PerspectiveTable | null>(null);
   const initializedRef = useRef(false);
-  const { isDataLoading, dataLoadingError, csv, requestId } = useDataLoad();
+  const { isDataLoading, dataLoadingError, csv, requestId, setDataLoading } = useSharedDataLoad();
   const lastAppliedRequestIdRef = useRef(0);
 
   const [status, setStatus] = useState<string | null>('Initialization...');
@@ -62,29 +62,29 @@ export function DataView() {
   }, [isDark]);
 
   useEffect(() => {
-    setStatus('Data loading...');
-  }, [isDataLoading]);
-
-  useEffect(() => {
-    setError(dataLoadingError);
-  }, [dataLoadingError]);
+      if( dataLoadingError ) {
+        setError(dataLoadingError);
+      } else {
+        setError(null);
+        if( isDataLoading ) {
+          setStatus('Data loading...');
+        } else {
+          setStatus(null);
+        }
+      }
+  }, [isDataLoading, dataLoadingError]);
 
   const loadCsvToViewer = async (csv: string) => {
     const viewer = viewerRef.current;
     if (!viewer) return;
-
     if (!workerRef.current) {
       workerRef.current = await perspective.worker();
     }
-
-    await tableRef.current?.delete?.();
-
+    const prevTable = tableRef.current;
     const table = await workerRef.current.table(csv, {
       format: 'csv',
     });
-
     tableRef.current = table as PerspectiveTable;
-
     await viewer.load(table);
     await viewer.restore({
       plugin: 'Datagrid',
@@ -95,7 +95,7 @@ export function DataView() {
         edit_mode: 'EDIT',
       },
     });
-
+    await prevTable?.delete?.();
   };
 
   useEffect(() => {
@@ -135,10 +135,14 @@ export function DataView() {
 
     return () => {
       cancelled = true; // if (initializedRef.current) {}
-      void tableRef.current?.delete?.();
-      void viewerRef.current?.delete?.();
-      tableRef.current = null;
+      const viewer = viewerRef.current;
+      const table = tableRef.current;
       viewerRef.current = null;
+      tableRef.current = null;
+      void (async () => {
+        await viewer?.delete?.();
+        await table?.delete?.();
+      })();
     };
   }, []);
 
@@ -152,10 +156,9 @@ export function DataView() {
     const run = async () => {
       try {
         if (!csv?.trim()) {
-          await tableRef.current?.delete?.();
-          tableRef.current = null;
           setError(null);
           setStatus('No data');
+          await loadCsvToViewer('empty\n');
           return;
         }
         await loadCsvToViewer(csv);
@@ -163,6 +166,8 @@ export function DataView() {
         const message = e instanceof Error ? e.message : 'Unknown error';
         setError(message);
         setStatus(null);
+      } finally {
+        setDataLoading(false);
       }
     };
 

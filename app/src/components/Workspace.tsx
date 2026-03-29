@@ -25,6 +25,7 @@ import { useThemeStore, type Theme } from '@/lib/theme-store';
 import { useViewStateStore } from '@/lib/view-state-store';
 import { getShortcutDisplay } from '@/lib/shortcuts';
 import { DataView } from '@/components/DataView.tsx';
+import { DataLoadProvider } from '@/components/DataLoadContext.tsx';
 
 interface WorkspaceProps {
   backendReady: boolean;
@@ -318,9 +319,11 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
         <div className="flex items-center gap-2">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <FlowScopeLogo/> {/*className="w-8 h-8 text-foreground/30 dark:text-white/30"*/}
+            <FlowScopeLogo /> {/*className="w-8 h-8 text-foreground/30 dark:text-white/30"*/}
             <div className="flex items-baseline gap-1">
-              <span className="text-lg font-semibold text-foreground">iDAF - FlowScope - Extra Lineage</span>
+              <span className="text-lg font-semibold text-foreground">
+                iDAF - FlowScope - Extra Lineage
+              </span>
               <span className="text-xs font-mono text-muted-foreground"></span>
             </div>
           </div>
@@ -435,65 +438,62 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
       {/* Main Split View - 2 columns */}
       <NavigationProvider projectId={activeProjectId} onNavigateToEditor={handleNavigateToEditor}>
         <FocusRegistryProvider>
-          <div className="flex-1 overflow-hidden">
-            <ResizablePanelGroup direction="vertical">
-              <ResizablePanel
-                defaultSize={67}
-                minSize={30}
-                collapsible
-                collapsedSize={0}
-                data-testid="main-panel"
-              >
+          <DataLoadProvider>
+            <div className="flex-1 overflow-hidden">
+              <ResizablePanelGroup direction="vertical">
+                <ResizablePanel
+                  defaultSize={67}
+                  minSize={30}
+                  collapsible
+                  collapsedSize={0}
+                  data-testid="main-panel"
+                >
+                  <ResizablePanelGroup direction="horizontal">
+                    {/* Left: Editor */}
+                    <ResizablePanel
+                      ref={editorPanelRef}
+                      defaultSize={EDITOR_PANEL_DEFAULT_SIZE}
+                      minSize={25}
+                      collapsible
+                      collapsedSize={0}
+                      data-testid="editor-panel"
+                    >
+                      <EditorArea
+                        backendReady={backendReady}
+                        fileSelectorOpen={fileSelectorOpen}
+                        onFileSelectorOpenChange={setFileSelectorOpen}
+                      />
+                    </ResizablePanel>
 
-                <ResizablePanelGroup direction="horizontal">
-                  {/* Left: Editor */}
-                  <ResizablePanel
-                    ref={editorPanelRef}
-                    defaultSize={EDITOR_PANEL_DEFAULT_SIZE}
-                    minSize={25}
-                    collapsible
-                    collapsedSize={0}
-                    data-testid="editor-panel"
-                  >
-                    <EditorArea
-                      backendReady={backendReady}
-                      fileSelectorOpen={fileSelectorOpen}
-                      onFileSelectorOpenChange={setFileSelectorOpen}
-                    />
-                  </ResizablePanel>
+                    <ResizableHandle withHandle />
 
-                  <ResizableHandle withHandle />
+                    {/* Right: Visualization */}
+                    <ResizablePanel
+                      defaultSize={87}
+                      minSize={30}
+                      collapsible
+                      collapsedSize={0}
+                      data-testid="analysis-panel"
+                    >
+                      <AnalysisView graphContainerRef={graphContainerRef} />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </ResizablePanel>
 
-                  {/* Right: Visualization */}
-                  <ResizablePanel
-                    defaultSize={87}
-                    minSize={30}
-                    collapsible
-                    collapsedSize={0}
-                    data-testid="analysis-panel"
-                  >
-                    <AnalysisView graphContainerRef={graphContainerRef} />
-                  </ResizablePanel>
-                </ResizablePanelGroup>
+                <ResizableHandle withHandleHoriz />
 
-              </ResizablePanel>
-
-              <ResizableHandle withHandleHoriz />
-
-              <ResizablePanel
-                defaultSize={23}
-                minSize={10}
-                collapsible
-                collapsedSize={0}
-                data-testid="analysis-panel"
-              >
-                <DataView/>
-              </ResizablePanel>
-
-
-            </ResizablePanelGroup>
-
-          </div>
+                <ResizablePanel
+                  defaultSize={23}
+                  minSize={10}
+                  collapsible
+                  collapsedSize={0}
+                  data-testid="analysis-panel"
+                >
+                  <DataView />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </div>
+          </DataLoadProvider>
         </FocusRegistryProvider>
       </NavigationProvider>
     </div>

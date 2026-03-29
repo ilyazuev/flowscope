@@ -13,7 +13,7 @@ import type { SqlViewMode } from './EditorToolbar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import type { RunMode } from '@/lib/project-store';
-import { useDataLoad } from '@/hooks/useDataLoad.ts';
+import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -64,7 +64,7 @@ export function EditorArea({
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
-  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError } = useDataLoad();
+  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError } = useSharedDataLoad();
 
   // Show error toast when error occurs
   useEffect(() => {
