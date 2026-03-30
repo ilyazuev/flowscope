@@ -84,7 +84,6 @@ export function EditorArea({
         description: dataLoadingError,
         duration: 5000,
       });
-      setDataLoadingError(null);
     }
   }, [dataLoadingError, setDataLoadingError]);
 

@@ -46,10 +46,11 @@ export function useDataLoad() {
         return;
       }
 
-      setDataLoading(true);
-      clear();
       const requestId = nextRequestId();
       dataLoadRequestRef.current = requestId;
+      setRequestId();
+      setDataLoading(true);
+      setDataLoadingError(null);
 
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       try {

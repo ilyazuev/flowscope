@@ -61,19 +61,6 @@ export function DataView() {
     }
   }, [isDark]);
 
-  useEffect(() => {
-      if( dataLoadingError ) {
-        setError(dataLoadingError);
-      } else {
-        setError(null);
-        if( isDataLoading ) {
-          setStatus('Data loading...');
-        } else {
-          setStatus(null);
-        }
-      }
-  }, [isDataLoading, dataLoadingError]);
-
   const loadCsvToViewer = async (csv: string) => {
     const viewer = viewerRef.current;
     if (!viewer) return;
@@ -146,22 +133,41 @@ export function DataView() {
     };
   }, []);
 
+
+  useEffect(() => {
+    if( dataLoadingError ) {
+      setError('Data Loading Error: ' + dataLoadingError);
+      console.log('6666666666666666666666666666');
+    } else {
+      setError(null);
+      if( isDataLoading ) {
+        setStatus('Data loading...');
+        console.log('777777777777777777777777777777');
+      } else {
+        setStatus(null);
+      }
+    }
+  }, [isDataLoading, dataLoadingError]);
+
+
   useEffect(() => {
     if (!initializedRef.current) return;
     if (!requestId) return;
-    if (lastAppliedRequestIdRef.current === requestId) return;
+    if (isDataLoading || lastAppliedRequestIdRef.current === requestId) return;
 
     lastAppliedRequestIdRef.current = requestId;
 
     const run = async () => {
       try {
         if (!csv?.trim()) {
+          console.log('111111111111111111111');
           setError(null);
           setStatus('No data');
-          await loadCsvToViewer('empty\n');
           return;
         }
+        console.log('22222222222222222222222222222222');
         await loadCsvToViewer(csv);
+        setStatus(null);
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown error';
         setError(message);
@@ -183,7 +189,7 @@ export function DataView() {
           node?.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
           viewerRef.current = node as PerspectiveViewerElement | null;
         }}
-        style={{ width: '100%', height: '100%', display: !error && !status ? 'block' : 'none' }}
+        style={{ width: !error && !status ? '100%' : '0', height: !error && !status ? '100%' : '0' }}
       />
     </>
   );
