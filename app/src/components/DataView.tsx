@@ -35,8 +35,9 @@ export function DataView() {
   const workerRef = useRef<PerspectiveWorker | null>(null);
   const tableRef = useRef<PerspectiveTable | null>(null);
   const initializedRef = useRef(false);
-  const { isDataLoading, dataLoadingError, csv, requestId, setDataLoading } = useSharedDataLoad();
   const lastAppliedRequestIdRef = useRef(0);
+
+  const { isDataLoading, dataLoadingError, csv, requestId, setDataLoading } = useSharedDataLoad();
 
   const [status, setStatus] = useState<string | null>('Initialization...');
   const [error, setError] = useState<string | null>(null);

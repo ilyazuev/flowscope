@@ -4,12 +4,10 @@ import { devLineageExecuteSql } from '@/lib/utils_idaf.tsx';
 import { useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
 
-
 export function useDataLoad() {
-
-  const { currentProject, activeProjectId } = useProject();
+  const { currentProject } = useProject();
   const requestIdRef = useRef(0);
-  const dataLoadRequestRef = useRef(0);
+
   const [state, setState] = useState<DataLoadState>({
     isDataLoading: false,
     requestId: 0,
@@ -18,13 +16,17 @@ export function useDataLoad() {
     _lastLoadAt: null,
   });
 
-  const nextRequestId = () => {
+  const startRequest = useCallback(() => {
     requestIdRef.current += 1;
-    return requestIdRef.current;
-  };
-
-  const setRequestId = useCallback(() => {
-    setState((prev) => ({ ...prev, requestId: prev.requestId + 1 }));
+    const requestId = requestIdRef.current;
+    setState((prev) => ({
+      ...prev,
+      requestId,
+      isDataLoading: true,
+      dataLoadingError: null,
+      csv: null,
+    }));
+    return requestId;
   }, []);
 
   const setCsv = useCallback((csv?: string|null) => {
@@ -46,18 +48,17 @@ export function useDataLoad() {
         return;
       }
 
-      const requestId = nextRequestId();
-      dataLoadRequestRef.current = requestId;
-      setRequestId();
-      setDataLoading(true);
-      setDataLoadingError(null);
+      if (!activeFileContent?.trim()) {
+        setState((prev) => ({
+          ...prev,
+          isDataLoading: false,
+          dataLoadingError: 'No SQL content to execute',
+        }));
+        return;
+      }
 
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const requestId = startRequest(); // await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       try {
-        if (!activeFileContent) {
-          setDataLoadingError('No project context available');
-          return;
-        }
         const sqlPayload: SqlPayload = {
           path: activeFilePath,
           content: activeFileContent,
@@ -66,36 +67,58 @@ export function useDataLoad() {
         };
 
         const sqlPayloadResponse = await devLineageExecuteSql(sqlPayload, currentProject);
-        if (!sqlPayloadResponse.csv) {
-          setDataLoadingError('No data response');
-        }
-        setCsv(sqlPayloadResponse.csv);
-      } catch (error) {
-        if (dataLoadRequestRef.current !== requestId) {
+
+        if (requestIdRef.current !== requestId) {
           return;
         }
-        setDataLoadingError(error instanceof Error ? error.message : 'Data load failed');
-        console.error(error);
-      } finally {
-        if (dataLoadRequestRef.current === requestId) {
-          setDataLoading(false);
+
+        if (!sqlPayloadResponse.csv) {
+          setState((prev) => ({
+            ...prev,
+            isDataLoading: false,
+            dataLoadingError: 'No data response',
+            csv: null,
+          }));
+          return;
         }
+
+        setState((prev) => ({
+          ...prev,
+          isDataLoading: false,
+          dataLoadingError: null,
+          csv: sqlPayloadResponse.csv,
+          _lastLoadAt: Date.now(),
+        }));
+      } catch (error) {
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        setState((prev) => ({
+          ...prev,
+          isDataLoading: false,
+          dataLoadingError: error instanceof Error ? error.message : 'Data load failed',
+        }));
+
+        console.error(error);
       }
     },
     [
       currentProject,
-      activeProjectId,
-      //storeResult,
-      //getResult,
-      setDataLoading,
-      setDataLoadingError,
+      startRequest,
     ]
   );
 
   const clear = useCallback(() => {
-    setCsv(null);
-    setRequestId();
-    setDataLoadingError(null);
+    requestIdRef.current += 1;
+
+    setState((prev) => ({
+      ...prev,
+      requestId: requestIdRef.current,
+      isDataLoading: false,
+      csv: null,
+      dataLoadingError: null,
+    }));
   }, []);
 
   return {
@@ -103,6 +126,7 @@ export function useDataLoad() {
     runExecuteSql,
     setDataLoadingError,
     setDataLoading,
+    setCsv,
     clear,
   };
 }
