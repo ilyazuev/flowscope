@@ -11,7 +11,7 @@ import { STORAGE_KEYS, FILE_EXTENSIONS, SHARE_LIMITS, DEFAULT_FILE_LANGUAGE } fr
 import type { SharePayload } from './share';
 import { parseTemplateMode } from '@/types';
 import type { TemplateMode } from '@/types';
-import { DEFAULT_IDAF_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
+import { DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
 import { useBackend } from './backend-context';
 import { useBackendFiles } from '@/hooks/useBackendFiles';
 
@@ -40,7 +40,7 @@ function validateProjectName(name: string, existingNames: string[]): string | nu
 }
 
 export type Dialect =
-  | 'oracleIdaf'
+  | 'oracleBackend'
   | 'generic'
   | 'ansi'
   | 'bigquery'
@@ -57,7 +57,7 @@ export type Dialect =
 
 /** Human-readable labels for each dialect. */
 const DIALECT_LABELS: Record<Dialect, string> = {
-  oracleIdaf: 'Oracle iDAF',
+  oracleBackend: 'Oracle Backend Parser',
   generic: 'Generic SQL',
   ansi: 'ANSI SQL',
   bigquery: 'BigQuery',
@@ -75,7 +75,7 @@ const DIALECT_LABELS: Record<Dialect, string> = {
 
 /** All valid dialect values for runtime validation. */
 export const VALID_DIALECTS: readonly Dialect[] = [
-  'oracleIdaf',
+  'oracleBackend',
   'generic',
   'ansi',
   'bigquery',
@@ -206,7 +206,7 @@ const loadProjectsFromStorage = (): Project[] => {
   } catch (error) {
     console.error('Failed to load projects from storage:', error);
   }
-  return [DEFAULT_IDAF_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT];
+  return [DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT];
 };
 
 const saveProjectsToStorage = (projects: Project[]) => {

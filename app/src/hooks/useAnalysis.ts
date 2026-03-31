@@ -8,7 +8,7 @@ import { useAnalysisStore } from '@/lib/analysis-store';
 import { FILE_LIMITS, ANALYSIS_SQL_PREVIEW_LIMITS } from '@/lib/constants';
 import { AnalysisErrorCode, isAnalysisError } from '@/types';
 import type { AnalysisState, AnalysisContext, FileValidationResult } from '@/types';
-import { devLineageAnalyze } from '@/lib/utils_idaf.tsx';
+import { devLineageAnalyze } from '@/lib/utils_backend.tsx';
 
 // Maximum retry attempts for file sync errors to prevent infinite loops
 const MAX_FILE_SYNC_RETRIES = 1;
@@ -396,7 +396,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
 
         let analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>>;
         let fileSyncRetries = 0;
-        if (currentProject.dialect === 'oracleIdaf') {
+        if (currentProject.dialect === 'oracleBackend') {
           analysisResponse = await devLineageAnalyze(adapterPayload, currentProject);
         } else if (adapter) { // Use adapter if available, otherwise fall back to direct worker calls
           while (true) {

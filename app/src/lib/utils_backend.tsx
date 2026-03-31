@@ -3,7 +3,7 @@ import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-const baseIdafUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
+const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
 
 export async function devLineageAnalyze(adapterPayload: AnalysisPayload, currentProject: Project) {
   const adapterPayloadEx: AnalysisPayloadEx = {
@@ -13,36 +13,36 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
   };
   const base64 = btoa(JSON.stringify(adapterPayloadEx));
   const res = await fetch(
-    `${baseIdafUrl}/idaf/usecaseDevLineage?analysis=${encodeURIComponent(base64)}`
+    `${baseBackendUrl}/idaf/usecaseDevLineage?analysis=${encodeURIComponent(base64)}`
   );
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
+    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
   }
   const analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>> = await res.json();
   if ('errorMessage' in analysisResponse && analysisResponse.errorMessage) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(analysisResponse.errorMessage as string);
   }
-  console.log('Received from iDAF');
+  console.log('Received from backend');
   return analysisResponse;
 }
 
 export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProject: Project) {
   const base64 = btoa(JSON.stringify(sqlPayload));
   const res = await fetch(
-    `${baseIdafUrl}/idaf/usecaseDevLineage?action=toCsv&analysis=${encodeURIComponent(base64)}`
+    `${baseBackendUrl}/idaf/usecaseDevLineage?action=toCsv&analysis=${encodeURIComponent(base64)}`
   );
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
+    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
   }
   const sqlPayloadResponse: SqlPayloadResponse = await res.json();
   if ('errorMessage' in sqlPayloadResponse && sqlPayloadResponse.errorMessage) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(sqlPayloadResponse.errorMessage as string);
   }
-  console.log('Received csv from iDAF');
+  console.log('Received csv from backend');
   return sqlPayloadResponse;
 }
 
@@ -55,10 +55,10 @@ let _inflight: Promise<DatabaseUsers> | null = null;
 async function DATABASES(): Promise<DatabaseUsers> {
   let res;
   try {
-    res = await fetch(`${baseIdafUrl}/idaf/usecaseDevLineage?action=loadDatabases`); // Simulate error example: // throw new Error("Backend is down");
+    res = await fetch(`${baseBackendUrl}/idaf/usecaseDevLineage?action=loadDatabases`); // Simulate error example: // throw new Error("Backend is down");
     if (!res.ok) {
       // noinspection ExceptionCaughtLocallyJS
-      throw new Error(`Failed to fetch from iDAF: ${res.status} ${res.statusText}`);
+      throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
     }
     const result = await res.json();
     if ('errorMessage' in result && result.errorMessage) {

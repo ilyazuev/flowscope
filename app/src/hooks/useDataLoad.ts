@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { SqlPayload } from '@/lib/backend-adapter.ts';
-import { devLineageExecuteSql } from '@/lib/utils_idaf.tsx';
+import { devLineageExecuteSql } from '@/lib/utils_backend.tsx';
 import { useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
 
@@ -44,7 +44,7 @@ export function useDataLoad() {
   const runExecuteSql = useCallback(
     async (activeFileContent?: string, activeFilePath?: string) => {
       if (!currentProject) return;
-      if (currentProject.dialect != 'oracleIdaf') {
+      if (currentProject.dialect != 'oracleBackend') {
         return;
       }
 

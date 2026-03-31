@@ -27,7 +27,7 @@ import {
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ProjectMenuItem } from './ProjectMenuItem';
 import { isValidTemplateMode, TEMPLATE_MODE_OPTIONS } from '@/types';
-import { DatabasesProvider, useDatabases } from '@/lib/utils_idaf.tsx';
+import { DatabasesProvider, useDatabases } from '@/lib/utils_backend.tsx';
 
 interface ProjectSelectorProps {
   open?: boolean;
@@ -285,7 +285,7 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
                     ))}
                   </SelectContent>
                 </Select>
-                {currentProject.dialect == 'oracleIdaf' && (
+                {currentProject.dialect == 'oracleBackend' && (
                   <DatabasesProvider>
                     <DbSelect />
                   </DatabasesProvider>

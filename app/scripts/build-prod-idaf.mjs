@@ -2,13 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { loadEnvFile } from 'process';
+loadEnvFile('.env');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 
-const PROD_BASE = '/idaf/client/static/flowscope';
-const TARGET_DIR = 'I:\\server117\\idaf_client\\static\\flowscope';
+const PROD_BASE = process.env.PROD_BASE;
+const TARGET_DIR = process.env.TARGET_DIR;
 
 function pad(value) {
   return String(value).padStart(2, '0');

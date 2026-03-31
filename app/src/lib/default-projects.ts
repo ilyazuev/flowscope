@@ -8,11 +8,11 @@ import type { Project } from './project-store';
  * sql iDAF demo project.
  * Demonstrates sql lineage.
  */
-export const DEFAULT_IDAF_PROJECT: Project = {
-   id: 'default-idaf-project',
+export const DEFAULT_CUSTOMERS_PROJECT: Project = {
+   id: 'default-customers-project',
    name: 'iDAF sql',
    activeFileId: 'sql-file-1',
-   dialect: 'oracleIdaf',
+   dialect: 'oracleBackend',
    database: 'SPTE',
    userName: 'DWHKIT',
    runMode: 'current',
