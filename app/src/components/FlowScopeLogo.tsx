@@ -8,7 +8,7 @@
  */
 export function FlowScopeLogo() { // { className }: FlowScopeLogoProps
   return (
-    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAATCAMAAAC9bj0JAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAEyUExURfVnAPRyAPeXUPaHMvZeAPNfAPZ9Ifm8kfefXfNiAPJiAPZuAPaMOPRyC/ZrAPd4AvV1EfzbwvrGof3m1/+iav9xAP1zAPRuAP9gAPFaAPRiAPWiaPaHKfV6KPNmAPNZAPV/KfV6GvitZvm2gvJZAPeiZPaQRPm4jP+NM/92GPZwAPNjAPeTSfJhAPJ0D/lpB/VlAPJgAPNnAPWse/V6DvaQQfFfAPddAPFaAPV2CvJgAPhVAPJ6CfebVvitcveEH/WELfNcAPvUtf3u5fmDKfRkAPR+FfZyAPR/G+9oAPNmAPRmAPrPk/nEkfduAPSHNfBfAPJUAPSFMvNhAPN8KvJkAPV/K/iyfPWQM/VfAPV/I/NcAPJ6DvNQAPJiAPWBIPWMQ/JHAPima/zbxv/590dwTO3s0sAAAABmdFJOU/////7//v7//4+u/v/+//7////+AhkouBa4irj//vb+/v7//6/+/v4LBnprubc7HDWfYrj/+PBxzp2iMoL+////xf//Wl7S++5RmJH//0PV8zyo15s9uP/Uubh98/7snc/+/v7+AHnkJeEAAAEoSURBVBjThdHVckJBDAbg3T1uHCtO4eAMTnEtUuruLrR5/1coS0tvarnLfJM/kwmCXwr9Bd2nUWLU832H55hoiLHTRb/iznxBd2jZE1u4P6H9zvbmxhJ6eGy9WSbboGGZrLI1/YS2IrymzTRii4ssj2dX+oAEH7dnNtF0abl4L7eAio6EiYiNWgugeB2gU3KJQkB3jBRisOJqJR4H+t1cck0KayENKQ6z6mDXOkqScAmgXKHgCzMqdoZMhGNE1E/iJoBHplCu8xqvcVGOI0nEE7YDcFGgcB4nHBdxBBVFjReScskAnQCg9lGdMJH+TE0Pog84JfLrEkyP3YD2DwSFVU3rKhRia+Y4zqLGWfhwfkfe6y3489Vg0Ov3X1aDtzeylC39948f6x03YHM0swGnlAAAAABJRU5ErkJggg=="/>
+    <img src={import.meta.env.VITE_APP_LOGO} alt="logo"/>
   );  
   // return (
   //   <svg

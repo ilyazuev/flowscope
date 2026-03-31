@@ -5,28 +5,29 @@
 import type { Project } from './project-store';
 
 /**
- * sql iDAF demo project.
+ * sql customers demo project.
  * Demonstrates sql lineage.
  */
+const DEFAULT_CUSTOMERS_SCHEMA = `${import.meta.env.VITE_DEFAULT_USERNAME || ''}.`;
 export const DEFAULT_CUSTOMERS_PROJECT: Project = {
-   id: 'default-customers-project',
-   name: 'iDAF sql',
-   activeFileId: 'sql-file-1',
-   dialect: 'oracleBackend',
-   database: 'SPTE',
-   userName: 'DWHKIT',
-   runMode: 'current',
-   selectedFileIds: [],
-   schemaSQL: ``,
-   templateMode: 'raw',
-   files: [
+  id: 'default-customers-project',
+  name: `${import.meta.env.VITE_APP_NAME||'Example'} sql`,
+  activeFileId: 'sql-file-1',
+  dialect: 'oracleBackend',
+  database: import.meta.env.VITE_DEFAULT_DATABASE || 'Autodetect',
+  userName: import.meta.env.VITE_DEFAULT_USERNAME || 'Autodetect',
+  runMode: 'current',
+  selectedFileIds: [],
+  schemaSQL: ``,
+  templateMode: 'raw',
+  files: [
     {
       id: 'sql-file-1',
       name: 'Test_SQL_1.sql',
       path: 'Test_SQL_1.sql',
       language: 'sql',
       content: `
--- noinspection SqlNoDataSourceInspection @ table/"IZ_TEST_1_ORDER"
+-- noinspection SqlNoDataSourceInspection @ table/"${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER"
 WITH
 params AS (
     SELECT
@@ -44,7 +45,7 @@ ord AS (
         o.order_dt,
         o.status_cd,
         o.currency_cd
-    FROM DWHKIT.IZ_TEST_1_ORDER o
+    FROM ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER o
     CROSS JOIN params p
     WHERE o.order_dt >= p.dt_from
       AND o.order_dt <  p.dt_to
@@ -59,7 +60,7 @@ items AS (
         oi.discount_amt,
         (oi.qty * oi.unit_price - oi.discount_amt) AS line_amount,
         p.order_extra
-    FROM DWHKIT.IZ_TEST_1_ORDER_ITEM oi
+    FROM ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER_ITEM oi
     JOIN ord o ON o.order_id = oi.order_id
     LEFT JOIN params p ON p.order_id = o.order_id -- check 2 CTE joins
 ),
@@ -78,10 +79,10 @@ enriched AS (
         i.line_amount,
         tbl_ord.status_cd
     FROM ord o
-    JOIN DWHKIT.IZ_TEST_1_CUSTOMER c ON c.customer_id = o.customer_id
-    LEFT JOIN DWHKIT.IZ_TEST_1_ORDER tbl_ord ON tbl_ord.customer_id = c.customer_id -- test double table join
+    JOIN ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}CUSTOMER c ON c.customer_id = o.customer_id
+    LEFT JOIN ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER tbl_ord ON tbl_ord.customer_id = c.customer_id -- test double table join
     JOIN items i ON i.order_id = o.order_id
-    JOIN IZ_TEST_1_PRODUCT p ON p.product_id = i.product_id
+    JOIN ${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}PRODUCT p ON p.product_id = i.product_id
 ),
 cat_rank AS (
     SELECT
@@ -110,10 +111,10 @@ GROUP BY
     e.full_name
 ORDER BY
     revenue_amt DESC;
-      `
-      }
-   ]
-}
+      `,
+    },
+  ],
+};
 
 /**
  * dbt Jaffle Shop demo project.

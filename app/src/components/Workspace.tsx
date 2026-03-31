@@ -322,8 +322,14 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
             <FlowScopeLogo /> {/*className="w-8 h-8 text-foreground/30 dark:text-white/30"*/}
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-semibold text-foreground">
-                iDAF - FlowScope - Extra Lineage
+                {import.meta.env.VITE_APP_NAME} - FlowScope - Extra Lineage
               </span>
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger> {import.meta.env.VITE_APP_VERSION}</TooltipTrigger>
+                  <TooltipContent>{import.meta.env.VITE_APP_BUILT_ON}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <span className="text-xs font-mono text-muted-foreground"></span>
             </div>
           </div>

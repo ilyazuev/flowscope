@@ -1,19 +1,34 @@
-import { AnalysisPayload, AnalysisPayloadEx, SqlPayload, SqlPayloadResponse } from '@/lib/backend-adapter.ts';
+import {
+  AnalysisPayload,
+  AnalysisPayloadEx,
+  SqlPayload,
+  SqlPayloadResponse,
+} from '@/lib/backend-adapter.ts';
 import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
 
+function backendUrl<T>(backendEndpoint: string, payload?: T) {
+  let content;
+  if (payload) {
+    const base64 = btoa(JSON.stringify(payload));
+    content = encodeURIComponent(base64);
+  } else {
+    content = '';
+  }
+  return `${baseBackendUrl}${backendEndpoint.replace('$content', content)}`;
+}
+
 export async function devLineageAnalyze(adapterPayload: AnalysisPayload, currentProject: Project) {
-  const adapterPayloadEx: AnalysisPayloadEx = {
+  const analysisPayloadEx: AnalysisPayloadEx = {
     analysisPayload: adapterPayload,
     database: currentProject.database,
     userName: currentProject.userName,
   };
-  const base64 = btoa(JSON.stringify(adapterPayloadEx));
   const res = await fetch(
-    `${baseBackendUrl}/idaf/usecaseDevLineage?analysis=${encodeURIComponent(base64)}`
+    backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_parseForLineage, analysisPayloadEx)
   );
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
@@ -29,10 +44,7 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
 }
 
 export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProject: Project) {
-  const base64 = btoa(JSON.stringify(sqlPayload));
-  const res = await fetch(
-    `${baseBackendUrl}/idaf/usecaseDevLineage?action=toCsv&analysis=${encodeURIComponent(base64)}`
-  );
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_toCsv, sqlPayload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
@@ -55,7 +67,7 @@ let _inflight: Promise<DatabaseUsers> | null = null;
 async function DATABASES(): Promise<DatabaseUsers> {
   let res;
   try {
-    res = await fetch(`${baseBackendUrl}/idaf/usecaseDevLineage?action=loadDatabases`); // Simulate error example: // throw new Error("Backend is down");
+    res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_loadDatabases)); // Simulate error example: // throw new Error("Backend is down");
     if (!res.ok) {
       // noinspection ExceptionCaughtLocallyJS
       throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
@@ -128,9 +140,9 @@ export function DatabasesProvider({ children }: { children: ReactNode }) {
 
   return (
     <DatabasesContext.Provider value={{ databases, loading, error, refresh }}>
-  {children}
-  </DatabasesContext.Provider>
-);
+      {children}
+    </DatabasesContext.Provider>
+  );
 }
 
 export function useDatabases() {

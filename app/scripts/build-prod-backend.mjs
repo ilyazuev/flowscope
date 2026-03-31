@@ -24,7 +24,7 @@ function getTimestamp() {
   const hh = pad(now.getHours());
   const min = pad(now.getMinutes());
 
-  return `${yyyy}${mm}${dd}_${hh}_${min}`;
+  return `${yyyy}${mm}${dd}_${hh}${min}`;
 }
 
 function runBuild() {
