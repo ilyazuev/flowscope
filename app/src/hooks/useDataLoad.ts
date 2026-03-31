@@ -87,6 +87,7 @@ export function useDataLoad() {
           isDataLoading: false,
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
+          title: activeFilePath,
           _lastLoadAt: Date.now(),
         }));
       } catch (error) {

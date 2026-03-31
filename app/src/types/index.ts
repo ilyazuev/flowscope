@@ -64,6 +64,7 @@ export interface AnalysisState {
 export interface DataLoadState {
   isDataLoading: boolean;
   requestId: number;
+  title?: string | null;
   csv?: string | null;
   dataLoadingError: string | null;
   _lastLoadAt: number | null;

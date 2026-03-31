@@ -37,7 +37,7 @@ export function DataView() {
   const initializedRef = useRef(false);
   const lastAppliedRequestIdRef = useRef(0);
 
-  const { isDataLoading, dataLoadingError, csv, requestId, setDataLoading } = useSharedDataLoad();
+  const { isDataLoading, dataLoadingError, csv, title, requestId } = useSharedDataLoad();
 
   const [status, setStatus] = useState<string | null>('Initialization...');
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export function DataView() {
     }
   }, [isDark]);
 
-  const loadCsvToViewer = async (csv: string) => {
+  const loadCsvToViewer = async (csv: string, title?: string|null) => {
     const viewer = viewerRef.current;
     if (!viewer) return;
     if (!workerRef.current) {
@@ -77,7 +77,7 @@ export function DataView() {
     await viewer.restore({
       plugin: 'Datagrid',
       settings: true,
-      title: '123213',
+      title: title ?? 'no data',
       plugin_config: {
         editable: true,
         edit_mode: 'EDIT',
@@ -94,23 +94,12 @@ export function DataView() {
       if (!viewer || initializedRef.current) {
         return;
       }
-
       setError(null);
       setStatus('Loading data...');
-
       try {
-        const response = await fetch('/mock/customers.csv');
-        if (!response.ok) {
-          // noinspection ExceptionCaughtLocallyJS
-          throw new Error(`Failed to load data: ${response.status}`);
-        }
-
-        const csv = await response.text();
-
+        const csv = "empty\n"; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
         if (cancelled) return;
-
         await loadCsvToViewer(csv);
-
         setStatus(null);
         initializedRef.current = true;
       } catch (e) {
@@ -138,12 +127,10 @@ export function DataView() {
   useEffect(() => {
     if( dataLoadingError ) {
       setError('Data Loading Error: ' + dataLoadingError);
-      console.log('6666666666666666666666666666');
     } else {
       setError(null);
       if( isDataLoading ) {
         setStatus('Data loading...');
-        console.log('777777777777777777777777777777');
       } else {
         setStatus(null);
       }
@@ -161,20 +148,16 @@ export function DataView() {
     const run = async () => {
       try {
         if (!csv?.trim()) {
-          console.log('111111111111111111111');
           setError(null);
           setStatus('No data');
           return;
         }
-        console.log('22222222222222222222222222222222');
-        await loadCsvToViewer(csv);
+        await loadCsvToViewer(csv, title);
         setStatus(null);
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown error';
         setError(message);
         setStatus(null);
-      } finally {
-        setDataLoading(false);
       }
     };
 
