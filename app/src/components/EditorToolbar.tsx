@@ -103,7 +103,7 @@ export function EditorToolbar({
             size="sm"
             className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3"
           >
-            {isAnalyzing || isDataLoading ? (
+            {isDataLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Play className="h-3.5 w-3.5 fill-current" />
@@ -116,12 +116,12 @@ export function EditorToolbar({
             size="sm"
             className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
           >
-            {isAnalyzing || isDataLoading ? (
+            {isAnalyzing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Play className="h-3.5 w-3.5 fill-current" />
             )}
-            <span className="hidden sm:inline">Run</span>
+            <span className="hidden sm:inline">Lineage</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

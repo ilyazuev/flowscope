@@ -18,7 +18,7 @@ function backendUrl<T>(backendEndpoint: string, payload?: T) {
   } else {
     content = '';
   }
-  return `${baseBackendUrl}${backendEndpoint.replace('$content', content)}`;
+  return `${baseBackendUrl}${backendEndpoint.replace('{content}', content)}`;
 }
 
 export async function devLineageAnalyze(adapterPayload: AnalysisPayload, currentProject: Project) {
