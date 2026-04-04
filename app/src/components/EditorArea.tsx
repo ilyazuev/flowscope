@@ -196,6 +196,16 @@ export function EditorArea({
     }
   }, [activeFile, currentProject, runExecuteSql]);
 
+  const sqlViewRef = useRef<{ getCursorPosition: () => number }>(null);
+
+  const handleExecuteCte = useCallback(() => {
+    const cursorPos = sqlViewRef.current?.getCursorPosition();
+    console.log(cursorPos);
+    // if (activeFile && currentProject) {
+    //   void runExecuteSql(activeFile.content, activeFile.path);
+    // }
+  }, [activeFile, currentProject, runExecuteSql]);
+
   const handleAnalyzeActiveOnly = useCallback(() => {
     if (activeFile && currentProject) {
       // Temporarily switch to 'current' mode for this run
@@ -249,6 +259,7 @@ export function EditorArea({
         backendReady={backendReady}
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}
+        onExecuteCte={handleExecuteCte}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
         fileSelectorOpen={fileSelectorOpen}
@@ -266,6 +277,7 @@ export function EditorArea({
       >
         <ErrorBoundary fallback={<SqlViewFallback />}>
           <SqlView
+            ref={sqlViewRef}
             value={displayContent}
             onChange={(val) => updateFile(activeFile.id, val)}
             className="h-full text-sm"
