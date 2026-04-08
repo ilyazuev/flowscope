@@ -206,7 +206,6 @@ export function EditorArea({
 
   const handleExecuteCte = useCallback(() => {
     if (
-      !backendReady ||
       !activeProjectId ||
       !activeFile ||
       !sqlViewRef.current ||
@@ -250,7 +249,6 @@ export function EditorArea({
     }
     setDataLoadingError('No CTE found under cursor.');
   }, [
-    backendReady,
     activeFile,
     activeProjectId,
     runExecuteSql,
@@ -271,9 +269,8 @@ export function EditorArea({
     }
   }, [activeFile, currentProject, runAnalysis, setRunMode]);
 
-  const handleRunDescribe  = useCallback(() => {
+  const handleRunDescribe = useCallback(() => {
     if (
-      !backendReady ||
       !activeProjectId ||
       !activeFile ||
       !sqlViewRef.current ||
@@ -285,9 +282,54 @@ export function EditorArea({
     if (!selection) {
       return;
     }
-    alert(selection.head);
-
-  }, [activeFile]);
+    const result = getResult(activeProjectId, hideCTEs);
+    if (!result) {
+      setDataLoadingError('No Lineage Data: need to parse SQL before describe database object.');
+      return;
+    }
+    const identifierArr = [];
+    for (let i = selection.head; i >= 0; i--) {
+      const ch = activeFile.content[i];
+      if (/[A-Za-z0-9_.$]/.test(ch)) {
+        identifierArr.unshift(ch);
+      } else {
+        break;
+      }
+    }
+    for (let i = selection.head + 1; i < activeFile.content.length; i++) {
+      const ch = activeFile.content[i];
+      if (/[A-Za-z0-9_.$]/.test(ch)) {
+        identifierArr.push(ch);
+      } else {
+        break;
+      }
+    }
+    const identifier = identifierArr.join('').toUpperCase();
+    const identifierParts = identifier.split('.');
+    for (const statement of result.statements) {
+      if (activeFile.name === statement.sourceName) {
+        for (const node of statement.nodes) {
+          if (
+            (node.type == 'table' || node.type == 'column') &&
+            node.label &&
+            node.qualifiedName &&
+            (node.label.toUpperCase() == identifier ||
+              node.label.toUpperCase() == identifierParts[1] ||
+              node.qualifiedName.toUpperCase() == identifier)
+          ) {
+            // const content =
+            //   activeFile.content.substring(0, node.span.end + 1) +
+            //   `\n)\nSELECT * FROM ${node.label}`;
+            // void runExecuteSql(content, activeFile.path, SqlPartType.cte, node.label);
+            console.log(node);
+            // return;
+          }
+        }
+        break;
+      }
+    }
+    setDataLoadingError('No CTE found under cursor.');
+  }, [activeFile, activeProjectId]);
 
   // Keyboard shortcuts for running analysis
   const analysisShortcuts = useMemo<GlobalShortcut[]>(
