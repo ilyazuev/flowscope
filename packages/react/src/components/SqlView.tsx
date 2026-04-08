@@ -16,6 +16,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { useLineage } from '../store';
 import type { SqlViewProps } from '../types';
 import { useBookmarkExtension } from './SqlView.Bookmarks';
+import { sqlCteFolding } from './SqlView.SqlCteFolding';
 
 type HighlightRange = { from: number; to: number; className: string };
 
@@ -147,6 +148,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         EditorView.lineWrapping,
         EditorView.editable.of(editable),
         bookmarkExtension,
+        sqlCteFolding(),
       ],
       [editable, bookmarkExtension]
     );
