@@ -241,7 +241,7 @@ export function EditorArea({
             const content =
               activeFile.content.substring(0, node.span.end + 1) +
               `\n)\nSELECT * FROM ${node.label}`;
-            void runExecuteSql(content, activeFile.path, SqlPartType.cte);
+            void runExecuteSql(content, activeFile.path, SqlPartType.cte, node.label);
             return;
           }
         }
@@ -271,6 +271,24 @@ export function EditorArea({
     }
   }, [activeFile, currentProject, runAnalysis, setRunMode]);
 
+  const handleRunDescribe  = useCallback(() => {
+    if (
+      !backendReady ||
+      !activeProjectId ||
+      !activeFile ||
+      !sqlViewRef.current ||
+      !activeFile.content
+    ) {
+      return;
+    }
+    const selection = sqlViewRef.current.getSelection();
+    if (!selection) {
+      return;
+    }
+    alert(selection.head);
+
+  }, [activeFile]);
+
   // Keyboard shortcuts for running analysis
   const analysisShortcuts = useMemo<GlobalShortcut[]>(
     () => [
@@ -285,8 +303,13 @@ export function EditorArea({
         shift: true,
         handler: handleAnalyzeActiveOnly,
       },
+      {
+        key: 'F4',
+        allowInInput: true,
+        handler: handleRunDescribe,
+      },
     ],
-    [handleAnalyze, handleAnalyzeActiveOnly]
+    [handleAnalyze, handleAnalyzeActiveOnly, handleRunDescribe]
   );
 
   useGlobalShortcuts(analysisShortcuts);

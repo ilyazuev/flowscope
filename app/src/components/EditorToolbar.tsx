@@ -12,6 +12,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileSelector } from './FileSelector';
 import type { RunMode } from '@/lib/project-store';
+import { SqlPartType } from '@/lib/backend-adapter.ts';
 
 export type SqlViewMode = 'template' | 'resolved';
 
@@ -19,7 +20,7 @@ interface EditorToolbarProps {
   runMode: RunMode;
   onRunModeChange: (mode: RunMode) => void;
   isAnalyzing: boolean;
-  isDataLoading: boolean;
+  isDataLoading: SqlPartType;
   backendReady: boolean;
   onAnalyze: () => void;
   onExecuteSql: () => void;
@@ -101,11 +102,11 @@ export function EditorToolbar({
         <div className="flex items-center rounded-full overflow-hidden shadow-xs">
           <Button
             onClick={onExecuteSql}
-            disabled={!backendReady || isAnalyzing || isDataLoading}
+            disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
             size="sm"
             className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3"
           >
-            {isDataLoading ? (
+            {isDataLoading == SqlPartType.sql ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Play className="h-3.5 w-3.5 fill-current" />
@@ -114,11 +115,11 @@ export function EditorToolbar({
           </Button>
           <Button
             onClick={onExecuteCte}
-            disabled={!backendReady || isAnalyzing || isDataLoading}
+            disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
             size="sm"
             className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3"
           >
-            {isDataLoading ? (
+            {isDataLoading == SqlPartType.cte || isDataLoading == SqlPartType.selection ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Play className="h-3.5 w-3.5 fill-current" />
@@ -136,7 +137,7 @@ export function EditorToolbar({
           </Button>
           <Button
             onClick={onAnalyze}
-            disabled={!backendReady || isAnalyzing || isDataLoading}
+            disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
             size="sm"
             className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
           >
@@ -152,7 +153,7 @@ export function EditorToolbar({
               <Button
                 size="sm"
                 className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
-                disabled={!backendReady || isAnalyzing || isDataLoading}
+                disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
               >
                 <ChevronDown className="size-3.5" />
               </Button>

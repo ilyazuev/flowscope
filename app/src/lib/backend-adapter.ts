@@ -40,6 +40,8 @@ export interface AnalysisPayload {
 
 
 export enum SqlPartType {
+  none,
+  sql,
   cte,
   selection,
 }

@@ -4,6 +4,8 @@
 
 // Re-export TemplateMode from core to maintain single source of truth
 // Application-specific utilities (validation, UI options) are defined below
+import { SqlPartType } from '@/lib/backend-adapter.ts';
+
 export type { TemplateMode } from '@pondpilot/flowscope-core';
 import type { TemplateMode } from '@pondpilot/flowscope-core';
 
@@ -62,7 +64,7 @@ export interface AnalysisState {
 }
 
 export interface DataLoadState {
-  isDataLoading: boolean;
+  isDataLoading: SqlPartType;
   requestId: number;
   title?: string | null;
   csv?: string | null;

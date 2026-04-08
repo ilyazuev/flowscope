@@ -9,20 +9,20 @@ export function useDataLoad() {
   const requestIdRef = useRef(0);
 
   const [state, setState] = useState<DataLoadState>({
-    isDataLoading: false,
+    isDataLoading: SqlPartType.none,
     requestId: 0,
     csv: null,
     dataLoadingError: null,
     _lastLoadAt: null,
   });
 
-  const startRequest = useCallback(() => {
+  const startRequest = useCallback((partType: SqlPartType) => {
     requestIdRef.current += 1;
     const requestId = requestIdRef.current;
     setState((prev) => ({
       ...prev,
       requestId,
-      isDataLoading: true,
+      isDataLoading: partType,
       dataLoadingError: null,
       csv: null,
     }));
@@ -33,7 +33,7 @@ export function useDataLoad() {
     setState((prev) => ({ ...prev, csv }));
   }, []);
 
-  const setDataLoading = useCallback((isDataLoading: boolean) => {
+  const setDataLoading = useCallback((isDataLoading: SqlPartType) => {
     setState((prev) => ({ ...prev, isDataLoading }));
   }, []);
 
@@ -42,7 +42,7 @@ export function useDataLoad() {
   }, []);
 
   const runExecuteSql = useCallback(
-    async (activeFileContent?: string, activeFilePath?: string, partType?: SqlPartType) => {
+    async (activeFileContent?: string, activeFilePath?: string, partType: SqlPartType = SqlPartType.sql, cteName?: string) => {
       if (!currentProject) return;
       if (currentProject.dialect != 'oracleBackend') {
         return;
@@ -51,13 +51,13 @@ export function useDataLoad() {
       if (!activeFileContent?.trim()) {
         setState((prev) => ({
           ...prev,
-          isDataLoading: false,
+          isDataLoading: SqlPartType.none,
           dataLoadingError: 'No SQL content to execute',
         }));
         return;
       }
 
-      const requestId = startRequest(); // await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const requestId = startRequest(partType); // await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       try {
         const sqlPayload: SqlPayload = {
           path: activeFilePath,
@@ -76,7 +76,7 @@ export function useDataLoad() {
         if (!sqlPayloadResponse.csv) {
           setState((prev) => ({
             ...prev,
-            isDataLoading: false,
+            isDataLoading: SqlPartType.none,
             dataLoadingError: 'No data response',
             csv: null,
           }));
@@ -85,10 +85,10 @@ export function useDataLoad() {
 
         setState((prev) => ({
           ...prev,
-          isDataLoading: false,
+          isDataLoading: SqlPartType.none,
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
-          title: (partType ? `${SqlPartType[partType].toUpperCase()}: ` : '' ) + activeFilePath,
+          title: (partType != SqlPartType.sql ? `${SqlPartType[partType].toUpperCase()}${cteName? ` (${cteName})`:''}: ` : '' ) + activeFilePath,
           _lastLoadAt: Date.now(),
         }));
       } catch (error) {
@@ -98,7 +98,7 @@ export function useDataLoad() {
 
         setState((prev) => ({
           ...prev,
-          isDataLoading: false,
+          isDataLoading: SqlPartType.none,
           dataLoadingError: error instanceof Error ? error.message : 'Data load failed',
         }));
 
@@ -117,7 +117,7 @@ export function useDataLoad() {
     setState((prev) => ({
       ...prev,
       requestId: requestIdRef.current,
-      isDataLoading: false,
+      isDataLoading: SqlPartType.none,
       csv: null,
       dataLoadingError: null,
     }));
