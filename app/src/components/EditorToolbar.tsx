@@ -110,7 +110,7 @@ export function EditorToolbar({
             ) : (
               <Play className="h-3.5 w-3.5 fill-current" />
             )}
-            <span className="hidden sm:inline">Execute Sql</span>
+            <span className="hidden sm:inline">Run Sql</span>
           </Button>
           <Button
             onClick={onExecuteCte}
@@ -123,7 +123,16 @@ export function EditorToolbar({
             ) : (
               <Play className="h-3.5 w-3.5 fill-current" />
             )}
-            <span className="hidden sm:inline">Execute Cte</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="hidden sm:inline">CTE / Selection</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                    Run CTE under cursor or selection
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </Button>
           <Button
             onClick={onAnalyze}

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { SqlPayload } from '@/lib/backend-adapter.ts';
+import { SqlPayload, SqlPartType } from '@/lib/backend-adapter.ts';
 import { devLineageExecuteSql } from '@/lib/utils_backend.tsx';
 import { useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
@@ -42,7 +42,7 @@ export function useDataLoad() {
   }, []);
 
   const runExecuteSql = useCallback(
-    async (activeFileContent?: string, activeFilePath?: string) => {
+    async (activeFileContent?: string, activeFilePath?: string, partType?: SqlPartType) => {
       if (!currentProject) return;
       if (currentProject.dialect != 'oracleBackend') {
         return;
@@ -64,6 +64,7 @@ export function useDataLoad() {
           content: activeFileContent,
           database: currentProject.database,
           userName: currentProject.userName,
+          partType
         };
 
         const sqlPayloadResponse = await devLineageExecuteSql(sqlPayload, currentProject);
@@ -87,7 +88,7 @@ export function useDataLoad() {
           isDataLoading: false,
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
-          title: activeFilePath,
+          title: (partType ? `${SqlPartType[partType].toUpperCase()}: ` : '' ) + activeFilePath,
           _lastLoadAt: Date.now(),
         }));
       } catch (error) {

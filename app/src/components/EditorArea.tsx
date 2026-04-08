@@ -1,19 +1,22 @@
-import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { SqlViewSelection } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState } from '@pondpilot/flowscope-react';
 import { cn } from '@/lib/utils';
+import type { RunMode } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
-import { useThemeStore, resolveTheme } from '@/lib/theme-store';
+import { resolveTheme, useThemeStore } from '@/lib/theme-store';
 import { useBackend } from '@/lib/backend-context';
-import { useAnalysis, useDebounce, useFileNavigation, useGlobalShortcuts } from '@/hooks';
 import type { GlobalShortcut } from '@/hooks';
-import { EditorToolbar } from './EditorToolbar';
+import { useAnalysis, useDebounce, useFileNavigation, useGlobalShortcuts } from '@/hooks';
 import type { SqlViewMode } from './EditorToolbar';
+import { EditorToolbar } from './EditorToolbar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
-import type { RunMode } from '@/lib/project-store';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
+import { useAnalysisStore } from '@/lib/analysis-store.ts';
+import { SqlPartType } from '@/lib/backend-adapter.ts';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -39,7 +42,8 @@ export function EditorArea({
   fileSelectorOpen,
   onFileSelectorOpenChange,
 }: EditorAreaProps) {
-  const { currentProject, updateFile, createFile, setRunMode, isReadOnly } = useProject();
+  const { currentProject, activeProjectId, updateFile, createFile, setRunMode, isReadOnly } =
+    useProject();
 
   const theme = useThemeStore((state) => state.theme);
   const isDark = resolveTheme(theme) === 'dark';
@@ -64,7 +68,9 @@ export function EditorArea({
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
-  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError } = useSharedDataLoad();
+  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError } =
+    useSharedDataLoad();
+  const { getResult } = useAnalysisStore();
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -196,15 +202,62 @@ export function EditorArea({
     }
   }, [activeFile, currentProject, runExecuteSql]);
 
-  const sqlViewRef = useRef<{ getCursorPosition: () => number }>(null);
+  const sqlViewRef = useRef<{ getSelection: () => SqlViewSelection | undefined }>(null);
 
   const handleExecuteCte = useCallback(() => {
-    const cursorPos = sqlViewRef.current?.getCursorPosition();
-    console.log(cursorPos);
-    // if (activeFile && currentProject) {
-    //   void runExecuteSql(activeFile.content, activeFile.path);
-    // }
-  }, [activeFile, currentProject, runExecuteSql]);
+    if (
+      !backendReady ||
+      !activeProjectId ||
+      !activeFile ||
+      !sqlViewRef.current ||
+      !activeFile.content
+    ) {
+      return;
+    }
+    const selection = sqlViewRef.current.getSelection();
+    if (!selection) {
+      return;
+    }
+    if (selection.from < selection.to) {
+      const content = activeFile.content.substring(selection.from, selection.to + 1);
+      void runExecuteSql(content, activeFile.path, SqlPartType.selection);
+      return;
+    }
+    const result = getResult(activeProjectId, hideCTEs);
+    if (!result) {
+      setDataLoadingError('No Lineage Data: need to parse SQL before execution.');
+      return;
+    }
+    for (const statement of result.statements) {
+      if (activeFile.name === statement.sourceName) {
+        for (const node of statement.nodes) {
+          if (
+            node.type == 'cte' &&
+            node.label &&
+            node.span &&
+            node.span.start <= selection.head &&
+            selection.head <= node.span.end
+          ) {
+            const content =
+              activeFile.content.substring(0, node.span.end + 1) +
+              `\n)\nSELECT * FROM ${node.label}`;
+            void runExecuteSql(content, activeFile.path, SqlPartType.cte);
+            return;
+          }
+        }
+        break;
+      }
+    }
+    setDataLoadingError('No CTE found under cursor.');
+  }, [
+    backendReady,
+    activeFile,
+    activeProjectId,
+    runExecuteSql,
+    getResult,
+    hideCTEs,
+    setDataLoadingError,
+  ]);
 
   const handleAnalyzeActiveOnly = useCallback(() => {
     if (activeFile && currentProject) {

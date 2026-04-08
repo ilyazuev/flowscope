@@ -1,4 +1,12 @@
-import { useMemo, useCallback, useEffect, useRef, type JSX, useImperativeHandle, forwardRef } from 'react';
+import {
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  type JSX,
+  useImperativeHandle,
+  forwardRef,
+} from 'react';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { EditorView, Decoration, type DecorationSet } from '@codemirror/view';
@@ -55,8 +63,14 @@ const baseTheme = EditorView.baseTheme({
   },
 });
 
+export interface SqlViewSelection {
+  from: number;
+  to: number;
+  head: number;
+}
+
 export type SqlViewRef = {
-  getCursorPosition: () => number | undefined;
+  getSelection: () => SqlViewSelection | undefined;
 };
 
 export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
@@ -107,9 +121,16 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     const editorRef = useRef<ReactCodeMirrorRef>(null);
 
     useImperativeHandle(ref, () => ({
-      getCursorPosition: () => {
+      getSelection: () => {
         const view = editorRef.current?.view;
-        return view?.state.selection.main.head;
+        const main = view?.state.selection.main;
+        return main
+          ? {
+              from: main.from,
+              to: main.to,
+              head: main.head,
+            }
+          : undefined;
       },
     }));
 

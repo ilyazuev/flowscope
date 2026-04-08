@@ -38,9 +38,16 @@ export interface AnalysisPayload {
   templateMode?: TemplateMode;
 }
 
+
+export enum SqlPartType {
+  cte,
+  selection,
+}
+
 export interface SqlPayload {
   path?: string;
   content: string;
+  partType?: SqlPartType;
   database?: string;
   userName?: string;
 }
