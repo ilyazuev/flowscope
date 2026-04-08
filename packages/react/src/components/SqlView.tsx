@@ -15,6 +15,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 
 import { useLineage } from '../store';
 import type { SqlViewProps } from '../types';
+import { useBookmarkExtension } from './SqlView.Bookmarks';
 
 type HighlightRange = { from: number; to: number; className: string };
 
@@ -134,15 +135,20 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       },
     }));
 
+    const bookmarkExtension = useBookmarkExtension();
+
     const extensions = useMemo(
       () => [
-        sql(),
+        sql({
+          upperCaseKeywords: true
+        }),
         highlightField,
         baseTheme,
         EditorView.lineWrapping,
         EditorView.editable.of(editable),
+        bookmarkExtension,
       ],
-      [editable]
+      [editable, bookmarkExtension]
     );
 
     const theme = useMemo(() => (isDark ? oneDark : 'light'), [isDark]);
