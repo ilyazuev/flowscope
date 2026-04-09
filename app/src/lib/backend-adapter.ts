@@ -59,6 +59,19 @@ export interface SqlPayloadResponse {
   errorMessage?: string;
 }
 
+export interface DataDescribePayload {
+  schema?: string;
+  tableName: string;
+  columnName?: string;
+  database?: string;
+  userName?: string;
+}
+
+export interface DataDescribePayloadResponse {
+  script?: string;
+  errorMessage?: string;
+}
+
 /**
  * Result from analysis operations.
  */

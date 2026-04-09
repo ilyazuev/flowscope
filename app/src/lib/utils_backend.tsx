@@ -1,6 +1,6 @@
 import {
   AnalysisPayload,
-  AnalysisPayloadEx,
+  AnalysisPayloadEx, DataDescribePayload, DataDescribePayloadResponse,
   SqlPayload,
   SqlPayloadResponse,
 } from '@/lib/backend-adapter.ts';
@@ -56,6 +56,21 @@ export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProje
   }
   console.log('Received csv from backend');
   return sqlPayloadResponse;
+}
+
+export async function devLineageDataDescribe(dataDescribePayload: DataDescribePayload, _currentProject: Project) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_dataDescribe, dataDescribePayload));
+  if (!res.ok) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+  }
+  const dataDescribePayloadResponse: DataDescribePayloadResponse = await res.json();
+  if ('errorMessage' in dataDescribePayloadResponse && dataDescribePayloadResponse.errorMessage) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(dataDescribePayloadResponse.errorMessage as string);
+  }
+  console.log('Data described from backend');
+  return dataDescribePayloadResponse;
 }
 
 // ------------------------------ DATABASES and USERS ------------------------------

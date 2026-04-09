@@ -1,0 +1,118 @@
+import { useProject } from '@/lib/project-store.tsx';
+import { useCallback, useRef, useState } from 'react';
+import { DataDescribeState } from '@/types';
+import { DataDescribePayload } from '@/lib/backend-adapter.ts';
+import { devLineageDataDescribe } from '@/lib/utils_backend.tsx';
+
+export function useDataDescribe() {
+  const { currentProject } = useProject();
+  const requestIdRef = useRef(0);
+
+
+  const [state, setState] = useState<DataDescribeState>({
+    isDataDescribing: false,
+    requestId: 0,
+    dataDescribingError: null,
+    script: null,
+  });
+
+  const startRequest = useCallback(() => {
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+    setState((prev) => ({
+      ...prev,
+      requestId,
+      isDataDescribing: true,
+      dataDescribingError: null,
+    }));
+    return requestId;
+  }, []);
+
+  const setDataDescribing = useCallback((isDataDescribing: boolean) => {
+    setState((prev) => ({ ...prev, isDataDescribing }));
+  }, []);
+
+  const setDataDescribingError = useCallback((error: string | null) => {
+    setState((prev) => ({ ...prev, dataDescribingError: error }));
+  }, []);
+
+  const runDataDescribe = useCallback(
+    async (tableName: string, schema?: string, columnName?: string) => {
+      if (!currentProject) return;
+      if (currentProject.dialect != 'oracleBackend') {
+        return;
+      }
+      const requestId = startRequest();
+      try {
+        const dataDescribePayload: DataDescribePayload = {
+          schema,
+          tableName,
+          columnName,
+          database: currentProject.database,
+          userName: currentProject.userName,
+        };
+        const dataDescribePayloadResponse = await devLineageDataDescribe(
+          dataDescribePayload,
+          currentProject
+        );
+
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        if (!dataDescribePayloadResponse.script) {
+          setState((prev) => ({
+            ...prev,
+            isDataDescribing: false,
+            dataDescribingError: 'No description',
+            script: null,
+          }));
+          return;
+        }
+
+        setState((prev) => ({
+          ...prev,
+          isDataDescribing: false,
+          dataDescribingError: null,
+          script: dataDescribePayloadResponse.script ?? null,
+        }));
+      } catch (error) {
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        setState((prev) => ({
+          ...prev,
+          isDataLoading: false,
+          dataLoadingError: error instanceof Error ? error.message : 'Data load failed',
+        }));
+
+        console.error(error);
+      }
+    },
+    [
+      currentProject,
+      startRequest,
+    ]
+  );
+
+  const clear = useCallback(() => {
+    requestIdRef.current += 1;
+    setState((prev) => ({
+      ...prev,
+      requestId: requestIdRef.current,
+      isDataDescribing: false,
+      script: null,
+      dataDescribingError: null,
+    }));
+  }, []);
+
+  return {
+    ...state,
+    runDataDescribe,
+    setDataDescribingError,
+    setDataDescribing,
+    clear,
+  };
+
+}

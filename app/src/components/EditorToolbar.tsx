@@ -104,7 +104,7 @@ export function EditorToolbar({
             onClick={onExecuteSql}
             disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
             size="sm"
-            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3"
+            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3 m-1"
           >
             {isDataLoading == SqlPartType.sql ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -117,7 +117,7 @@ export function EditorToolbar({
             onClick={onExecuteCte}
             disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
             size="sm"
-            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3"
+            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3 m-1"
           >
             {isDataLoading == SqlPartType.cte || isDataLoading == SqlPartType.selection ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

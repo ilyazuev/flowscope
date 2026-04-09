@@ -72,6 +72,13 @@ export interface DataLoadState {
   _lastLoadAt: number | null;
 }
 
+export interface DataDescribeState {
+  isDataDescribing: boolean;
+  requestId: number;
+  dataDescribingError: string | null;
+  script: string | null;
+}
+
 export interface KeyboardShortcutHandler {
   key: string;
   modifiers: ReadonlyArray<'metaKey' | 'ctrlKey' | 'shiftKey' | 'altKey'>;

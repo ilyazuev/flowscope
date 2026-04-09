@@ -17,6 +17,7 @@ import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { useSharedDataDescribe } from '@/components/DataDescribeContext.tsx';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -70,6 +71,10 @@ export function EditorArea({
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
   const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError } =
     useSharedDataLoad();
+
+  const { dataDescribingError, runDataDescribe, setDataDescribingError, script } =
+    useSharedDataDescribe();
+
   const { getResult } = useAnalysisStore();
 
   // Show error toast when error occurs
@@ -83,6 +88,14 @@ export function EditorArea({
     }
   }, [error, setError]);
 
+
+  useEffect(() => {
+    if (script) {
+      console.log(script);
+    }
+  }, [script]);
+
+
   // Show error toast when error occurs
   useEffect(() => {
     if (dataLoadingError) {
@@ -92,6 +105,17 @@ export function EditorArea({
       });
     }
   }, [dataLoadingError, setDataLoadingError]);
+
+  // Show error toast when error occurs
+  useEffect(() => {
+    if (dataDescribingError) {
+      toast.error('Data Loading Error', {
+        description: dataDescribingError,
+        duration: 5000,
+      });
+      setDataDescribingError(null);
+    }
+  }, [dataDescribingError, setDataDescribingError]);
 
   // Debounce schema SQL to prevent rapid re-analysis during editing
   const debouncedSchemaSQL = useDebounce(currentProject?.schemaSQL ?? '', 300);
@@ -193,7 +217,8 @@ export function EditorArea({
   const clearErrors = useCallback(()=>{
     setError(null);
     setDataLoadingError(null);
-  }, [setError, setDataLoadingError]);
+    setDataDescribingError(null);
+  }, [setError, setDataLoadingError, setDataDescribingError]);
 
   const handleAnalyze = useCallback(() => {
     clearErrors();
@@ -295,7 +320,7 @@ export function EditorArea({
     }
     const result = getResult(activeProjectId, hideCTEs);
     if (!result) {
-      setDataLoadingError('No Lineage Data: need to parse SQL before describe database object.');
+      setDataDescribingError('No Lineage Data: need to parse SQL before describe database object.');
       return;
     }
     if( result.resolvedSchema ) {
@@ -303,7 +328,7 @@ export function EditorArea({
         if( table.spans ) {
           for (const span of table.spans) {
             if( span.start <= selection.head && selection.head <= span.end ) {
-              console.log(table.schema, table.name);
+              void runDataDescribe(table.name, table.schema);
               return;
             }
           }
@@ -313,7 +338,7 @@ export function EditorArea({
             if( column.spans ) {
               for (const span of column.spans) {
                 if( span.start <= selection.head && selection.head <= span.end ) {
-                  console.log(table.schema, table.name, column.name);
+                  void runDataDescribe(table.name, table.schema, column.name);
                   return;
                 }
               }
@@ -322,49 +347,8 @@ export function EditorArea({
         }
       }
     }
-    // const identifierArr = [];
-    // for (let i = selection.head; i >= 0; i--) {
-    //   const ch = activeFile.content[i];
-    //   if (/[A-Za-z0-9_.$]/.test(ch)) {
-    //     identifierArr.unshift(ch);
-    //   } else {
-    //     break;
-    //   }
-    // }
-    // for (let i = selection.head + 1; i < activeFile.content.length; i++) {
-    //   const ch = activeFile.content[i];
-    //   if (/[A-Za-z0-9_.$]/.test(ch)) {
-    //     identifierArr.push(ch);
-    //   } else {
-    //     break;
-    //   }
-    // }
-    // const identifier = identifierArr.join('').toUpperCase();
-    // const identifierParts = identifier.split('.');
-    // for (const statement of result.statements) {
-    //   if (activeFile.name === statement.sourceName) {
-    //     for (const node of statement.nodes) {
-    //       if (
-    //         (node.type == 'table' || node.type == 'column') &&
-    //         node.label &&
-    //         node.qualifiedName &&
-    //         (node.label.toUpperCase() == identifier ||
-    //           node.label.toUpperCase() == identifierParts[1] ||
-    //           node.qualifiedName.toUpperCase() == identifier)
-    //       ) {
-    //         // const content =
-    //         //   activeFile.content.substring(0, node.span.end + 1) +
-    //         //   `\n)\nSELECT * FROM ${node.label}`;
-    //         // void runExecuteSql(content, activeFile.path, SqlPartType.cte, node.label);
-    //         console.log(node);
-    //         // return;
-    //       }
-    //     }
-    //     break;
-    //   }
-    // }
     setError('No database object found under cursor.');
-  }, [activeFile, activeProjectId, clearErrors]);
+  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe]);
 
   // Keyboard shortcuts for running analysis
   const analysisShortcuts = useMemo<GlobalShortcut[]>(
