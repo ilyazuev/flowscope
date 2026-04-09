@@ -190,21 +190,29 @@ export function EditorArea({
     return activeFile?.content ?? '';
   }, [sqlViewMode, resolvedSql, activeFile?.content]);
 
+  const clearErrors = useCallback(()=>{
+    setError(null);
+    setDataLoadingError(null);
+  }, [setError, setDataLoadingError]);
+
   const handleAnalyze = useCallback(() => {
+    clearErrors();
     if (activeFile) {
       runAnalysis(activeFile.content, activeFile.path);
     }
-  }, [activeFile, runAnalysis]);
+  }, [activeFile, runAnalysis, clearErrors]);
 
   const handleExecuteSql = useCallback(() => {
+    clearErrors();
     if (activeFile && currentProject) {
       void runExecuteSql(activeFile.content, activeFile.path);
     }
-  }, [activeFile, currentProject, runExecuteSql]);
+  }, [activeFile, currentProject, runExecuteSql, clearErrors]);
 
   const sqlViewRef = useRef<{ getSelection: () => SqlViewSelection | undefined }>(null);
 
   const handleExecuteCte = useCallback(() => {
+    clearErrors();
     if (
       !activeProjectId ||
       !activeFile ||
@@ -255,9 +263,11 @@ export function EditorArea({
     getResult,
     hideCTEs,
     setDataLoadingError,
+    clearErrors,
   ]);
 
   const handleAnalyzeActiveOnly = useCallback(() => {
+    clearErrors();
     if (activeFile && currentProject) {
       // Temporarily switch to 'current' mode for this run
       const originalMode = currentProject.runMode;
@@ -267,9 +277,10 @@ export function EditorArea({
         setRunMode(currentProject.id, originalMode);
       });
     }
-  }, [activeFile, currentProject, runAnalysis, setRunMode]);
+  }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors]);
 
   const handleRunDescribe = useCallback(() => {
+    clearErrors();
     if (
       !activeProjectId ||
       !activeFile ||
@@ -352,8 +363,8 @@ export function EditorArea({
     //     break;
     //   }
     // }
-    setDataLoadingError('No database object found under cursor.');
-  }, [activeFile, activeProjectId]);
+    setError('No database object found under cursor.');
+  }, [activeFile, activeProjectId, clearErrors]);
 
   // Keyboard shortcuts for running analysis
   const analysisShortcuts = useMemo<GlobalShortcut[]>(
