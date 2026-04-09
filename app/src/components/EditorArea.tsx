@@ -17,7 +17,7 @@ import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
-import { useSharedDataDescribe } from '@/components/DataDescribeContext.tsx';
+import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -73,7 +73,7 @@ export function EditorArea({
     useSharedDataLoad();
 
   const { dataDescribingError, runDataDescribe, setDataDescribingError, script } =
-    useSharedDataDescribe();
+    useDataDescribe();
 
   const { getResult } = useAnalysisStore();
 
