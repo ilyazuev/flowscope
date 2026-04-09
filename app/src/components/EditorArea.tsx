@@ -287,48 +287,72 @@ export function EditorArea({
       setDataLoadingError('No Lineage Data: need to parse SQL before describe database object.');
       return;
     }
-    const identifierArr = [];
-    for (let i = selection.head; i >= 0; i--) {
-      const ch = activeFile.content[i];
-      if (/[A-Za-z0-9_.$]/.test(ch)) {
-        identifierArr.unshift(ch);
-      } else {
-        break;
-      }
-    }
-    for (let i = selection.head + 1; i < activeFile.content.length; i++) {
-      const ch = activeFile.content[i];
-      if (/[A-Za-z0-9_.$]/.test(ch)) {
-        identifierArr.push(ch);
-      } else {
-        break;
-      }
-    }
-    const identifier = identifierArr.join('').toUpperCase();
-    const identifierParts = identifier.split('.');
-    for (const statement of result.statements) {
-      if (activeFile.name === statement.sourceName) {
-        for (const node of statement.nodes) {
-          if (
-            (node.type == 'table' || node.type == 'column') &&
-            node.label &&
-            node.qualifiedName &&
-            (node.label.toUpperCase() == identifier ||
-              node.label.toUpperCase() == identifierParts[1] ||
-              node.qualifiedName.toUpperCase() == identifier)
-          ) {
-            // const content =
-            //   activeFile.content.substring(0, node.span.end + 1) +
-            //   `\n)\nSELECT * FROM ${node.label}`;
-            // void runExecuteSql(content, activeFile.path, SqlPartType.cte, node.label);
-            console.log(node);
-            // return;
+    if( result.resolvedSchema ) {
+      for (const table of result.resolvedSchema.tables) {
+        if( table.spans ) {
+          for (const span of table.spans) {
+            if( span.start <= selection.head && selection.head <= span.end ) {
+              console.log(table.schema, table.name);
+              return;
+            }
           }
         }
-        break;
+        if(table.columns) {
+          for (const column of table.columns) {
+            if( column.spans ) {
+              for (const span of column.spans) {
+                if( span.start <= selection.head && selection.head <= span.end ) {
+                  console.log(table.schema, table.name, column.name);
+                  return;
+                }
+              }
+            }
+          }
+        }
       }
     }
-    setDataLoadingError('No CTE found under cursor.');
+    // const identifierArr = [];
+    // for (let i = selection.head; i >= 0; i--) {
+    //   const ch = activeFile.content[i];
+    //   if (/[A-Za-z0-9_.$]/.test(ch)) {
+    //     identifierArr.unshift(ch);
+    //   } else {
+    //     break;
+    //   }
+    // }
+    // for (let i = selection.head + 1; i < activeFile.content.length; i++) {
+    //   const ch = activeFile.content[i];
+    //   if (/[A-Za-z0-9_.$]/.test(ch)) {
+    //     identifierArr.push(ch);
+    //   } else {
+    //     break;
+    //   }
+    // }
+    // const identifier = identifierArr.join('').toUpperCase();
+    // const identifierParts = identifier.split('.');
+    // for (const statement of result.statements) {
+    //   if (activeFile.name === statement.sourceName) {
+    //     for (const node of statement.nodes) {
+    //       if (
+    //         (node.type == 'table' || node.type == 'column') &&
+    //         node.label &&
+    //         node.qualifiedName &&
+    //         (node.label.toUpperCase() == identifier ||
+    //           node.label.toUpperCase() == identifierParts[1] ||
+    //           node.qualifiedName.toUpperCase() == identifier)
+    //       ) {
+    //         // const content =
+    //         //   activeFile.content.substring(0, node.span.end + 1) +
+    //         //   `\n)\nSELECT * FROM ${node.label}`;
+    //         // void runExecuteSql(content, activeFile.path, SqlPartType.cte, node.label);
+    //         console.log(node);
+    //         // return;
+    //       }
+    //     }
+    //     break;
+    //   }
+    // }
+    setDataLoadingError('No database object found under cursor.');
   }, [activeFile, activeProjectId]);
 
   // Keyboard shortcuts for running analysis

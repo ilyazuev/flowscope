@@ -667,6 +667,7 @@ export interface ResolvedSchemaTable {
   temporary?: boolean;
   /** Table-level constraints (composite PKs, FKs, etc.) */
   constraints?: TableConstraintInfo[];
+  spans?: Span[];
 }
 
 /** A column in the resolved schema with origin tracking. */
@@ -679,6 +680,7 @@ export interface ResolvedColumnSchema {
   isPrimaryKey?: boolean;
   /** Foreign key reference if this column references another table */
   foreignKey?: ForeignKeyRef;
+  spans?: Span[];
 }
 
 /** Information about a table-level constraint (composite PK, FK, etc.). */
