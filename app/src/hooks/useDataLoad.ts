@@ -7,7 +7,6 @@ import { DataLoadState } from '@/types';
 export function useDataLoad() {
   const { currentProject } = useProject();
   const requestIdRef = useRef(0);
-  const parameters = useRef<SqlParameters|null>(null);
 
   const [state, setState] = useState<DataLoadState>({
     isDataLoading: SqlPartType.none,
@@ -15,7 +14,6 @@ export function useDataLoad() {
     csv: null,
     dataLoadingError: null,
     _lastLoadAt: null,
-    parameters: null,
     needParameters: false,
   });
 
@@ -29,9 +27,16 @@ export function useDataLoad() {
       dataLoadingError: null,
       csv: null,
       needParameters: false,
-      parameters: parameters.current,
     }));
     return requestId;
+  }, []);
+
+  const setNeedParameters = useCallback((needParameters: boolean) => {
+    setState((prev) => ({ ...prev, needParameters }));
+  }, []);
+
+  const setParameters = useCallback((parameters?: SqlParameters) => {
+    setState((prev) => ({ ...prev, parameters }));
   }, []);
 
   const setCsv = useCallback((csv?: string|null) => {
@@ -47,7 +52,7 @@ export function useDataLoad() {
   }, []);
 
   const runExecuteSql = useCallback(
-    async (activeFileContent?: string, activeFilePath?: string, partType: SqlPartType = SqlPartType.sql, cteName?: string) => {
+    async (activeFileContent?: string, activeFilePath?: string, parameters?: SqlParameters, partType: SqlPartType = SqlPartType.sql, cteName?: string) => {
       if (!currentProject) return;
       if (currentProject.dialect != 'oracleBackend') {
         return;
@@ -69,7 +74,7 @@ export function useDataLoad() {
           content: activeFileContent,
           database: currentProject.database,
           userName: currentProject.userName,
-          parameters: parameters.current ?? undefined,
+          parameters: parameters,
           partType
         };
 
@@ -78,13 +83,13 @@ export function useDataLoad() {
         if (requestIdRef.current !== requestId) {
           return;
         }
-        const needParameters: boolean = !parameters.current && !!sqlPayloadResponse.parameters;
-        parameters.current = sqlPayloadResponse.parameters;
+        const needParameters: boolean = !parameters && !!sqlPayloadResponse.parameters;
+
         if (!sqlPayloadResponse.csv) {
           setState((prev) => ({
             ...prev,
-            isDataLoading: SqlPartType.none,
-            dataLoadingError: 'No data response',
+            isDataLoading: needParameters ? partType : SqlPartType.none,
+            dataLoadingError: needParameters ? null : 'No data response',
             csv: null,
             parameters: sqlPayloadResponse.parameters,
             needParameters,
@@ -139,6 +144,8 @@ export function useDataLoad() {
     runExecuteSql,
     setDataLoadingError,
     setDataLoading,
+    setNeedParameters,
+    setParameters,
     setCsv,
     clear,
   };

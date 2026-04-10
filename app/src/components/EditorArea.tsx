@@ -18,6 +18,7 @@ import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
+import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -43,7 +44,7 @@ export function EditorArea({
   fileSelectorOpen,
   onFileSelectorOpenChange,
 }: EditorAreaProps) {
-  const { currentProject, activeProjectId, updateFile, createFile, setRunMode, isReadOnly } =
+  const { currentProject, activeProjectId, updateFile, updateFileParameters, createFile, setRunMode, isReadOnly } =
     useProject();
 
   const theme = useThemeStore((state) => state.theme);
@@ -69,7 +70,7 @@ export function EditorArea({
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
-  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError, needParameters, parameters } =
+  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError, setParameters, setNeedParameters, needParameters, parameters } =
     useSharedDataLoad();
 
   const { dataDescribingError, runDataDescribe, setDataDescribingError, script } =
@@ -101,6 +102,13 @@ export function EditorArea({
       console.log(needParameters, parameters);
     }
   }, [needParameters, parameters]);
+
+  useEffect(() => {
+    if( activeFile && !activeFile.parameters && parameters  ) {
+      updateFileParameters(activeFile.id, parameters);
+      setParameters();
+    }
+  }, [activeFile, parameters]);
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -236,7 +244,7 @@ export function EditorArea({
   const handleExecuteSql = useCallback(() => {
     clearErrors();
     if (activeFile && currentProject) {
-      void runExecuteSql(activeFile.content, activeFile.path);
+      void runExecuteSql(activeFile.content, activeFile.path, activeFile.parameters);
     }
   }, [activeFile, currentProject, runExecuteSql, clearErrors]);
 
@@ -258,7 +266,7 @@ export function EditorArea({
     }
     if (selection.from < selection.to) {
       const content = activeFile.content.substring(selection.from, selection.to + 1);
-      void runExecuteSql(content, activeFile.path, SqlPartType.selection);
+      void runExecuteSql(content, activeFile.path, activeFile.parameters, SqlPartType.selection);
       return;
     }
     const result = getResult(activeProjectId, hideCTEs);
@@ -279,7 +287,7 @@ export function EditorArea({
             const content =
               activeFile.content.substring(0, node.span.end + 1) +
               `\n)\nSELECT * FROM ${node.label}`;
-            void runExecuteSql(content, activeFile.path, SqlPartType.cte, node.label);
+            void runExecuteSql(content, activeFile.path, activeFile.parameters, SqlPartType.cte, node.label);
             return;
           }
         }
@@ -389,6 +397,15 @@ export function EditorArea({
     );
   }
 
+  const handleUseParameters = useCallback(
+    (schemaSQL: string) => {
+      if (activeFile) {
+        console.log("qweqwewqe qwewqe " + schemaSQL)
+      }
+    },
+    [activeFile]
+  );
+
   const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
   const selectedCount = currentProject.selectedFileIds?.length || 0;
 
@@ -435,6 +452,17 @@ export function EditorArea({
           </div>
         )}
       </div>
+
+      {currentProject && (
+        <SqlParametersEditor
+          open={needParameters}
+          onOpenChange={setNeedParameters}
+          schemaSQL={"qwqwewe"}
+          dialect={currentProject.dialect}
+          onSave={handleUseParameters}
+          isReadOnly={false}
+        />
+      )}
     </div>
   );
 }

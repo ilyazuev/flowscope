@@ -70,7 +70,7 @@ export interface DataLoadState {
   csv?: string | null;
   dataLoadingError: string | null;
   _lastLoadAt: number | null;
-  parameters: SqlParameters | null;
+  parameters?: SqlParameters;
   needParameters: boolean;
 }
 

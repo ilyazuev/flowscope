@@ -14,6 +14,7 @@ import type { TemplateMode } from '@/types';
 import { DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
 import { useBackend } from './backend-context';
 import { useBackendFiles } from '@/hooks/useBackendFiles';
+import { SqlParameters } from '@/lib/backend-adapter.ts';
 
 const uuidv4 = () => crypto.randomUUID();
 
@@ -121,6 +122,7 @@ export interface ProjectFile {
   name: string;
   path: string; // Relative path including filename, e.g., "queries/users/get-all.sql"
   content: string;
+  parameters?: SqlParameters;
   language: 'sql' | 'json' | 'text';
 }
 
@@ -156,6 +158,7 @@ interface ProjectContextType {
   // File actions for active project
   createFile: (name: string, content?: string, path?: string) => void;
   updateFile: (fileId: string, content: string) => void;
+  updateFileParameters: (fileId: string, parameters?: SqlParameters) => void;
   deleteFile: (fileId: string) => void;
   renameFile: (fileId: string, newName: string) => void;
   selectFile: (fileId: string) => void;
@@ -544,7 +547,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           if (p.id !== activeProjectId) return p;
           return {
             ...p,
-            files: p.files.map((f) => (f.id === fileId ? { ...f, content } : f)),
+            files: p.files.map((f) => (f.id === fileId ? { ...f, content, parameters: undefined } : f)),
+          };
+        })
+      );
+    },
+    [activeProjectId]
+  );
+
+  const updateFileParameters = useCallback(
+    (fileId: string, parameters?: SqlParameters) => {
+      if (!activeProjectId) return;
+
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.id !== activeProjectId) return p;
+          return {
+            ...p,
+            files: p.files.map((f) => (f.id === fileId ? { ...f, parameters } : f)),
           };
         })
       );
@@ -733,6 +753,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     toggleFileSelection,
     createFile,
     updateFile,
+    updateFileParameters,
     deleteFile,
     renameFile,
     selectFile,

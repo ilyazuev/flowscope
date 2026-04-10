@@ -60,7 +60,7 @@ export interface SqlPayload {
 export interface SqlPayloadResponse {
   csv?: string;
   errorMessage?: string;
-  parameters: SqlParameters|null;
+  parameters?: SqlParameters;
 }
 
 export interface DataDescribePayload {
