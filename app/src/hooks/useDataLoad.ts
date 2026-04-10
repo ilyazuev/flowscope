@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { SqlPayload, SqlPartType } from '@/lib/backend-adapter.ts';
+import { SqlPayload, SqlPartType, SqlParameters } from '@/lib/backend-adapter.ts';
 import { devLineageExecuteSql } from '@/lib/utils_backend.tsx';
 import { useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
@@ -7,6 +7,7 @@ import { DataLoadState } from '@/types';
 export function useDataLoad() {
   const { currentProject } = useProject();
   const requestIdRef = useRef(0);
+  const parameters = useRef<SqlParameters|null>(null);
 
   const [state, setState] = useState<DataLoadState>({
     isDataLoading: SqlPartType.none,
@@ -14,6 +15,8 @@ export function useDataLoad() {
     csv: null,
     dataLoadingError: null,
     _lastLoadAt: null,
+    parameters: null,
+    needParameters: false,
   });
 
   const startRequest = useCallback((partType: SqlPartType) => {
@@ -25,6 +28,8 @@ export function useDataLoad() {
       isDataLoading: partType,
       dataLoadingError: null,
       csv: null,
+      needParameters: false,
+      parameters: parameters.current,
     }));
     return requestId;
   }, []);
@@ -64,6 +69,7 @@ export function useDataLoad() {
           content: activeFileContent,
           database: currentProject.database,
           userName: currentProject.userName,
+          parameters: parameters.current ?? undefined,
           partType
         };
 
@@ -72,13 +78,16 @@ export function useDataLoad() {
         if (requestIdRef.current !== requestId) {
           return;
         }
-
+        const needParameters: boolean = !parameters.current && !!sqlPayloadResponse.parameters;
+        parameters.current = sqlPayloadResponse.parameters;
         if (!sqlPayloadResponse.csv) {
           setState((prev) => ({
             ...prev,
             isDataLoading: SqlPartType.none,
             dataLoadingError: 'No data response',
             csv: null,
+            parameters: sqlPayloadResponse.parameters,
+            needParameters,
           }));
           return;
         }
@@ -88,8 +97,10 @@ export function useDataLoad() {
           isDataLoading: SqlPartType.none,
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
+          parameters: sqlPayloadResponse.parameters,
           title: (partType != SqlPartType.sql ? `${SqlPartType[partType].toUpperCase()}${cteName? ` (${cteName})`:''}: ` : '' ) + activeFilePath,
           _lastLoadAt: Date.now(),
+          needParameters,
         }));
       } catch (error) {
         if (requestIdRef.current !== requestId) {

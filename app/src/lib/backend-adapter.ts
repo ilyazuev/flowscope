@@ -46,17 +46,21 @@ export enum SqlPartType {
   selection,
 }
 
+export type SqlParameters = Record<string, string>;
+
 export interface SqlPayload {
   path?: string;
   content: string;
   partType?: SqlPartType;
   database?: string;
   userName?: string;
+  parameters?: SqlParameters;
 }
 
 export interface SqlPayloadResponse {
   csv?: string;
   errorMessage?: string;
+  parameters: SqlParameters|null;
 }
 
 export interface DataDescribePayload {

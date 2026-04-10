@@ -69,7 +69,7 @@ export function EditorArea({
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
-  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError } =
+  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError, needParameters, parameters } =
     useSharedDataLoad();
 
   const { dataDescribingError, runDataDescribe, setDataDescribingError, script } =
@@ -95,6 +95,12 @@ export function EditorArea({
     }
   }, [script]);
 
+  useEffect(() => {
+    if (needParameters) {
+      debugger
+      console.log(needParameters, parameters);
+    }
+  }, [needParameters, parameters]);
 
   // Show error toast when error occurs
   useEffect(() => {
