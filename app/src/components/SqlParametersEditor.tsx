@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react';
-import { SqlView } from '@pondpilot/flowscope-react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,85 +8,98 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { useThemeStore, resolveTheme } from '@/lib/theme-store';
-import type { Dialect } from '@/lib/project-store';
+import { SqlParameters } from '@/lib/backend-adapter.ts';
 
-interface SqlParametersEditor {
+interface SqlParametersEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  schemaSQL: string;
-  dialect: Dialect;
-  onSave: (schemaSQL: string) => void;
-  /** When true, schema is from backend and cannot be edited */
-  isReadOnly?: boolean;
+  inputParameters: SqlParameters;
+  onRunSql: (editedParameters: SqlParameters) => void;
 }
 
 export function SqlParametersEditor({
   open,
   onOpenChange,
-  schemaSQL,
-  onSave,
-  isReadOnly = false,
-}: SqlParametersEditor) {
-  const [editedSQL, setEditedSQL] = useState(schemaSQL);
-  const theme = useThemeStore((state) => state.theme);
-  const isDark = resolveTheme(theme) === 'dark';
+  inputParameters,
+  onRunSql,
+}: SqlParametersEditorProps) {
+  const [editedParameters, setEditedParameters] = useState<SqlParameters>(inputParameters);
 
-  // Reset to prop value when dialog opens
+  useEffect(() => {
+    if (open) {
+      setEditedParameters(inputParameters);
+    }
+  }, [open, inputParameters]);
+
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
-      if (newOpen) {
-        setEditedSQL(schemaSQL);
+      if (!newOpen) {
+        setEditedParameters(inputParameters);
       }
       onOpenChange(newOpen);
     },
-    [schemaSQL, onOpenChange]
+    [inputParameters, onOpenChange]
   );
 
+  const handleParameterChange = useCallback((key: string, value: string) => {
+    setEditedParameters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }, []);
+
   const handleSave = useCallback(() => {
-    if (isReadOnly) return;
-    onSave(editedSQL);
+    onRunSql(editedParameters);
     onOpenChange(false);
-  }, [editedSQL, onSave, onOpenChange, isReadOnly]);
+  }, [editedParameters, onRunSql, onOpenChange]);
 
   const handleClose = useCallback(() => {
-    setEditedSQL(schemaSQL); // Reset to original
+    setEditedParameters(inputParameters);
     onOpenChange(false);
-  }, [schemaSQL, onOpenChange]);
+  }, [inputParameters, onOpenChange]);
+
+  const entries = Object.entries(editedParameters);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{isReadOnly ? 'View Schema' : 'Edit Schema'}</DialogTitle>
-          <DialogDescription>
-            {isReadOnly
-              ? 'This schema was loaded from the server (database introspection). It cannot be edited in serve mode.'
-              : 'Define your database schema using CREATE TABLE statements. This schema will be used to augment the lineage analysis without appearing in the graph.'}
-          </DialogDescription>
+          <DialogTitle>Variables</DialogTitle>
+          <DialogDescription>Fill variables to run SQL</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 border rounded-md overflow-hidden">
-          <SqlView
-            value={editedSQL}
-            onChange={isReadOnly ? undefined : setEditedSQL}
-            className="h-full"
-            editable={!isReadOnly}
-            isDark={isDark}
-          />
+        <div className="flex-1 min-h-0 border rounded-md overflow-auto p-4">
+          <div className="space-y-4">
+            {entries.length === 0 ? (
+              <div className="text-sm text-slate-500 dark:text-slate-400">No SQL parameters</div>
+            ) : (
+              entries.map(([key, value]) => (
+                <div key={key} className="space-y-1.5">
+                  <label
+                    htmlFor={`sql-param-${key}`}
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                  >
+                    {key}
+                  </label>
+                  <input
+                    id={`sql-param-${key}`}
+                    type="text"
+                    value={value ?? ''}
+                    onChange={(e) => handleParameterChange(key, e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                    placeholder={`Enter value for ${key}`}
+                  />
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <DialogFooter>
-          {isReadOnly ? (
-            <Button onClick={handleClose}>Close</Button>
-          ) : (
-            <>
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave}>Save Schema</Button>
-            </>
-          )}
+          <Button variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Run SQL</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

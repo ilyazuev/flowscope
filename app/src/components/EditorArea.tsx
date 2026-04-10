@@ -16,7 +16,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
-import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { SqlParameters, SqlPartType } from '@/lib/backend-adapter.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 
@@ -95,20 +95,6 @@ export function EditorArea({
       console.log(script);
     }
   }, [script]);
-
-  useEffect(() => {
-    if (needParameters) {
-      debugger
-      console.log(needParameters, parameters);
-    }
-  }, [needParameters, parameters]);
-
-  useEffect(() => {
-    if( activeFile && !activeFile.parameters && parameters  ) {
-      updateFileParameters(activeFile.id, parameters);
-      setParameters();
-    }
-  }, [activeFile, parameters]);
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -243,10 +229,10 @@ export function EditorArea({
 
   const handleExecuteSql = useCallback(() => {
     clearErrors();
-    if (activeFile && currentProject) {
+    if (activeFile ) {
       void runExecuteSql(activeFile.content, activeFile.path, activeFile.parameters);
     }
-  }, [activeFile, currentProject, runExecuteSql, clearErrors]);
+  }, [activeFile, runExecuteSql, clearErrors]);
 
   const sqlViewRef = useRef<{ getSelection: () => SqlViewSelection | undefined }>(null);
 
@@ -397,10 +383,26 @@ export function EditorArea({
     );
   }
 
+  // ------------------------------------  SQL parameters (variables)
+  useEffect(() => {
+    if (needParameters) {
+      debugger
+      console.log(needParameters, parameters);
+    }
+  }, [needParameters, parameters]);
+
+  useEffect(() => {
+    if( activeFile && !activeFile.parameters && parameters  ) {
+      updateFileParameters(activeFile.id, parameters);
+      setParameters();
+    }
+  }, [activeFile, parameters]);
+
   const handleUseParameters = useCallback(
-    (schemaSQL: string) => {
+    (editedParameters: SqlParameters) => {
       if (activeFile) {
-        console.log("qweqwewqe qwewqe " + schemaSQL)
+        updateFileParameters(activeFile.id, editedParameters);
+        handleExecuteSql();
       }
     },
     [activeFile]
@@ -439,7 +441,11 @@ export function EditorArea({
           <SqlView
             ref={sqlViewRef}
             value={displayContent}
-            onChange={(val) => updateFile(activeFile.id, val)}
+            onChange={(val) => {
+              updateFile(activeFile.id, val)
+              // TODO zuev
+              console.log(activeFile.parameters)
+            }}
             className="h-full text-sm"
             editable={sqlViewMode === 'template' && !isReadOnly}
             isDark={isDark}
@@ -453,15 +459,12 @@ export function EditorArea({
         )}
       </div>
 
-      {currentProject && (
+      {currentProject && activeFile?.parameters && (
         <SqlParametersEditor
           open={needParameters}
           onOpenChange={setNeedParameters}
-          schemaSQL={"qwqwewe"}
-          dialect={currentProject.dialect}
-          onSave={handleUseParameters}
-          isReadOnly={false}
-        />
+          onRunSql={handleUseParameters}
+          inputParameters={activeFile.parameters}/>
       )}
     </div>
   );
