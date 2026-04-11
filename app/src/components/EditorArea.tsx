@@ -91,7 +91,6 @@ export function EditorArea({
     }
   }, [error, setError]);
 
-
   useEffect(() => {
     if (script) {
       console.log(script);
@@ -286,8 +285,10 @@ export function EditorArea({
       }
     }
     setError('No database object found under cursor.');
-  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe]);  
-  
+  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe]);
+
+  const lastExecuteSql = useRef(true);
+
   const doExecuteSql = useCallback((executeSql: boolean, editedParameters?:  SqlParameters) => {
     clearErrors();
     if (
@@ -296,6 +297,7 @@ export function EditorArea({
     ) {
       return;
     }
+    lastExecuteSql.current = executeSql;
     if( !editedParameters && activeFile.parameters ) {
       setNeedParameters(true);
       setParameters(activeFile.parameters);
@@ -368,7 +370,7 @@ export function EditorArea({
     (editedParameters: SqlParameters) => {
       if (activeFile) {
         updateFileParameters(activeFile.id, editedParameters);
-        doExecuteSql(true, editedParameters);
+        doExecuteSql(lastExecuteSql.current, editedParameters);
       }
     },
     [activeFile, doExecuteSql]
