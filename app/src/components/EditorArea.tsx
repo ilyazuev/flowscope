@@ -70,13 +70,15 @@ export function EditorArea({
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
-  const { isDataLoading, dataLoadingError, runExecuteSql, setDataLoadingError, setParameters, setNeedParameters, needParameters, parameters } =
+  const { isDataLoading, setDataLoading, dataLoadingError, setDataLoadingError, runExecuteSql, parameters, setParameters, needParameters, setNeedParameters } =
     useSharedDataLoad();
 
   const { dataDescribingError, runDataDescribe, setDataDescribingError, script } =
     useDataDescribe();
 
   const { getResult } = useAnalysisStore();
+
+  const sqlViewRef = useRef<{ getSelection: () => SqlViewSelection | undefined }>(null);
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -227,70 +229,6 @@ export function EditorArea({
     }
   }, [activeFile, runAnalysis, clearErrors]);
 
-  const handleExecuteSql = useCallback(() => {
-    clearErrors();
-    if (activeFile ) {
-      void runExecuteSql(activeFile.content, activeFile.path, activeFile.parameters);
-    }
-  }, [activeFile, runExecuteSql, clearErrors]);
-
-  const sqlViewRef = useRef<{ getSelection: () => SqlViewSelection | undefined }>(null);
-
-  const handleExecuteCte = useCallback(() => {
-    clearErrors();
-    if (
-      !activeProjectId ||
-      !activeFile ||
-      !sqlViewRef.current ||
-      !activeFile.content
-    ) {
-      return;
-    }
-    const selection = sqlViewRef.current.getSelection();
-    if (!selection) {
-      return;
-    }
-    if (selection.from < selection.to) {
-      const content = activeFile.content.substring(selection.from, selection.to + 1);
-      void runExecuteSql(content, activeFile.path, activeFile.parameters, SqlPartType.selection);
-      return;
-    }
-    const result = getResult(activeProjectId, hideCTEs);
-    if (!result) {
-      setDataLoadingError('No Lineage Data: need to parse SQL before execution.');
-      return;
-    }
-    for (const statement of result.statements) {
-      if (activeFile.name === statement.sourceName) {
-        for (const node of statement.nodes) {
-          if (
-            node.type == 'cte' &&
-            node.label &&
-            node.span &&
-            node.span.start <= selection.head &&
-            selection.head <= node.span.end
-          ) {
-            const content =
-              activeFile.content.substring(0, node.span.end + 1) +
-              `\n)\nSELECT * FROM ${node.label}`;
-            void runExecuteSql(content, activeFile.path, activeFile.parameters, SqlPartType.cte, node.label);
-            return;
-          }
-        }
-        break;
-      }
-    }
-    setDataLoadingError('No CTE found under cursor.');
-  }, [
-    activeFile,
-    activeProjectId,
-    runExecuteSql,
-    getResult,
-    hideCTEs,
-    setDataLoadingError,
-    clearErrors,
-  ]);
-
   const handleAnalyzeActiveOnly = useCallback(() => {
     clearErrors();
     if (activeFile && currentProject) {
@@ -348,7 +286,93 @@ export function EditorArea({
       }
     }
     setError('No database object found under cursor.');
-  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe]);
+  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe]);  
+  
+  const doExecuteSql = useCallback((executeSql: boolean, editedParameters?:  SqlParameters) => {
+    clearErrors();
+    if (
+      !activeFile ||
+      !activeFile.content
+    ) {
+      return;
+    }
+    if( !editedParameters && activeFile.parameters ) {
+      setNeedParameters(true);
+      setParameters(activeFile.parameters);
+      return;
+    }
+    if( executeSql) {
+      void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
+    } else {
+      if (
+        !activeProjectId ||
+        !sqlViewRef.current
+      ) {
+        return;
+      }
+      const selection = sqlViewRef.current.getSelection();
+      if (!selection) {
+        return;
+      }
+      if (selection.from < selection.to) {
+        const content = activeFile.content.substring(selection.from, selection.to + 1);
+        void runExecuteSql(content, activeFile.path, parameters, SqlPartType.selection);
+        return;
+      }
+      const result = getResult(activeProjectId, hideCTEs);
+      if (!result) {
+        setDataLoadingError('No Lineage Data: need to parse SQL before execution.');
+        return;
+      }
+      for (const statement of result.statements) {
+        if (activeFile.name === statement.sourceName) {
+          for (const node of statement.nodes) {
+            if (
+              node.type == 'cte' &&
+              node.label &&
+              node.span &&
+              node.span.start <= selection.head &&
+              selection.head <= node.span.end
+            ) {
+              const content =
+                activeFile.content.substring(0, node.span.end + 1) +
+                `\n)\nSELECT * FROM ${node.label}`;
+              void runExecuteSql(content, activeFile.path, parameters, SqlPartType.cte, node.label);
+              return;
+            }
+          }
+          break;
+        }
+      }
+      setDataLoadingError('No CTE found under cursor.');
+    }
+  }, [
+    activeFile,
+    activeProjectId,
+    runExecuteSql,
+    getResult,
+    hideCTEs,
+    setDataLoadingError,
+    clearErrors,
+  ]);
+
+  const handleExecuteSql = useCallback(() => {
+    doExecuteSql(true);
+  }, [doExecuteSql]);
+  
+  const handleExecuteCte = useCallback(() => {
+    doExecuteSql(false);
+  }, [doExecuteSql]);
+
+  const handleUseParameters = useCallback(
+    (editedParameters: SqlParameters) => {
+      if (activeFile) {
+        updateFileParameters(activeFile.id, editedParameters);
+        doExecuteSql(true, editedParameters);
+      }
+    },
+    [activeFile, doExecuteSql]
+  );
 
   // Keyboard shortcuts for running analysis
   const analysisShortcuts = useMemo<GlobalShortcut[]>(
@@ -382,31 +406,6 @@ export function EditorArea({
       </div>
     );
   }
-
-  // ------------------------------------  SQL parameters (variables)
-  useEffect(() => {
-    if (needParameters) {
-      debugger
-      console.log(needParameters, parameters);
-    }
-  }, [needParameters, parameters]);
-
-  useEffect(() => {
-    if( activeFile && !activeFile.parameters && parameters  ) {
-      updateFileParameters(activeFile.id, parameters);
-      setParameters();
-    }
-  }, [activeFile, parameters]);
-
-  const handleUseParameters = useCallback(
-    (editedParameters: SqlParameters) => {
-      if (activeFile) {
-        updateFileParameters(activeFile.id, editedParameters);
-        handleExecuteSql();
-      }
-    },
-    [activeFile]
-  );
 
   const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
   const selectedCount = currentProject.selectedFileIds?.length || 0;
@@ -442,9 +441,8 @@ export function EditorArea({
             ref={sqlViewRef}
             value={displayContent}
             onChange={(val) => {
-              updateFile(activeFile.id, val)
-              // TODO zuev
-              console.log(activeFile.parameters)
+              setParameters();
+              updateFile(activeFile.id, val);
             }}
             className="h-full text-sm"
             editable={sqlViewMode === 'template' && !isReadOnly}
@@ -459,12 +457,17 @@ export function EditorArea({
         )}
       </div>
 
-      {currentProject && activeFile?.parameters && (
+      {currentProject && parameters && (
         <SqlParametersEditor
           open={needParameters}
-          onOpenChange={setNeedParameters}
+          onOpenChange={(open: boolean, ok?: boolean)=>{
+            setNeedParameters(open);
+            if(!ok) {
+              setDataLoading(SqlPartType.none);
+            }
+          }}
           onRunSql={handleUseParameters}
-          inputParameters={activeFile.parameters}/>
+          inputParameters={parameters}/>
       )}
     </div>
   );

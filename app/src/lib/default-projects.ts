@@ -83,6 +83,11 @@ enriched AS (
     LEFT JOIN ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER tbl_ord ON tbl_ord.customer_id = c.customer_id -- test double table join
     JOIN items i ON i.order_id = o.order_id
     JOIN ${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}PRODUCT p ON p.product_id = i.product_id
+    WHERE 
+        1 = 1
+        and c.customer_no = :customer_no -- CUST-001
+        and p.category = :category -- ELECTRONICS
+        and c.customer_no = :customer_no
 ),
 cat_rank AS (
     SELECT

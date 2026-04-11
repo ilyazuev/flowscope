@@ -117,7 +117,7 @@ export function useGlobalShortcuts(shortcuts: GlobalShortcut[]) {
         }
 
         // Check key match (case-insensitive)
-        if (e.key.toLowerCase() !== shortcut.key.toLowerCase()) {
+        if (e.key?.toLowerCase() !== shortcut.key.toLowerCase()) {
           continue;
         }
 

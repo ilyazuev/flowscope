@@ -12,7 +12,7 @@ import { SqlParameters } from '@/lib/backend-adapter.ts';
 
 interface SqlParametersEditorProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (open: boolean, ok?: boolean) => void;
   inputParameters: SqlParameters;
   onRunSql: (editedParameters: SqlParameters) => void;
 }
@@ -50,7 +50,7 @@ export function SqlParametersEditor({
 
   const handleSave = useCallback(() => {
     onRunSql(editedParameters);
-    onOpenChange(false);
+    onOpenChange(false, true);
   }, [editedParameters, onRunSql, onOpenChange]);
 
   const handleClose = useCallback(() => {
