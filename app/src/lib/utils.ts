@@ -254,13 +254,15 @@ export function filterParamsUsedInSql(sql: string, editedParameters: SqlParamete
   );
 }
 
-export function extractKnownSqlParams(sql: string, editedParameters: SqlParameters): SqlParameters {
-  // ✅ fast exit if no params provided
+export function extractKnownSqlParamsInSqlOrder(
+  sql: string,
+  editedParameters: SqlParameters
+): SqlParameters {
   const keys = Object.keys(editedParameters);
   if (keys.length === 0) return {};
 
-  const result: SqlParameters = {};
-  const allowed = new Set(keys);
+  const allowed = new Set(keys as string[]);
+  const foundKeys: Array<keyof SqlParameters> = [];
 
   let i = 0;
   const len = sql.length;
@@ -307,13 +309,11 @@ export function extractKnownSqlParams(sql: string, editedParameters: SqlParamete
           let j = i + 1;
           while (j < len && isIdentPart(sql[j])) j++;
 
-          const name = sql.slice(i + 1, j);
+          const paramWithColon = sql.slice(i, j);
 
-          if (allowed.has(name)) {
-            result[name] = editedParameters[name];
-            if (Object.keys(result).length === keys.length) {
-              return result;
-            }
+          if (allowed.has(paramWithColon as string)) {
+            foundKeys.push(paramWithColon);
+            allowed.delete(paramWithColon as string);
           }
 
           i = j;
@@ -326,7 +326,9 @@ export function extractKnownSqlParams(sql: string, editedParameters: SqlParamete
     }
 
     if (state === 'line') {
-      if (char === '\n') state = 'code';
+      if (char === '\n') {
+        state = 'code';
+      }
       i++;
       continue;
     }
@@ -341,7 +343,9 @@ export function extractKnownSqlParams(sql: string, editedParameters: SqlParamete
       if (char === '*' && next === '/') {
         blockDepth--;
         i += 2;
-        if (blockDepth === 0) state = 'code';
+        if (blockDepth === 0) {
+          state = 'code';
+        }
         continue;
       }
 
@@ -355,10 +359,17 @@ export function extractKnownSqlParams(sql: string, editedParameters: SqlParamete
         continue;
       }
 
-      if (char === "'") state = 'code';
+      if (char === "'") {
+        state = 'code';
+      }
 
       i++;
     }
+  }
+
+  const result = {} as SqlParameters;
+  for (const key of foundKeys) {
+    result[key] = editedParameters[key];
   }
 
   return result;

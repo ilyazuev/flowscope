@@ -3,7 +3,7 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState } from '@pondpilot/flowscope-react';
-import { cn, extractKnownSqlParams } from '@/lib/utils';
+import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
 import { ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
 import { resolveTheme, useThemeStore } from '@/lib/theme-store';
@@ -305,7 +305,7 @@ export function EditorArea({
   ): boolean => {
     if (!editedParameters && activeFile.parameters?.valid) {
       const sqlParameters = sql
-        ? extractKnownSqlParams(sql, activeFile.parameters.parameters)
+        ? extractKnownSqlParamsInSqlOrder(sql, activeFile.parameters.parameters)
         : activeFile.parameters.parameters;
       if (sqlParameters) {
         const keys = Object.keys(sqlParameters);
