@@ -50,34 +50,35 @@ export function byteOffsetToLineColumn(
   };
 }
 
+// noinspection JSUnusedGlobalSymbols
 export function stripSqlComments(sql: string): string {
-  let result = "";
+  let result = '';
   let i = 0;
   const len = sql.length;
 
-  let state: "code" | "line" | "block" | "string" = "code";
+  let state: 'code' | 'line' | 'block' | 'string' = 'code';
   let blockDepth = 0;
 
   while (i < len) {
     const char = sql[i];
     const next = sql[i + 1];
 
-    if (state === "code") {
-      if (char === "-" && next === "-") {
-        state = "line";
+    if (state === 'code') {
+      if (char === '-' && next === '-') {
+        state = 'line';
         i += 2;
         continue;
       }
 
-      if (char === "/" && next === "*") {
-        state = "block";
+      if (char === '/' && next === '*') {
+        state = 'block';
         blockDepth = 1;
         i += 2;
         continue;
       }
 
       if (char === "'") {
-        state = "string";
+        state = 'string';
         result += char;
         i++;
         continue;
@@ -88,28 +89,28 @@ export function stripSqlComments(sql: string): string {
       continue;
     }
 
-    if (state === "line") {
-      if (char === "\n") {
-        state = "code";
+    if (state === 'line') {
+      if (char === '\n') {
+        state = 'code';
         result += char;
       }
       i++;
       continue;
     }
 
-    if (state === "block") {
-      if (char === "/" && next === "*") {
+    if (state === 'block') {
+      if (char === '/' && next === '*') {
         blockDepth++;
         i += 2;
         continue;
       }
 
-      if (char === "*" && next === "/") {
+      if (char === '*' && next === '/') {
         blockDepth--;
         i += 2;
 
         if (blockDepth === 0) {
-          state = "code";
+          state = 'code';
         }
         continue;
       }
@@ -118,7 +119,7 @@ export function stripSqlComments(sql: string): string {
       continue;
     }
 
-    if (state === "string") {
+    if (state === 'string') {
       result += char;
 
       // SQL escaped quote: ''
@@ -129,11 +130,10 @@ export function stripSqlComments(sql: string): string {
       }
 
       if (char === "'") {
-        state = "code";
+        state = 'code';
       }
 
       i++;
-
     }
   }
 
@@ -146,30 +146,28 @@ export function extractSqlParams(sql: string): Set<string> {
   let i = 0;
   const len = sql.length;
 
-  let state: "code" | "line" | "block" | "string" = "code";
+  let state: 'code' | 'line' | 'block' | 'string' = 'code';
   let blockDepth = 0;
 
-  const isIdentStart = (c: string | undefined) =>
-    !!c && /[A-Za-z_]/.test(c);
+  const isIdentStart = (c: string | undefined) => !!c && /[A-Za-z_]/.test(c);
 
-  const isIdentPart = (c: string | undefined) =>
-    !!c && /[A-Za-z0-9_]/.test(c);
+  const isIdentPart = (c: string | undefined) => !!c && /[A-Za-z0-9_]/.test(c);
 
   while (i < len) {
     const char = sql[i];
     const next = sql[i + 1];
 
-    if (state === "code") {
+    if (state === 'code') {
       // line comment
-      if (char === "-" && next === "-") {
-        state = "line";
+      if (char === '-' && next === '-') {
+        state = 'line';
         i += 2;
         continue;
       }
 
       // block comment, supports nesting
-      if (char === "/" && next === "*") {
-        state = "block";
+      if (char === '/' && next === '*') {
+        state = 'block';
         blockDepth = 1;
         i += 2;
         continue;
@@ -177,18 +175,18 @@ export function extractSqlParams(sql: string): Set<string> {
 
       // string literal
       if (char === "'") {
-        state = "string";
+        state = 'string';
         i++;
         continue;
       }
 
       // named bind param :param
       // ignore :: cast/operator forms
-      if (char === ":" && next !== ":" && isIdentStart(next)) {
-        const prev = i > 0 ? sql[i - 1] : "";
+      if (char === ':' && next !== ':' && isIdentStart(next)) {
+        const prev = i > 0 ? sql[i - 1] : '';
 
         // extra safety: do not match second colon in ::
-        if (prev !== ":") {
+        if (prev !== ':') {
           let j = i + 1;
           while (j < len && isIdentPart(sql[j])) j++;
           params.add(sql.slice(i + 1, j));
@@ -201,26 +199,26 @@ export function extractSqlParams(sql: string): Set<string> {
       continue;
     }
 
-    if (state === "line") {
-      if (char === "\n") {
-        state = "code";
+    if (state === 'line') {
+      if (char === '\n') {
+        state = 'code';
       }
       i++;
       continue;
     }
 
-    if (state === "block") {
-      if (char === "/" && next === "*") {
+    if (state === 'block') {
+      if (char === '/' && next === '*') {
         blockDepth++;
         i += 2;
         continue;
       }
 
-      if (char === "*" && next === "/") {
+      if (char === '*' && next === '/') {
         blockDepth--;
         i += 2;
         if (blockDepth === 0) {
-          state = "code";
+          state = 'code';
         }
         continue;
       }
@@ -229,7 +227,7 @@ export function extractSqlParams(sql: string): Set<string> {
       continue;
     }
 
-    if (state === "string") {
+    if (state === 'string') {
       // escaped quote in SQL: ''
       if (char === "'" && next === "'") {
         i += 2;
@@ -237,11 +235,10 @@ export function extractSqlParams(sql: string): Set<string> {
       }
 
       if (char === "'") {
-        state = "code";
+        state = 'code';
       }
 
       i++;
-
     }
   }
 
@@ -249,57 +246,47 @@ export function extractSqlParams(sql: string): Set<string> {
 }
 
 // noinspection JSUnusedGlobalSymbols
-export function filterParamsUsedInSql (
-  sql: string,
-  editedParameters: SqlParameters,
-): SqlParameters {
+export function filterParamsUsedInSql(sql: string, editedParameters: SqlParameters): SqlParameters {
   const usedParams = extractSqlParams(sql);
 
   return Object.fromEntries(
-    Object.entries(editedParameters).filter(([key]) => usedParams.has(key)),
+    Object.entries(editedParameters).filter(([key]) => usedParams.has(key))
   );
 }
 
-export function extractKnownSqlParams (
-  sql: string,
-  editedParameters: SqlParameters,
-): SqlParameters {
+export function extractKnownSqlParams(sql: string, editedParameters: SqlParameters): SqlParameters {
+  // ✅ fast exit if no params provided
+  const keys = Object.keys(editedParameters);
+  if (keys.length === 0) return {};
+
   const result: SqlParameters = {};
-
-  if( !editedParameters ) {
-    return result;
-  }
-
-  // Precompute allowed keys for O(1) lookup
-  const allowed = new Set(Object.keys(editedParameters));
+  const allowed = new Set(keys);
 
   let i = 0;
   const len = sql.length;
 
-  let state: "code" | "line" | "block" | "string" = "code";
+  let state: 'code' | 'line' | 'block' | 'string' = 'code';
   let blockDepth = 0;
 
-  const isIdentStart = (c: string | undefined) =>
-    !!c && /[A-Za-z_]/.test(c);
+  const isIdentStart = (c: string | undefined) => !!c && /[A-Za-z_]/.test(c);
 
-  const isIdentPart = (c: string | undefined) =>
-    !!c && /[A-Za-z0-9_]/.test(c);
+  const isIdentPart = (c: string | undefined) => !!c && /[A-Za-z0-9_]/.test(c);
 
   while (i < len) {
     const char = sql[i];
     const next = sql[i + 1];
 
-    if (state === "code") {
+    if (state === 'code') {
       // -- line comment
-      if (char === "-" && next === "-") {
-        state = "line";
+      if (char === '-' && next === '-') {
+        state = 'line';
         i += 2;
         continue;
       }
 
       // /* block comment */ (nested)
-      if (char === "/" && next === "*") {
-        state = "block";
+      if (char === '/' && next === '*') {
+        state = 'block';
         blockDepth = 1;
         i += 2;
         continue;
@@ -307,16 +294,16 @@ export function extractKnownSqlParams (
 
       // 'string literal'
       if (char === "'") {
-        state = "string";
+        state = 'string';
         i++;
         continue;
       }
 
       // :param detection (only from allowed set)
-      if (char === ":" && next !== ":" && isIdentStart(next)) {
-        const prev = i > 0 ? sql[i - 1] : "";
+      if (char === ':' && next !== ':' && isIdentStart(next)) {
+        const prev = i > 0 ? sql[i - 1] : '';
 
-        if (prev !== ":") {
+        if (prev !== ':') {
           let j = i + 1;
           while (j < len && isIdentPart(sql[j])) j++;
 
@@ -324,6 +311,9 @@ export function extractKnownSqlParams (
 
           if (allowed.has(name)) {
             result[name] = editedParameters[name];
+            if (Object.keys(result).length === keys.length) {
+              return result;
+            }
           }
 
           i = j;
@@ -335,25 +325,23 @@ export function extractKnownSqlParams (
       continue;
     }
 
-    if (state === "line") {
-      if (char === "\n") {
-        state = "code";
-      }
+    if (state === 'line') {
+      if (char === '\n') state = 'code';
       i++;
       continue;
     }
 
-    if (state === "block") {
-      if (char === "/" && next === "*") {
+    if (state === 'block') {
+      if (char === '/' && next === '*') {
         blockDepth++;
         i += 2;
         continue;
       }
 
-      if (char === "*" && next === "/") {
+      if (char === '*' && next === '/') {
         blockDepth--;
         i += 2;
-        if (blockDepth === 0) state = "code";
+        if (blockDepth === 0) state = 'code';
         continue;
       }
 
@@ -361,19 +349,15 @@ export function extractKnownSqlParams (
       continue;
     }
 
-    if (state === "string") {
-      // escaped ''
+    if (state === 'string') {
       if (char === "'" && next === "'") {
         i += 2;
         continue;
       }
 
-      if (char === "'") {
-        state = "code";
-      }
+      if (char === "'") state = 'code';
 
       i++;
-
     }
   }
 

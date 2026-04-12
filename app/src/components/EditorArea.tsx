@@ -240,7 +240,7 @@ export function EditorArea({
   const handleAnalyze = useCallback(() => {
     clearErrors();
     if (activeFile) {
-      runAnalysis(activeFile.content, activeFile.path);
+      void runAnalysis(activeFile.content, activeFile.path);
     }
   }, [activeFile, runAnalysis, clearErrors]);
 
@@ -308,6 +308,10 @@ export function EditorArea({
         ? extractKnownSqlParams(sql, activeFile.parameters.parameters)
         : activeFile.parameters.parameters;
       if (sqlParameters) {
+        const keys = Object.keys(sqlParameters);
+        if (keys.length === 0) {
+          return false;
+        }
         setNeedParameters(true);
         setParameters(sqlParameters);
         return true;
@@ -325,23 +329,21 @@ export function EditorArea({
         return;
       }
       lastExecuteSql.current = executeSql;
+      const selection = sqlViewRef.current?.getSelection();
+      if (selection && selection.from < selection.to) {
+        lastExecuteSql.current = false;
+        const sql = activeFile.content.substring(selection.from, selection.to + 1);
+        if (!needParametersForSql(activeFile, editedParameters, sql)) {
+          void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.selection);
+        }
+        return;
+      }
       if (executeSql) {
         if (!needParametersForSql(activeFile, editedParameters)) {
           void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
         }
       } else {
-        if (!activeProjectId || !sqlViewRef.current) {
-          return;
-        }
-        const selection = sqlViewRef.current.getSelection();
-        if (!selection) {
-          return;
-        }
-        if (selection.from < selection.to) {
-          const sql = activeFile.content.substring(selection.from, selection.to + 1);
-          if (!needParametersForSql(activeFile, editedParameters, sql)) {
-            void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.selection);
-          }
+        if (!activeProjectId || !selection) {
           return;
         }
         const result = getResult(activeProjectId, hideCTEs);

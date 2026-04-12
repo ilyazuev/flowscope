@@ -62,7 +62,7 @@ export function DataView() {
     }
   }, [isDark]);
 
-  const loadCsvToViewer = async (csv: string, title?: string|null) => {
+  const loadCsvToViewer = async (csv: string, title?: string | null) => {
     const viewer = viewerRef.current;
     if (!viewer) return;
     if (!workerRef.current) {
@@ -97,7 +97,7 @@ export function DataView() {
       setError(null);
       setStatus('Loading data...');
       try {
-        const csv = "empty\n"; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
+        const csv = 'empty\n'; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
         if (cancelled) return;
         await loadCsvToViewer(csv);
         setStatus(null);
@@ -123,20 +123,18 @@ export function DataView() {
     };
   }, []);
 
-
   useEffect(() => {
-    if( dataLoadingError ) {
+    if (dataLoadingError) {
       setError('Data Loading Error: ' + dataLoadingError);
     } else {
       setError(null);
-      if( isDataLoading ) {
+      if (isDataLoading) {
         setStatus('Data loading...');
       } else {
         setStatus(null);
       }
     }
   }, [isDataLoading, dataLoadingError]);
-
 
   useEffect(() => {
     if (!initializedRef.current) return;
@@ -166,6 +164,29 @@ export function DataView() {
 
   return (
     <>
+      <style>{`
+        perspective-viewer-datagrid regular-table td,
+        perspective-viewer-datagrid regular-table th {
+          position: relative;
+        }
+      
+        perspective-viewer-datagrid regular-table td::after,
+        perspective-viewer-datagrid regular-table th::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 1px;
+          height: 100%;
+          background: rgba(128, 128, 128, 0.35);
+          pointer-events: none;
+        }
+      
+        perspective-viewer-datagrid regular-table td:last-child::after,
+        perspective-viewer-datagrid regular-table th:last-child::after {
+          display: none;
+        }
+      `}</style>
       {!error && status && <div style={{ marginBottom: 12 }}>{status}</div>}
       {error && <pre style={{ color: 'crimson', whiteSpace: 'pre-wrap' }}>{error}</pre>}
       <perspective-viewer
@@ -173,7 +194,10 @@ export function DataView() {
           node?.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
           viewerRef.current = node as PerspectiveViewerElement | null;
         }}
-        style={{ width: !error && !status ? '100%' : '0', height: !error && !status ? '100%' : '0' }}
+        style={{
+          width: !error && !status ? '100%' : '0',
+          height: !error && !status ? '100%' : '0',
+        }}
       />
     </>
   );
