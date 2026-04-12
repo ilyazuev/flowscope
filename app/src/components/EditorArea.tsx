@@ -3,8 +3,8 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState } from '@pondpilot/flowscope-react';
-import { cn } from '@/lib/utils';
-import type { RunMode, SqlParameters } from '@/lib/project-store';
+import { cn, extractKnownSqlParams } from '@/lib/utils';
+import { ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
 import { resolveTheme, useThemeStore } from '@/lib/theme-store';
 import { useBackend } from '@/lib/backend-context';
@@ -298,6 +298,24 @@ export function EditorArea({
     setError('No database object found under cursor.');
   }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe]);
 
+  const needParametersForSql = (
+    activeFile: ProjectFile,
+    editedParameters?: SqlParameters,
+    sql?: string
+  ): boolean => {
+    if (!editedParameters && activeFile.parameters?.valid) {
+      const sqlParameters = sql
+        ? extractKnownSqlParams(sql, activeFile.parameters.parameters)
+        : activeFile.parameters.parameters;
+      if (sqlParameters) {
+        setNeedParameters(true);
+        setParameters(sqlParameters);
+        return true;
+      }
+    }
+    return false;
+  };
+
   const lastExecuteSql = useRef(true);
 
   const doExecuteSql = useCallback(
@@ -307,13 +325,10 @@ export function EditorArea({
         return;
       }
       lastExecuteSql.current = executeSql;
-      if (!editedParameters && activeFile.parameters?.valid) {
-        setNeedParameters(true);
-        setParameters(activeFile.parameters.parameters);
-        return;
-      }
       if (executeSql) {
-        void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
+        if (!needParametersForSql(activeFile, editedParameters)) {
+          void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
+        }
       } else {
         if (!activeProjectId || !sqlViewRef.current) {
           return;
@@ -323,8 +338,10 @@ export function EditorArea({
           return;
         }
         if (selection.from < selection.to) {
-          const content = activeFile.content.substring(selection.from, selection.to + 1);
-          void runExecuteSql(content, activeFile.path, parameters, SqlPartType.selection);
+          const sql = activeFile.content.substring(selection.from, selection.to + 1);
+          if (!needParametersForSql(activeFile, editedParameters, sql)) {
+            void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.selection);
+          }
           return;
         }
         const result = getResult(activeProjectId, hideCTEs);
@@ -342,16 +359,12 @@ export function EditorArea({
                 node.span.start <= selection.head &&
                 selection.head <= node.span.end
               ) {
-                const content =
+                const sql =
                   activeFile.content.substring(0, node.span.end + 1) +
                   `\n)\nSELECT * FROM ${node.label}`;
-                void runExecuteSql(
-                  content,
-                  activeFile.path,
-                  parameters,
-                  SqlPartType.cte,
-                  node.label
-                );
+                if (!needParametersForSql(activeFile, editedParameters, sql)) {
+                  void runExecuteSql(sql, activeFile.path, parameters, SqlPartType.cte, node.label);
+                }
                 return;
               }
             }
@@ -383,10 +396,12 @@ export function EditorArea({
   const handleUseParameters = useCallback(
     (editedParameters: SqlParameters) => {
       if (activeFile) {
-        updateFileParameters(activeFile.id, {
-          valid: true,
-          parameters: editedParameters,
-        });
+        if (lastExecuteSql.current) {
+          updateFileParameters(activeFile.id, {
+            valid: true,
+            parameters: editedParameters,
+          });
+        }
         doExecuteSql(lastExecuteSql.current, editedParameters);
       }
     },

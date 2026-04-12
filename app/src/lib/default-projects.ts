@@ -30,12 +30,15 @@ export const DEFAULT_CUSTOMERS_PROJECT: Project = {
 -- noinspection SqlNoDataSourceInspection @ table/"${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER"
 WITH
 params AS (
-    SELECT
-        1 order_id,
-        'extra' order_extra,
-        DATE '2026-01-01' AS dt_from,
-        DATE '2026-02-01' AS dt_to
-    FROM dual
+    select order_id, order_extra, dt_from, dt_to from ( 
+        SELECT
+            1 order_id,
+            'extra' order_extra,
+            DATE '2026-01-01' AS dt_from, 
+            DATE '2026-02-01' AS dt_to
+        FROM dual -- test parameter in comment :order_id
+    ) /* test parameter in comment :order_id */
+    where order_id = :order_id -- 1
 ),
 ord AS (
     SELECT
@@ -111,6 +114,7 @@ SELECT
 FROM enriched e
 LEFT JOIN cat_rank cr
     ON cr.customer_id = e.customer_id
+WHERE e.full_name = :full_name -- Alice Korhonen
 GROUP BY
     e.customer_no,
     e.full_name
