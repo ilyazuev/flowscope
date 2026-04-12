@@ -44,8 +44,15 @@ export function EditorArea({
   fileSelectorOpen,
   onFileSelectorOpenChange,
 }: EditorAreaProps) {
-  const { currentProject, activeProjectId, updateFile, updateFileParameters, createFile, setRunMode, isReadOnly } =
-    useProject();
+  const {
+    currentProject,
+    activeProjectId,
+    updateFile,
+    updateFileParameters,
+    createFile,
+    setRunMode,
+    isReadOnly,
+  } = useProject();
 
   const theme = useThemeStore((state) => state.theme);
   const isDark = resolveTheme(theme) === 'dark';
@@ -70,8 +77,17 @@ export function EditorArea({
   // Use backend adapter for analysis when available
   const { adapter } = useBackend();
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
-  const { isDataLoading, setDataLoading, dataLoadingError, setDataLoadingError, runExecuteSql, parameters, setParameters, needParameters, setNeedParameters } =
-    useSharedDataLoad();
+  const {
+    isDataLoading,
+    setDataLoading,
+    dataLoadingError,
+    setDataLoadingError,
+    runExecuteSql,
+    parameters,
+    setParameters,
+    needParameters,
+    setNeedParameters,
+  } = useSharedDataLoad();
 
   const { dataDescribingError, runDataDescribe, setDataDescribingError, script } =
     useDataDescribe();
@@ -215,7 +231,7 @@ export function EditorArea({
     return activeFile?.content ?? '';
   }, [sqlViewMode, resolvedSql, activeFile?.content]);
 
-  const clearErrors = useCallback(()=>{
+  const clearErrors = useCallback(() => {
     setError(null);
     setDataLoadingError(null);
     setDataDescribingError(null);
@@ -243,12 +259,7 @@ export function EditorArea({
 
   const handleRunDescribe = useCallback(() => {
     clearErrors();
-    if (
-      !activeProjectId ||
-      !activeFile ||
-      !sqlViewRef.current ||
-      !activeFile.content
-    ) {
+    if (!activeProjectId || !activeFile || !sqlViewRef.current || !activeFile.content) {
       return;
     }
     const selection = sqlViewRef.current.getSelection();
@@ -260,21 +271,21 @@ export function EditorArea({
       setDataDescribingError('No Lineage Data: need to parse SQL before describe database object.');
       return;
     }
-    if( result.resolvedSchema ) {
+    if (result.resolvedSchema) {
       for (const table of result.resolvedSchema.tables) {
-        if( table.spans ) {
+        if (table.spans) {
           for (const span of table.spans) {
-            if( span.start <= selection.head && selection.head <= span.end ) {
+            if (span.start <= selection.head && selection.head <= span.end) {
               void runDataDescribe(table.name, table.schema);
               return;
             }
           }
         }
-        if(table.columns) {
+        if (table.columns) {
           for (const column of table.columns) {
-            if( column.spans ) {
+            if (column.spans) {
               for (const span of column.spans) {
-                if( span.start <= selection.head && selection.head <= span.end ) {
+                if (span.start <= selection.head && selection.head <= span.end) {
                   void runDataDescribe(table.name, table.schema, column.name);
                   return;
                 }
@@ -289,79 +300,82 @@ export function EditorArea({
 
   const lastExecuteSql = useRef(true);
 
-  const doExecuteSql = useCallback((executeSql: boolean, editedParameters?:  SqlParameters) => {
-    clearErrors();
-    if (
-      !activeFile ||
-      !activeFile.content
-    ) {
-      return;
-    }
-    lastExecuteSql.current = executeSql;
-    if( !editedParameters && activeFile.parameters?.valid ) {
-      setNeedParameters(true);
-      setParameters(activeFile.parameters);
-      return;
-    }
-    if( executeSql) {
-      void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
-    } else {
-      if (
-        !activeProjectId ||
-        !sqlViewRef.current
-      ) {
+  const doExecuteSql = useCallback(
+    (executeSql: boolean, editedParameters?: SqlParameters) => {
+      clearErrors();
+      if (!activeFile || !activeFile.content) {
         return;
       }
-      const selection = sqlViewRef.current.getSelection();
-      if (!selection) {
+      lastExecuteSql.current = executeSql;
+      if (!editedParameters && activeFile.parameters?.valid) {
+        setNeedParameters(true);
+        setParameters(activeFile.parameters.parameters);
         return;
       }
-      if (selection.from < selection.to) {
-        const content = activeFile.content.substring(selection.from, selection.to + 1);
-        void runExecuteSql(content, activeFile.path, parameters, SqlPartType.selection);
-        return;
-      }
-      const result = getResult(activeProjectId, hideCTEs);
-      if (!result) {
-        setDataLoadingError('No Lineage Data: need to parse SQL before execution.');
-        return;
-      }
-      for (const statement of result.statements) {
-        if (activeFile.name === statement.sourceName) {
-          for (const node of statement.nodes) {
-            if (
-              node.type == 'cte' &&
-              node.label &&
-              node.span &&
-              node.span.start <= selection.head &&
-              selection.head <= node.span.end
-            ) {
-              const content =
-                activeFile.content.substring(0, node.span.end + 1) +
-                `\n)\nSELECT * FROM ${node.label}`;
-              void runExecuteSql(content, activeFile.path, parameters, SqlPartType.cte, node.label);
-              return;
-            }
-          }
-          break;
+      if (executeSql) {
+        void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
+      } else {
+        if (!activeProjectId || !sqlViewRef.current) {
+          return;
         }
+        const selection = sqlViewRef.current.getSelection();
+        if (!selection) {
+          return;
+        }
+        if (selection.from < selection.to) {
+          const content = activeFile.content.substring(selection.from, selection.to + 1);
+          void runExecuteSql(content, activeFile.path, parameters, SqlPartType.selection);
+          return;
+        }
+        const result = getResult(activeProjectId, hideCTEs);
+        if (!result) {
+          setDataLoadingError('No Lineage Data: need to parse SQL before execution.');
+          return;
+        }
+        for (const statement of result.statements) {
+          if (activeFile.name === statement.sourceName) {
+            for (const node of statement.nodes) {
+              if (
+                node.type == 'cte' &&
+                node.label &&
+                node.span &&
+                node.span.start <= selection.head &&
+                selection.head <= node.span.end
+              ) {
+                const content =
+                  activeFile.content.substring(0, node.span.end + 1) +
+                  `\n)\nSELECT * FROM ${node.label}`;
+                void runExecuteSql(
+                  content,
+                  activeFile.path,
+                  parameters,
+                  SqlPartType.cte,
+                  node.label
+                );
+                return;
+              }
+            }
+            break;
+          }
+        }
+        setDataLoadingError('No CTE found under cursor.');
       }
-      setDataLoadingError('No CTE found under cursor.');
-    }
-  }, [
-    activeFile,
-    activeProjectId,
-    runExecuteSql,
-    getResult,
-    hideCTEs,
-    setDataLoadingError,
-    clearErrors,
-  ]);
+    },
+    [
+      activeFile,
+      activeProjectId,
+      runExecuteSql,
+      getResult,
+      hideCTEs,
+      setDataLoadingError,
+      clearErrors,
+    ]
+  );
 
   const handleExecuteSql = useCallback(() => {
     doExecuteSql(true);
   }, [doExecuteSql]);
-  
+
   const handleExecuteCte = useCallback(() => {
     doExecuteSql(false);
   }, [doExecuteSql]);
@@ -371,7 +385,7 @@ export function EditorArea({
       if (activeFile) {
         updateFileParameters(activeFile.id, {
           valid: true,
-          parameters: editedParameters
+          parameters: editedParameters,
         });
         doExecuteSql(lastExecuteSql.current, editedParameters);
       }
@@ -465,14 +479,24 @@ export function EditorArea({
       {currentProject && parameters && (
         <SqlParametersEditor
           open={needParameters}
-          onOpenChange={(open: boolean, ok?: boolean)=>{
+          onOpenChange={(open: boolean, ok?: boolean) => {
             setNeedParameters(open);
-            if(!ok) {
+            if (!ok) {
               setDataLoading(SqlPartType.none);
             }
           }}
           onRunSql={handleUseParameters}
-          inputParameters={parameters}/>
+          inputParameters={
+            activeFile?.parameters?.parameters
+              ? Object.fromEntries(
+                  Object.entries(parameters).map(([key, value]) => [
+                    key,
+                    activeFile.parameters?.parameters[key] ?? value,
+                  ])
+                )
+              : parameters
+          }
+        />
       )}
     </div>
   );

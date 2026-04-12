@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
-import { SqlPayload, SqlPartType, SqlParameters } from '@/lib/backend-adapter.ts';
+import { SqlPayload, SqlPartType  } from '@/lib/backend-adapter.ts';
 import { devLineageExecuteSql } from '@/lib/utils_backend.tsx';
-import { useProject } from '@/lib/project-store.tsx';
+import { SqlParameters, useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
 
 export function useDataLoad() {
@@ -53,7 +53,10 @@ export function useDataLoad() {
 
   const runExecuteSql = useCallback(
     async (activeFileContent?: string, activeFilePath?: string, parameters?: SqlParameters, partType: SqlPartType = SqlPartType.sql, cteName?: string) => {
+      setNeedParameters(false);
+
       if (!currentProject) return;
+
       if (currentProject.dialect != 'oracleBackend') {
         return;
       }

@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { SqlParameters } from '@/lib/backend-adapter.ts';
+import { SqlParameters } from '@/lib/project-store.tsx';
 
 interface SqlParametersEditorProps {
   open: boolean;

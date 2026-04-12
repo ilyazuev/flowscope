@@ -4,10 +4,11 @@
 
 // Re-export TemplateMode from core to maintain single source of truth
 // Application-specific utilities (validation, UI options) are defined below
-import { SqlParameters, SqlPartType } from '@/lib/backend-adapter.ts';
+import { SqlPartType } from '@/lib/backend-adapter.ts';
 
 export type { TemplateMode } from '@pondpilot/flowscope-core';
 import type { TemplateMode } from '@pondpilot/flowscope-core';
+import { SqlParameters } from '@/lib/project-store.tsx';
 
 /**
  * Error codes for analysis worker operations.
