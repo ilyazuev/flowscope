@@ -14,7 +14,6 @@ import type { TemplateMode } from '@/types';
 import { DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
 import { useBackend } from './backend-context';
 import { useBackendFiles } from '@/hooks/useBackendFiles';
-import { SqlParameters } from '@/lib/backend-adapter.ts';
 
 const uuidv4 = () => crypto.randomUUID();
 
@@ -117,12 +116,19 @@ export type RunMode = 'current' | 'all' | 'custom';
 // Re-export TemplateMode from shared types for backward compatibility
 export type { TemplateMode } from '@/types';
 
+export type SqlParameters = Record<string, string>;
+
+export interface SqlParametersValid {
+  valid: boolean;
+  parameters: SqlParameters;
+}
+
 export interface ProjectFile {
   id: string;
   name: string;
   path: string; // Relative path including filename, e.g., "queries/users/get-all.sql"
   content: string;
-  parameters?: SqlParameters;
+  parameters?: SqlParametersValid;
   language: 'sql' | 'json' | 'text';
 }
 
@@ -158,7 +164,7 @@ interface ProjectContextType {
   // File actions for active project
   createFile: (name: string, content?: string, path?: string) => void;
   updateFile: (fileId: string, content: string) => void;
-  updateFileParameters: (fileId: string, parameters?: SqlParameters) => void;
+  updateFileParameters: (fileId: string, parameters?: SqlParametersValid) => void;
   deleteFile: (fileId: string) => void;
   renameFile: (fileId: string, newName: string) => void;
   selectFile: (fileId: string) => void;
@@ -547,7 +553,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           if (p.id !== activeProjectId) return p;
           return {
             ...p,
-            files: p.files.map((f) => (f.id === fileId ? { ...f, content, parameters: undefined } : f)),
+            files: p.files.map((f) => (
+              f.id === fileId
+                ? {
+                  ...f,
+                  content,
+                  parameters: f.parameters ? {
+                    parameters: f.parameters.parameters,
+                    valid: false
+                } : undefined }
+                : f)),
           };
         })
       );
@@ -556,7 +571,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateFileParameters = useCallback(
-    (fileId: string, parameters?: SqlParameters) => {
+    (fileId: string, parameters?: SqlParametersValid) => {
       if (!activeProjectId) return;
 
       setProjects((prev) =>

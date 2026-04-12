@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState } from '@pondpilot/flowscope-react';
 import { cn } from '@/lib/utils';
-import type { RunMode } from '@/lib/project-store';
+import type { RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
 import { resolveTheme, useThemeStore } from '@/lib/theme-store';
 import { useBackend } from '@/lib/backend-context';
@@ -16,9 +16,9 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
-import { SqlParameters, SqlPartType } from '@/lib/backend-adapter.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
+import { SqlPartType } from '@/lib/backend-adapter.ts';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -298,7 +298,7 @@ export function EditorArea({
       return;
     }
     lastExecuteSql.current = executeSql;
-    if( !editedParameters && activeFile.parameters ) {
+    if( !editedParameters && activeFile.parameters?.valid ) {
       setNeedParameters(true);
       setParameters(activeFile.parameters);
       return;
@@ -369,7 +369,10 @@ export function EditorArea({
   const handleUseParameters = useCallback(
     (editedParameters: SqlParameters) => {
       if (activeFile) {
-        updateFileParameters(activeFile.id, editedParameters);
+        updateFileParameters(activeFile.id, {
+          valid: true,
+          parameters: editedParameters
+        });
         doExecuteSql(lastExecuteSql.current, editedParameters);
       }
     },

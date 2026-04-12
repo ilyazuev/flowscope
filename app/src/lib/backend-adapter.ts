@@ -19,6 +19,7 @@ import {
   clearAnalysisWorkerCache,
 } from './analysis-worker';
 import type { AnalysisWorkerResult, AnalyzeWorkerOptions } from './analysis-worker';
+import { SqlParameters } from '@/lib/project-store.tsx';
 
 /**
  * Payload for running analysis.
@@ -45,8 +46,6 @@ export enum SqlPartType {
   cte,
   selection,
 }
-
-export type SqlParameters = Record<string, string>;
 
 export interface SqlPayload {
   path?: string;
