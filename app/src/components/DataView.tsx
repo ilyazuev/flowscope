@@ -68,7 +68,8 @@ export function DataView() {
     if (!workerRef.current) {
       workerRef.current = await perspective.worker();
     }
-    const prevTable = tableRef.current;
+    const prevTable = tableRef.current; // csv = 'abc,bca,drt\n123,dew,456';
+
     const table = await workerRef.current.table(csv, {
       format: 'csv',
     });
@@ -83,6 +84,18 @@ export function DataView() {
         edit_mode: 'EDIT',
       },
     });
+
+    const elements = viewer.getElementsByTagName('perspective-viewer-datagrid');
+    if( elements && elements.length > 0 ){
+      const tds = elements[0].shadowRoot?.querySelectorAll('regular-table > table td, regular-table > table th');
+      if (tds && elements.length > 0) {
+        for (const td of tds) {
+          (td as HTMLElement).style.boxShadow = '1px 0px var(--inactive--border-color, #8b868045)';
+        }
+      }
+      
+    }
+
     await prevTable?.delete?.();
   };
 
@@ -164,29 +177,6 @@ export function DataView() {
 
   return (
     <>
-      <style>{`
-        perspective-viewer-datagrid regular-table td,
-        perspective-viewer-datagrid regular-table th {
-          position: relative;
-        }
-      
-        perspective-viewer-datagrid regular-table td::after,
-        perspective-viewer-datagrid regular-table th::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 1px;
-          height: 100%;
-          background: rgba(128, 128, 128, 0.35);
-          pointer-events: none;
-        }
-      
-        perspective-viewer-datagrid regular-table td:last-child::after,
-        perspective-viewer-datagrid regular-table th:last-child::after {
-          display: none;
-        }
-      `}</style>
       {!error && status && <div style={{ marginBottom: 12 }}>{status}</div>}
       {error && <pre style={{ color: 'crimson', whiteSpace: 'pre-wrap' }}>{error}</pre>}
       <perspective-viewer
