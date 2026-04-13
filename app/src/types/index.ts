@@ -79,7 +79,7 @@ export interface DataDescribeState {
   isDataDescribing: boolean;
   requestId: number;
   dataDescribingError: string | null;
-  script: string | null;
+  dataDescriptionScript: string | null;
 }
 
 export interface KeyboardShortcutHandler {

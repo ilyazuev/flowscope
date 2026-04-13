@@ -13,7 +13,7 @@ export function useDataDescribe() {
     isDataDescribing: false,
     requestId: 0,
     dataDescribingError: null,
-    script: null,
+    dataDescriptionScript: null,
   });
 
   const startRequest = useCallback(() => {
@@ -65,7 +65,7 @@ export function useDataDescribe() {
             ...prev,
             isDataDescribing: false,
             dataDescribingError: 'No description',
-            script: null,
+            dataDescriptionScript: null,
           }));
           return;
         }
@@ -74,7 +74,7 @@ export function useDataDescribe() {
           ...prev,
           isDataDescribing: false,
           dataDescribingError: null,
-          script: dataDescribePayloadResponse.script ?? null,
+          dataDescriptionScript: dataDescribePayloadResponse.script ?? null,
         }));
       } catch (error) {
         if (requestIdRef.current !== requestId) {
@@ -102,7 +102,7 @@ export function useDataDescribe() {
       ...prev,
       requestId: requestIdRef.current,
       isDataDescribing: false,
-      script: null,
+      dataDescriptionScript: null,
       dataDescribingError: null,
     }));
   }, []);

@@ -89,7 +89,7 @@ export function EditorArea({
     setNeedParameters,
   } = useSharedDataLoad();
 
-  const { dataDescribingError, runDataDescribe, setDataDescribingError, script } =
+  const { dataDescribingError, runDataDescribe, setDataDescribingError, dataDescriptionScript } =
     useDataDescribe();
 
   const { getResult } = useAnalysisStore();
@@ -108,10 +108,10 @@ export function EditorArea({
   }, [error, setError]);
 
   useEffect(() => {
-    if (script) {
-      console.log(script);
+    if (dataDescriptionScript) {
+      console.log(dataDescriptionScript);
     }
-  }, [script]);
+  }, [dataDescriptionScript]);
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -365,7 +365,7 @@ export function EditorArea({
                   activeFile.content.substring(0, node.span.end + 1) +
                   `\n)\nSELECT * FROM ${node.label}`;
                 if (!needParametersForSql(activeFile, editedParameters, sql)) {
-                  void runExecuteSql(sql, activeFile.path, parameters, SqlPartType.cte, node.label);
+                  void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.cte, node.label);
                 }
                 return;
               }
