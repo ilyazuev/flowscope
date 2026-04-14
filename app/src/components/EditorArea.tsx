@@ -19,6 +19,7 @@ import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { FloatingWindows, useWindowManager } from '@/components/floating-window';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -56,6 +57,10 @@ export function EditorArea({
 
   const theme = useThemeStore((state) => state.theme);
   const isDark = resolveTheme(theme) === 'dark';
+
+  const manager = useWindowManager({
+    theme: isDark ? 'dark' : 'light',
+  });
 
   const activeFile = currentProject?.files.find((f) => f.id === currentProject.activeFileId);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -257,6 +262,19 @@ export function EditorArea({
     }
   }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors]);
 
+  const openDescribeWindow = (manager: ReturnType<typeof useWindowManager>, tableName: string, schema?: string, _columnName?: string) => {
+    const tableFullName = `${schema? schema + '.' : ''}${tableName}`;
+    manager.openWindow({
+      id: `describeWindow-${Date.now()}`,
+      title: tableFullName,
+      content: (
+        <div>
+          <p className="mt-3">Description of {tableFullName}.</p>
+        </div>
+      ),
+    });
+  };
+
   const handleRunDescribe = useCallback(() => {
     clearErrors();
     if (!activeProjectId || !activeFile || !sqlViewRef.current || !activeFile.content) {
@@ -276,7 +294,8 @@ export function EditorArea({
         if (table.spans) {
           for (const span of table.spans) {
             if (span.start <= selection.head && selection.head <= span.end) {
-              void runDataDescribe(table.name, table.schema);
+              //void runDataDescribe(table.name, table.schema);
+              openDescribeWindow(manager, table.name, table.schema);
               return;
             }
           }
@@ -286,7 +305,8 @@ export function EditorArea({
             if (column.spans) {
               for (const span of column.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
-                  void runDataDescribe(table.name, table.schema, column.name);
+                  // void runDataDescribe(table.name, table.schema, column.name);
+                  openDescribeWindow(manager, table.name, table.schema, column.name);
                   return;
                 }
               }
@@ -296,7 +316,7 @@ export function EditorArea({
       }
     }
     setError('No database object found under cursor.');
-  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe]);
+  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe, manager]);
 
   const needParametersForSql = (
     activeFile: ProjectFile,
@@ -515,6 +535,8 @@ export function EditorArea({
           }
         />
       )}
+
+      <FloatingWindows manager={manager} theme={isDark ? 'dark' : 'light'} />
     </div>
   );
 }
