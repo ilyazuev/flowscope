@@ -12,26 +12,9 @@ import type {
   WindowDefinition,
   WindowId,
   WindowItem,
+  WindowManagerApi,
 } from './types';
 import { clampWindowToViewport, createWindow } from './utils';
-
-type InternalManager = {
-  windows: WindowItem[];
-  topmostId?: WindowId;
-  interactionActive: boolean;
-  openWindow: (windowDef: WindowDefinition) => void;
-  closeWindow: (id: WindowId) => void;
-  closeTopmost: () => void;
-  closeAllWindows: () => void;
-  bringToFront: (id: WindowId) => void;
-  replaceWindows: (windows: WindowDefinition[]) => void;
-  startDrag: (id: WindowId, event: React.PointerEvent<HTMLDivElement>) => void;
-  startResize: (
-    id: WindowId,
-    direction: ResizeDirection,
-    event: React.PointerEvent<HTMLDivElement>
-  ) => void;
-};
 
 function useGlobalEscape(onEscape: () => void) {
   React.useEffect(() => {
@@ -58,7 +41,7 @@ function useDisableSelectionWhileDragging(isActive: boolean) {
   }, [isActive]);
 }
 
-export function useWindowManager(options: UseWindowManagerOptions): InternalManager {
+export function useWindowManager(options: UseWindowManagerOptions): WindowManagerApi {
   const { initialWindows = [] } = options;
   const nextZRef = React.useRef(INITIAL_Z_INDEX);
   const dragStateRef = React.useRef<DragState>(null);
@@ -89,12 +72,21 @@ export function useWindowManager(options: UseWindowManagerOptions): InternalMana
       if (!target) return prev;
 
       const nextZ = ++nextZRef.current;
+      target.onActivate?.(id);
+      target.onFocus?.(id);
+
       return prev.map((item) => (item.id === id ? { ...item, zIndex: nextZ } : item));
     });
   }, []);
 
   const closeWindow = React.useCallback((id: WindowId) => {
-    setWindows((prev) => prev.map((item) => (item.id === id ? { ...item, open: false } : item)));
+    setWindows((prev) =>
+      prev.map((item) => {
+        if (item.id !== id || !item.open) return item;
+        item.onClose?.(id);
+        return { ...item, open: false };
+      })
+    );
   }, []);
 
   const closeTopmost = React.useCallback(() => {
@@ -104,23 +96,33 @@ export function useWindowManager(options: UseWindowManagerOptions): InternalMana
         .sort((a, b) => b.zIndex - a.zIndex)[0];
 
       if (!target) return prev;
+      target.onClose?.(target.id);
       return prev.map((item) => (item.id === target.id ? { ...item, open: false } : item));
     });
   }, []);
 
   const closeAllWindows = React.useCallback(() => {
-    setWindows((prev) => prev.map((item) => ({ ...item, open: false })));
+    setWindows((prev) =>
+      prev.map((item) => {
+        if (item.open) item.onClose?.(item.id);
+        return { ...item, open: false };
+      })
+    );
   }, []);
 
   const openWindow = React.useCallback((windowDef: WindowDefinition) => {
     setWindows((prev) => {
       const existingOpen = prev.find((item) => item.id === windowDef.id && item.open);
+      const nextZ = ++nextZRef.current;
+
       if (existingOpen) {
-        const nextZ = ++nextZRef.current;
+        windowDef.onOpen?.(windowDef.id);
+        windowDef.onActivate?.(windowDef.id);
+        windowDef.onFocus?.(windowDef.id);
+
         return prev.map((item) =>
           item.id === windowDef.id
             ? {
-                ...item,
                 ...createWindow({
                   windowDef,
                   index: 0,
@@ -133,12 +135,15 @@ export function useWindowManager(options: UseWindowManagerOptions): InternalMana
       }
 
       const existingClosed = prev.find((item) => item.id === windowDef.id);
-      const nextZ = ++nextZRef.current;
       const nextWindow = createWindow({
         windowDef,
         index: prev.filter((item) => item.open).length,
         zIndex: nextZ,
       });
+
+      nextWindow.onOpen?.(nextWindow.id);
+      nextWindow.onActivate?.(nextWindow.id);
+      nextWindow.onFocus?.(nextWindow.id);
 
       if (existingClosed) {
         return prev.map((item) => (item.id === windowDef.id ? nextWindow : item));
@@ -308,7 +313,6 @@ export function useWindowManager(options: UseWindowManagerOptions): InternalMana
   return {
     windows,
     topmostId,
-    interactionActive,
     openWindow,
     closeWindow,
     closeTopmost,

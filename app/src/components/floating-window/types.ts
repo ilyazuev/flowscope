@@ -2,7 +2,14 @@ import * as React from 'react';
 
 export type WindowId = string;
 
-export type WindowDefinition = {
+export type WindowCallbacks = {
+  onOpen?: (id: WindowId) => void;
+  onClose?: (id: WindowId) => void;
+  onActivate?: (id: WindowId) => void;
+  onFocus?: (id: WindowId) => void;
+};
+
+export type WindowDefinition = WindowCallbacks & {
   id: WindowId;
   title: string;
   content: React.ReactNode;
@@ -13,7 +20,7 @@ export type WindowDefinition = {
   className?: string;
 };
 
-export type WindowItem = {
+export type WindowItem = WindowCallbacks & {
   id: WindowId;
   title: string;
   content: React.ReactNode;
@@ -71,12 +78,19 @@ export type UseWindowManagerOptions = {
 
 export type WindowManagerApi = {
   windows: WindowItem[];
+  topmostId?: WindowId;
   openWindow: (windowDef: WindowDefinition) => void;
   closeWindow: (id: WindowId) => void;
   closeTopmost: () => void;
   closeAllWindows: () => void;
   bringToFront: (id: WindowId) => void;
   replaceWindows: (windows: WindowDefinition[]) => void;
+  startDrag: (id: WindowId, event: React.PointerEvent<HTMLDivElement>) => void;
+  startResize: (
+    id: WindowId,
+    direction: ResizeDirection,
+    event: React.PointerEvent<HTMLDivElement>
+  ) => void;
 };
 
 export type FloatingWindowsProps = {

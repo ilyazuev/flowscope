@@ -37,7 +37,6 @@ export function clampWindowToViewport(item: WindowItem): WindowItem {
     Math.max(item.minHeight, viewport.height - VIEWPORT_MARGIN * 2)
   );
 
-  // Keep enough of the titlebar reachable so the user can always drag the window back.
   const minX = -(width - 120);
   const maxX = viewport.width - 120;
   const minY = VIEWPORT_MARGIN;
@@ -76,6 +75,10 @@ export function createWindow(params: {
     title: params.windowDef.title,
     content: params.windowDef.content,
     className: params.windowDef.className,
+    onOpen: params.windowDef.onOpen,
+    onClose: params.windowDef.onClose,
+    onActivate: params.windowDef.onActivate,
+    onFocus: params.windowDef.onFocus,
     open: true,
     width,
     height,

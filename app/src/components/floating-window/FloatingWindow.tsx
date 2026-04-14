@@ -76,10 +76,16 @@ export function FloatingWindow({
             <Dialog.Title asChild>
               <div
                 className={[
-                  'flex h-11 shrink-0 touch-none select-none items-center justify-between border-b px-3',
+                  'flex h-11 shrink-0 touch-none select-none items-center justify-between border-b px-3 cursor-move',
                   isDark ? 'border-white/10 bg-neutral-800' : 'border-black/10 bg-neutral-50',
                 ].join(' ')}
-                onPointerDown={(event) => onDragStart(item.id, event)}
+                onPointerDown={(event) => {
+                  const target = event.target as HTMLElement;
+                  if( target && (target.tagName=='button' || target.closest('button') ) ) {
+                    return;
+                  }
+                  onDragStart(item.id, event)
+                }}
               >
                 <div
                   className={[
@@ -90,21 +96,22 @@ export function FloatingWindow({
                   {item.title}
                 </div>
 
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className={[
-                      'inline-flex h-8 w-8 items-center justify-center rounded-lg transition focus:outline-none focus:ring-2',
-                      isDark
-                        ? 'text-neutral-400 hover:bg-white/10 hover:text-white focus:ring-neutral-500'
-                        : 'text-neutral-500 hover:bg-black/5 hover:text-neutral-900 focus:ring-neutral-400',
-                    ].join(' ')}
-                    aria-label={`Close ${item.title}`}
-                    onClick={() => onClose(item.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </Dialog.Close>
+                <button
+                  type="button"
+                  className={[
+                    'inline-flex h-8 w-8 items-center justify-center rounded-lg transition focus:outline-none focus:ring-2',
+                    isDark
+                      ? 'text-neutral-400 hover:bg-white/10 hover:text-white focus:ring-neutral-500'
+                      : 'text-neutral-500 hover:bg-black/5 hover:text-neutral-900 focus:ring-neutral-400',
+                  ].join(' ')}
+                  aria-label={`Close ${item.title}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClose(item.id);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
             </Dialog.Title>
 
