@@ -8,4 +8,5 @@ export type {
   ResizeDirection,
   ResolvedTheme,
   WindowManagerApi,
+  UpdateWindowPatch,
 } from './types';

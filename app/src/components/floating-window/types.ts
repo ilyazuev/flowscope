@@ -76,10 +76,18 @@ export type UseWindowManagerOptions = {
   theme: ResolvedTheme;
 };
 
+export type UpdateWindowPatch = Partial<
+  Pick<
+    WindowDefinition,
+    'title' | 'content' | 'width' | 'height' | 'minWidth' | 'minHeight' | 'className'
+  >
+>;
+
 export type WindowManagerApi = {
   windows: WindowItem[];
   topmostId?: WindowId;
   openWindow: (windowDef: WindowDefinition) => void;
+  updateWindow: (id: WindowId, patch: UpdateWindowPatch) => void;
   closeWindow: (id: WindowId) => void;
   closeTopmost: () => void;
   closeAllWindows: () => void;

@@ -8,6 +8,7 @@ import {
 import type {
   DragState,
   ResizeDirection,
+  UpdateWindowPatch,
   UseWindowManagerOptions,
   WindowDefinition,
   WindowId,
@@ -106,6 +107,27 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
       prev.map((item) => {
         if (item.open) item.onClose?.(item.id);
         return { ...item, open: false };
+      })
+    );
+  }, []);
+
+  const updateWindow = React.useCallback((id: WindowId, patch: UpdateWindowPatch) => {
+    setWindows((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+
+        const nextItem: WindowItem = {
+          ...item,
+          title: patch.title ?? item.title,
+          content: patch.content ?? item.content,
+          width: patch.width ?? item.width,
+          height: patch.height ?? item.height,
+          minWidth: patch.minWidth ?? item.minWidth,
+          minHeight: patch.minHeight ?? item.minHeight,
+          className: patch.className ?? item.className,
+        };
+
+        return clampWindowToViewport(nextItem);
       })
     );
   }, []);
@@ -314,6 +336,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     windows,
     topmostId,
     openWindow,
+    updateWindow,
     closeWindow,
     closeTopmost,
     closeAllWindows,

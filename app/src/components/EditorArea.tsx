@@ -262,20 +262,59 @@ export function EditorArea({
     }
   }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors]);
 
+  function LoadingState({ tableFullName, isDark }: { tableFullName: string, isDark: boolean }) {
+    return (
+      <div className={isDark ? 'text-neutral-300' : 'text-neutral-600'}>
+        <div className="text-sm font-medium flex gap-2">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+        </div>
+        <div className="mt-2 text-xs opacity-80">Fetching description of {tableFullName}.</div>
+      </div>
+    );
+  }
+
   const openDescribeWindow = (manager: ReturnType<typeof useWindowManager>, tableName: string, schema?: string, _columnName?: string) => {
     const tableFullName = `${schema? schema + '.' : ''}${tableName}`;
+    const windowId = `describeWindow-${Date.now()}`;
+//     manager.openWindow({
+//       id: windowId,
+//       title: tableFullName,
+//       content: (
+//         <SqlView
+//           isDark={isDark}
+//           editable={true}
+//           className="h-full text-sm"
+//           value={`SELECT *
+// FROM customers c
+// JOIN orders o ON o.customer_id = c.id
+// WHERE o.status = 'paid'
+// ORDER BY o.created_at DESC;`}
+//         />
+//       ),
+//       // content: (
+//       //   <div>
+//       //     <p className="mt-3">Description of {tableFullName}.</p>
+//       //   </div>
+//       // ),
+//     });
+
     manager.openWindow({
-      id: `describeWindow-${Date.now()}`,
-      title: tableFullName,
-      content: (
-        <div>
-          <p className="mt-3">Description of {tableFullName}.</p>
-        </div>
-      ),
+      id: windowId,
+      title: `Description of ${tableFullName}`,
+      width: 760,
+      height: 460,
+      minWidth: 460,
+      minHeight: 260,
+      content: <LoadingState isDark={isDark} tableFullName={tableFullName}/>,
     });
   };
 
   const handleRunDescribe = useCallback(() => {
+    // TODO ZUEV
+    openDescribeWindow(manager, 'IZ_TEST_1_ORDER', 'DWHKIT');
+    if(1==1) return;
+
+
     clearErrors();
     if (!activeProjectId || !activeFile || !sqlViewRef.current || !activeFile.content) {
       return;

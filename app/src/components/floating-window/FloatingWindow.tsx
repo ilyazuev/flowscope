@@ -80,11 +80,11 @@ export function FloatingWindow({
                   isDark ? 'border-white/10 bg-neutral-800' : 'border-black/10 bg-neutral-50',
                 ].join(' ')}
                 onPointerDown={(event) => {
-                  const target = event.target as HTMLElement;
-                  if( target && (target.tagName=='button' || target.closest('button') ) ) {
+                  const target = event.target as HTMLElement | null;
+                  if (target && (target.tagName === 'BUTTON' || target.closest('button'))) {
                     return;
                   }
-                  onDragStart(item.id, event)
+                  onDragStart(item.id, event);
                 }}
               >
                 <div
