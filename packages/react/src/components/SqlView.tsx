@@ -77,7 +77,15 @@ export type SqlViewRef = {
 
 export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
   (
-    { className, editable = false, onChange, value, isDark, highlightedSpan: highlightedSpanProp, lineWrapping = false },
+    {
+      className,
+      editable = false,
+      onChange,
+      value,
+      isDark,
+      highlightedSpan: highlightedSpanProp,
+      lineWrapping = true,
+    },
     ref
   ): JSX.Element => {
     const { state, actions } = useLineage();
@@ -145,12 +153,12 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         }),
         highlightField,
         baseTheme,
-        EditorView.lineWrapping,
+        ...(lineWrapping ? [EditorView.lineWrapping] : []),
         EditorView.editable.of(editable),
         bookmarkExtension,
         sqlCteFolding(),
       ],
-      [editable, bookmarkExtension]
+      [editable, bookmarkExtension, lineWrapping]
     );
 
     const theme = useMemo(() => (isDark ? oneDark : 'light'), [isDark]);
@@ -194,7 +202,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     }, [highlightedSpan, issueHighlights, isControlled]);
 
     return (
-      <div className={`flowscope-sql-view ${className || ''}`}>
+      <div className={`flowscope-sql-view h-full w-full min-h-0 min-w-0 ${className || ""}`}>
         <CodeMirror
           ref={editorRef}
           value={sqlText}
@@ -207,7 +215,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             highlightActiveLineGutter: true,
             foldGutter: true,
           }}
-          className="flowscope-codemirror"
+          className="flowscope-codemirror h-full w-full"
         />
       </div>
     );

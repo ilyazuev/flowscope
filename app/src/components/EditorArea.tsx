@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState } from '@pondpilot/flowscope-react';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
-import { ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
+import { Project, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
 import { resolveTheme, useThemeStore } from '@/lib/theme-store';
 import { useBackend } from '@/lib/backend-context';
@@ -262,7 +262,7 @@ export function EditorArea({
     }
   }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors]);
 
-  function LoadingState({ tableFullName, isDark }: { tableFullName: string, isDark: boolean }) {
+  function LoadingState({ tableFullName, isDark }: { tableFullName: string; isDark: boolean }) {
     return (
       <div className={isDark ? 'text-neutral-300' : 'text-neutral-600'}>
         <div className="text-sm font-medium flex gap-2">
@@ -273,52 +273,57 @@ export function EditorArea({
     );
   }
 
-  const openDescribeWindow = (manager: ReturnType<typeof useWindowManager>, tableName: string, schema?: string, _columnName?: string) => {
-    const tableFullName = `${schema? schema + '.' : ''}${tableName}`;
+  const openDescribeWindow = (
+    manager: ReturnType<typeof useWindowManager>,
+    project: Project,
+    tableName: string,
+    schema?: string,
+    _columnName?: string
+  ): string => {
+    const tableFullName = `${schema ? schema + '.' : ''}${tableName}`;
     const windowId = `describeWindow-${Date.now()}`;
-//     manager.openWindow({
-//       id: windowId,
-//       title: tableFullName,
-//       content: (
-//         <SqlView
-//           isDark={isDark}
-//           editable={true}
-//           className="h-full text-sm"
-//           value={`SELECT *
-// FROM customers c
-// JOIN orders o ON o.customer_id = c.id
-// WHERE o.status = 'paid'
-// ORDER BY o.created_at DESC;`}
-//         />
-//       ),
-//       // content: (
-//       //   <div>
-//       //     <p className="mt-3">Description of {tableFullName}.</p>
-//       //   </div>
-//       // ),
-//     });
-
     manager.openWindow({
       id: windowId,
-      title: `Description of ${tableFullName}`,
-      width: 760,
-      height: 460,
-      minWidth: 460,
-      minHeight: 260,
-      content: <LoadingState isDark={isDark} tableFullName={tableFullName}/>,
+      title: `${project.database ? `${project.database}. ` : ''}Describe object ${tableFullName}`,
+      content: <LoadingState isDark={isDark} tableFullName={tableFullName} />,
     });
+    return windowId;
   };
 
-  const handleRunDescribe = useCallback(() => {
-    // TODO ZUEV
-    openDescribeWindow(manager, 'IZ_TEST_1_ORDER', 'DWHKIT');
-    if(1==1) return;
-
-
+  const handleRunDescribe = useCallback(async () => {
     clearErrors();
-    if (!activeProjectId || !activeFile || !sqlViewRef.current || !activeFile.content) {
+    if (
+      !currentProject ||
+      !activeProjectId ||
+      !activeFile ||
+      !sqlViewRef.current ||
+      !activeFile.content
+    ) {
       return;
     }
+
+    // TODO ZUEV
+    const windowId = openDescribeWindow(manager, currentProject, 'IZ_TEST_1_ORDER', 'DWHKIT');
+    await runDataDescribe('IZ_TEST_1_ORDER', 'DWHKIT');
+
+    manager.updateWindow(windowId, {
+      content: dataDescriptionScript ? (
+        <div className="h-full w-full min-h-0">
+          <SqlView
+            className="h-full w-full"
+            isDark={isDark}
+            editable={true}
+            lineWrapping={false}
+            value={dataDescriptionScript}
+          />
+        </div>
+      ) : (
+        <span>{'No description found'}</span>
+      ),
+    });
+
+    if (1 == 1) return;
+
     const selection = sqlViewRef.current.getSelection();
     if (!selection) {
       return;
@@ -334,7 +339,7 @@ export function EditorArea({
           for (const span of table.spans) {
             if (span.start <= selection.head && selection.head <= span.end) {
               //void runDataDescribe(table.name, table.schema);
-              openDescribeWindow(manager, table.name, table.schema);
+              openDescribeWindow(manager, currentProject, table.name, table.schema);
               return;
             }
           }
@@ -345,7 +350,13 @@ export function EditorArea({
               for (const span of column.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
                   // void runDataDescribe(table.name, table.schema, column.name);
-                  openDescribeWindow(manager, table.name, table.schema, column.name);
+                  openDescribeWindow(
+                    manager,
+                    currentProject,
+                    table.name,
+                    table.schema,
+                    column.name
+                  );
                   return;
                 }
               }
@@ -355,7 +366,15 @@ export function EditorArea({
       }
     }
     setError('No database object found under cursor.');
-  }, [activeFile, activeProjectId, clearErrors, setDataDescribingError, runDataDescribe, manager]);
+  }, [
+    currentProject,
+    activeFile,
+    activeProjectId,
+    clearErrors,
+    setDataDescribingError,
+    runDataDescribe,
+    manager,
+  ]);
 
   const needParametersForSql = (
     activeFile: ProjectFile,
@@ -424,7 +443,13 @@ export function EditorArea({
                   activeFile.content.substring(0, node.span.end + 1) +
                   `\n)\nSELECT * FROM ${node.label}`;
                 if (!needParametersForSql(activeFile, editedParameters, sql)) {
-                  void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.cte, node.label);
+                  void runExecuteSql(
+                    sql,
+                    activeFile.path,
+                    editedParameters,
+                    SqlPartType.cte,
+                    node.label
+                  );
                 }
                 return;
               }
