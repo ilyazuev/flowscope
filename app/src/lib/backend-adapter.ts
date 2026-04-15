@@ -71,7 +71,11 @@ export interface DataDescribePayload {
 }
 
 export interface DataDescribePayloadResponse {
+  schema?: string;
+  tableName?: string;
   script?: string;
+  columnNames?: string[];
+  lastDdlTime?: number;
   errorMessage?: string;
 }
 

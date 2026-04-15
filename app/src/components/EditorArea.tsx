@@ -112,12 +112,6 @@ export function EditorArea({
     }
   }, [error, setError]);
 
-  useEffect(() => {
-    if (dataDescriptionScript) {
-      console.log(dataDescriptionScript);
-    }
-  }, [dataDescriptionScript]);
-
   // Show error toast when error occurs
   useEffect(() => {
     if (dataLoadingError) {
@@ -304,17 +298,22 @@ export function EditorArea({
 
     // TODO ZUEV
     const windowId = openDescribeWindow(manager, currentProject, 'IZ_TEST_1_ORDER', 'DWHKIT');
-    await runDataDescribe('IZ_TEST_1_ORDER', 'DWHKIT');
+    const dataDescribePayloadResponse = await runDataDescribe('IZ_TEST_1_ORDER', 'DWHKIT');
+
+    //await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    // TODO ZUEV
+    console.log(dataDescribePayloadResponse?.script);
 
     manager.updateWindow(windowId, {
-      content: dataDescriptionScript ? (
+      content: dataDescribePayloadResponse?.script ? (
         <div className="h-full w-full min-h-0">
           <SqlView
             className="h-full w-full"
             isDark={isDark}
             editable={true}
             lineWrapping={false}
-            value={dataDescriptionScript}
+            value={dataDescribePayloadResponse?.script}
           />
         </div>
       ) : (
@@ -373,6 +372,7 @@ export function EditorArea({
     clearErrors,
     setDataDescribingError,
     runDataDescribe,
+    dataDescriptionScript,
     manager,
   ]);
 

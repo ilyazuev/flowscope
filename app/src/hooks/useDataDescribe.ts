@@ -1,7 +1,7 @@
 import { useProject } from '@/lib/project-store.tsx';
 import { useCallback, useRef, useState } from 'react';
 import { DataDescribeState } from '@/types';
-import { DataDescribePayload } from '@/lib/backend-adapter.ts';
+import { DataDescribePayload, DataDescribePayloadResponse } from '@/lib/backend-adapter.ts';
 import { devLineageDataDescribe } from '@/lib/utils_backend.tsx';
 
 export function useDataDescribe() {
@@ -37,10 +37,10 @@ export function useDataDescribe() {
   }, []);
 
   const runDataDescribe = useCallback(
-    async (tableName: string, schema?: string, columnName?: string) => {
-      if (!currentProject) return;
+    async (tableName: string, schema?: string, columnName?: string) : Promise<DataDescribePayloadResponse | null> => {
+      if (!currentProject) return null;
       if (currentProject.dialect != 'oracleBackend') {
-        return;
+        return null;
       }
       const requestId = startRequest();
       try {
@@ -57,7 +57,7 @@ export function useDataDescribe() {
         );
 
         if (requestIdRef.current !== requestId) {
-          return;
+          return null;
         }
 
         if (!dataDescribePayloadResponse.script) {
@@ -67,7 +67,7 @@ export function useDataDescribe() {
             dataDescribingError: 'No description',
             dataDescriptionScript: null,
           }));
-          return;
+          return null;
         }
 
         setState((prev) => ({
@@ -76,19 +76,19 @@ export function useDataDescribe() {
           dataDescribingError: null,
           dataDescriptionScript: dataDescribePayloadResponse.script ?? null,
         }));
+        return dataDescribePayloadResponse;
       } catch (error) {
         if (requestIdRef.current !== requestId) {
-          return;
+          return null;
         }
-
         setState((prev) => ({
           ...prev,
           isDataLoading: false,
           dataLoadingError: error instanceof Error ? error.message : 'Data load failed',
         }));
-
         console.error(error);
       }
+      return null;
     },
     [
       currentProject,
