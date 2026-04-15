@@ -77,7 +77,7 @@ export type SqlViewRef = {
 
 export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
   (
-    { className, editable = false, onChange, value, isDark, highlightedSpan: highlightedSpanProp },
+    { className, editable = false, onChange, value, isDark, highlightedSpan: highlightedSpanProp, lineWrapping = false },
     ref
   ): JSX.Element => {
     const { state, actions } = useLineage();

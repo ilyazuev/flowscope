@@ -255,6 +255,7 @@ export interface SqlViewProps {
   isDark?: boolean;
   /** Span to highlight and scroll to in the editor (for controlled mode navigation) */
   highlightedSpan?: Span | null;
+  lineWrapping?: boolean;
 }
 
 /**

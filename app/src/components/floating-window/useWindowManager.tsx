@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 import {
   DEFAULT_MIN_HEIGHT,
   DEFAULT_MIN_WIDTH,
@@ -16,9 +14,10 @@ import type {
   WindowManagerApi,
 } from './types';
 import { clampWindowToViewport, createWindow } from './utils';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 function useGlobalEscape(onEscape: () => void) {
-  React.useEffect(() => {
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       onEscape();
@@ -30,7 +29,7 @@ function useGlobalEscape(onEscape: () => void) {
 }
 
 function useDisableSelectionWhileDragging(isActive: boolean) {
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isActive) return;
 
     const previousUserSelect = document.body.style.userSelect;
@@ -44,11 +43,11 @@ function useDisableSelectionWhileDragging(isActive: boolean) {
 
 export function useWindowManager(options: UseWindowManagerOptions): WindowManagerApi {
   const { initialWindows = [] } = options;
-  const nextZRef = React.useRef(INITIAL_Z_INDEX);
-  const dragStateRef = React.useRef<DragState>(null);
-  const [interactionActive, setInteractionActive] = React.useState(false);
+  const nextZRef = useRef(INITIAL_Z_INDEX);
+  const dragStateRef = useRef<DragState>(null);
+  const [interactionActive, setInteractionActive] = useState(false);
 
-  const [windows, setWindows] = React.useState<WindowItem[]>(() => {
+  const [windows, setWindows] = useState<WindowItem[]>(() => {
     const items = initialWindows.map((windowDef, index) =>
       createWindow({
         windowDef,
@@ -61,13 +60,13 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     return items;
   });
 
-  const topmostId = React.useMemo(() => {
+  const topmostId = useMemo(() => {
     return windows
       .filter((item) => item.open)
       .sort((a, b) => b.zIndex - a.zIndex)[0]?.id;
   }, [windows]);
 
-  const bringToFront = React.useCallback((id: WindowId) => {
+  const bringToFront = useCallback((id: WindowId) => {
     setWindows((prev) => {
       const target = prev.find((item) => item.id === id && item.open);
       if (!target) return prev;
@@ -80,7 +79,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     });
   }, []);
 
-  const closeWindow = React.useCallback((id: WindowId) => {
+  const closeWindow = useCallback((id: WindowId) => {
     setWindows((prev) =>
       prev.map((item) => {
         if (item.id !== id || !item.open) return item;
@@ -90,7 +89,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     );
   }, []);
 
-  const closeTopmost = React.useCallback(() => {
+  const closeTopmost = useCallback(() => {
     setWindows((prev) => {
       const target = [...prev]
         .filter((item) => item.open)
@@ -102,7 +101,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     });
   }, []);
 
-  const closeAllWindows = React.useCallback(() => {
+  const closeAllWindows = useCallback(() => {
     setWindows((prev) =>
       prev.map((item) => {
         if (item.open) item.onClose?.(item.id);
@@ -111,7 +110,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     );
   }, []);
 
-  const updateWindow = React.useCallback((id: WindowId, patch: UpdateWindowPatch) => {
+  const updateWindow = useCallback((id: WindowId, patch: UpdateWindowPatch) => {
     setWindows((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
@@ -132,7 +131,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     );
   }, []);
 
-  const openWindow = React.useCallback((windowDef: WindowDefinition) => {
+  const openWindow = useCallback((windowDef: WindowDefinition) => {
     setWindows((prev) => {
       const existingOpen = prev.find((item) => item.id === windowDef.id && item.open);
       const nextZ = ++nextZRef.current;
@@ -175,7 +174,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     });
   }, []);
 
-  const replaceWindows = React.useCallback((windowDefs: WindowDefinition[]) => {
+  const replaceWindows = useCallback((windowDefs: WindowDefinition[]) => {
     const nextWindows = windowDefs.map((windowDef, index) =>
       createWindow({
         windowDef,
@@ -191,7 +190,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
   useGlobalEscape(closeTopmost);
   useDisableSelectionWhileDragging(interactionActive);
 
-  const startDrag = React.useCallback((id: WindowId, event: React.PointerEvent<HTMLDivElement>) => {
+  const startDrag = useCallback((id: WindowId, event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
 
     const item = windows.find((windowItem) => windowItem.id === id && windowItem.open);
@@ -213,7 +212,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     event.preventDefault();
   }, [bringToFront, windows]);
 
-  const startResize = React.useCallback(
+  const startResize = useCallback(
     (id: WindowId, direction: ResizeDirection, event: React.PointerEvent<HTMLDivElement>) => {
       if (event.button !== 0) return;
 
@@ -241,7 +240,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     [bringToFront, windows]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
       const state = dragStateRef.current;
       if (!state) return;
@@ -323,7 +322,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     };
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const onResize = () => {
       setWindows((prev) => prev.map((item) => clampWindowToViewport(item)));
     };
