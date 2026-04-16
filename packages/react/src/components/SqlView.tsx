@@ -5,7 +5,7 @@ import {
   useRef,
   type JSX,
   useImperativeHandle,
-  forwardRef,
+  forwardRef, useState,
 } from 'react';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
@@ -129,6 +129,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     }, [state.result, isControlled]);
 
     const editorRef = useRef<ReactCodeMirrorRef>(null);
+    const [editorView, setEditorView] = useState<EditorView | null>(null);
 
     useImperativeHandle(ref, () => ({
       getSelection: () => {
@@ -174,7 +175,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     );
 
     useEffect(() => {
-      const view = editorRef.current?.view;
+      const view = editorRef.current?.view || editorView;
       if (!view) return;
 
       const ranges: HighlightRange[] = [];
@@ -199,7 +200,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           scrollIntoView: true,
         });
       }
-    }, [highlightedSpan, issueHighlights, isControlled]);
+    }, [highlightedSpan, issueHighlights, isControlled, editorView]);
 
     return (
       <div className={`flowscope-sql-view h-full w-full min-h-0 min-w-0 ${className || ""}`}>
@@ -207,6 +208,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           ref={editorRef}
           value={sqlText}
           onChange={handleChange}
+          onCreateEditor={setEditorView}
           extensions={extensions}
           editable={editable}
           theme={theme}
