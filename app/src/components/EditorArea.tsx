@@ -267,13 +267,13 @@ export function EditorArea({
     );
   }
 
-  const openDescribeWindow = (
+  const openDescribeWindow = async (
     manager: ReturnType<typeof useWindowManager>,
     project: Project,
     tableName: string,
     schema?: string,
     _columnName?: string
-  ): string => {
+  ) => {
     const tableFullName = `${schema ? schema + '.' : ''}${tableName}`;
     const windowId = `describeWindow-${Date.now()}`;
     manager.openWindow({
@@ -281,30 +281,7 @@ export function EditorArea({
       title: `${project.database ? `${project.database}. ` : ''}Describe object ${tableFullName}`,
       content: <LoadingState isDark={isDark} tableFullName={tableFullName} />,
     });
-    return windowId;
-  };
-
-  const handleRunDescribe = useCallback(async () => {
-    clearErrors();
-    if (
-      !currentProject ||
-      !activeProjectId ||
-      !activeFile ||
-      !sqlViewRef.current ||
-      !activeFile.content
-    ) {
-      return;
-    }
-
-    // TODO ZUEV
-    const windowId = openDescribeWindow(manager, currentProject, 'IZ_TEST_1_ORDER', 'DWHKIT');
-    const dataDescribePayloadResponse = await runDataDescribe('IZ_TEST_1_ORDER', 'DWHKIT');
-
-    //await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-
-    // TODO ZUEV
-    console.log(dataDescribePayloadResponse?.script);
-
+    const dataDescribePayloadResponse = await runDataDescribe(tableName, schema);
     manager.updateWindow(windowId, {
       content: dataDescribePayloadResponse?.script ? (
         <div className="h-full w-full min-h-0">
@@ -320,9 +297,19 @@ export function EditorArea({
         <span>{'No description found'}</span>
       ),
     });
+  };
 
-    if (1 == 1) return;
-
+  const handleRunDescribe = useCallback(async () => {
+    clearErrors();
+    if (
+      !currentProject ||
+      !activeProjectId ||
+      !activeFile ||
+      !sqlViewRef.current ||
+      !activeFile.content
+    ) {
+      return;
+    }
     const selection = sqlViewRef.current.getSelection();
     if (!selection) {
       return;
@@ -337,8 +324,7 @@ export function EditorArea({
         if (table.spans) {
           for (const span of table.spans) {
             if (span.start <= selection.head && selection.head <= span.end) {
-              //void runDataDescribe(table.name, table.schema);
-              openDescribeWindow(manager, currentProject, table.name, table.schema);
+              void openDescribeWindow(manager, currentProject, table.name, table.schema); // await openDescribeWindow(manager, currentProject, 'IZ_TEST_1_ORDER', 'DWHKIT');
               return;
             }
           }
@@ -348,8 +334,7 @@ export function EditorArea({
             if (column.spans) {
               for (const span of column.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
-                  // void runDataDescribe(table.name, table.schema, column.name);
-                  openDescribeWindow(
+                  void openDescribeWindow(
                     manager,
                     currentProject,
                     table.name,
