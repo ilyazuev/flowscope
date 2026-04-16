@@ -527,7 +527,8 @@ export function EditorArea({
   return (
     <div className={cn('flex flex-col h-full bg-background', className)}>
       <EditorToolbar
-        runMode={currentProject.runMode}
+        runMode={currentProject.dialect == 'oracleBackend' ? 'current' : currentProject.runMode}
+        dialect={currentProject.dialect}
         onRunModeChange={(mode: RunMode) => setRunMode(currentProject.id, mode)}
         isAnalyzing={isAnalyzing}
         isDataLoading={isDataLoading}

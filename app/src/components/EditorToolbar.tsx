@@ -11,13 +11,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileSelector } from './FileSelector';
-import type { RunMode } from '@/lib/project-store';
+import { Dialect, RunMode } from '@/lib/project-store';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
 
 export type SqlViewMode = 'template' | 'resolved';
 
 interface EditorToolbarProps {
   runMode: RunMode;
+  dialect: Dialect;
   onRunModeChange: (mode: RunMode) => void;
   isAnalyzing: boolean;
   isDataLoading: SqlPartType;
@@ -37,6 +38,7 @@ interface EditorToolbarProps {
 
 export function EditorToolbar({
   runMode,
+  dialect,
   onRunModeChange,
   isAnalyzing,
   isDataLoading,
@@ -171,10 +173,10 @@ export function EditorToolbar({
                     <span className="text-xs">⌘</span>⇧↵
                   </kbd>
                 </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="all" className="text-xs">
+                <DropdownMenuRadioItem value="all" className="text-xs" disabled={dialect == 'oracleBackend'}>
                   Run All Files ({allFileCount})
                 </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="custom" className="text-xs">
+                <DropdownMenuRadioItem value="custom" className="text-xs" disabled={dialect == 'oracleBackend'}>
                   Run Selected ({selectedCount})
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>

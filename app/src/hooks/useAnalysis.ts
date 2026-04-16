@@ -109,7 +109,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
 
       let contextDescription = '';
       let filesToAnalyze: Array<{ name: string; content: string }> = [];
-      const runMode = project.runMode;
+      const runMode = project.dialect == 'oracleBackend' ? 'current' : project.runMode;
 
       if (runMode === 'current' && activeFileContent && activeFilePath) {
         filesToAnalyze = [{ name: activeFilePath, content: activeFileContent }];
