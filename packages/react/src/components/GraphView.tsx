@@ -64,6 +64,109 @@ const ELK_NODE_LIMIT = 2000;
  */
 const NODE_OVERLAP_THRESHOLD = 0.5;
 
+
+const HORIZONTAL_NODE_GAP = 150;
+const OVERLAP_TOLERANCE = 4;
+const FALLBACK_NODE_WIDTH = 220;
+const FALLBACK_NODE_HEIGHT = 120;
+
+function getNodeWidth(node: FlowNode): number {
+  const styleWidth = typeof node.style?.width === 'number' ? node.style.width : undefined;
+
+  return node.measured?.width ?? node.width ?? styleWidth ?? FALLBACK_NODE_WIDTH;
+}
+
+function getNodeHeight(node: FlowNode): number {
+  const styleHeight = typeof node.style?.height === 'number' ? node.style.height : undefined;
+
+  return node.measured?.height ?? node.height ?? styleHeight ?? FALLBACK_NODE_HEIGHT;
+}
+
+function overlapsVertically(
+  a: FlowNode,
+  b: FlowNode,
+  tolerance = OVERLAP_TOLERANCE
+): boolean {
+  const aTop = a.position.y;
+  const aBottom = a.position.y + getNodeHeight(a);
+
+  const bTop = b.position.y;
+  const bBottom = b.position.y + getNodeHeight(b);
+
+  return aTop < bBottom - tolerance && bTop < aBottom - tolerance;
+}
+
+function spreadNodesHorizontally(
+  nodes: FlowNode[],
+  gap = HORIZONTAL_NODE_GAP
+): FlowNode[] {
+  if (nodes.length < 2) return nodes;
+
+  const working = nodes.map((node, index) => ({
+    ...node,
+    position: { ...node.position },
+    __index: index,
+  }));
+
+  working.sort((a, b) => {
+    if (a.position.x !== b.position.x) {
+      return a.position.x - b.position.x;
+    }
+
+    if (a.position.y !== b.position.y) {
+      return a.position.y - b.position.y;
+    }
+
+    return a.__index - b.__index;
+  });
+
+  let changed = false;
+
+  for (let i = 0; i < working.length; i += 1) {
+    const current = working[i];
+    let requiredX = current.position.x;
+
+    for (let j = 0; j < i; j += 1) {
+      const prev = working[j];
+
+      if (!overlapsVertically(current, prev)) continue;
+
+      const prevRight = prev.position.x + getNodeWidth(prev);
+      const nextAllowedX = prevRight + gap;
+
+      if (nextAllowedX > requiredX) {
+        requiredX = nextAllowedX;
+      }
+    }
+
+    if (requiredX !== current.position.x) {
+      current.position = { ...current.position, x: requiredX };
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    return nodes;
+  }
+
+  const newXById = new Map<string, number>(working.map((node) => [node.id, node.position.x]));
+
+  return nodes.map((node) => {
+    const newX = newXById.get(node.id);
+    if (newX == null || newX === node.position.x) {
+      return node;
+    }
+
+    return {
+      ...node,
+      position: {
+        ...node.position,
+        x: newX,
+      },
+    };
+  });
+}
+
 /**
  * Helper component to handle node focusing.
  * Must be rendered inside ReactFlow to access useReactFlow hook.
@@ -776,6 +879,31 @@ export function GraphView({
   // Track last applied collapse states to detect individual node collapse changes
   const lastAppliedCollapseStates = useRef<Map<string, boolean>>(new Map());
 
+  const overlapFixRafRef = useRef<number | null>(null);
+
+  const scheduleHorizontalOverlapFix = useCallback(() => {
+    if (overlapFixRafRef.current !== null) {
+      cancelAnimationFrame(overlapFixRafRef.current);
+    }
+
+    overlapFixRafRef.current = requestAnimationFrame(() => {
+      overlapFixRafRef.current = requestAnimationFrame(() => {
+        setNodes((currentNodes) => {
+          const fixedNodes = spreadNodesHorizontally(currentNodes);
+          return fixedNodes === currentNodes ? currentNodes : fixedNodes;
+        });
+      });
+    });
+  }, [setNodes]);
+
+  useEffect(() => {
+    return () => {
+      if (overlapFixRafRef.current !== null) {
+        cancelAnimationFrame(overlapFixRafRef.current);
+      }
+    };
+  }, []);
+
   // Stage 2: Apply computed layout positions once the worker completes.
   // This effect runs when layoutedNodes/layoutedEdges update, applying the
   // final positions. It handles two cases:
@@ -882,6 +1010,13 @@ export function GraphView({
     lastAppliedCollapseStates.current = newCollapseStates;
     if (GRAPH_DEBUG) console.timeEnd('[Layout] Stage 2: apply layout positions');
   }, [layoutedNodes, layoutedEdges, renderNodeDataById, renderEdgeById, setNodes, setEdges]);
+
+
+  useEffect(() => {
+    if (layoutedNodes.length === 0) return;
+
+    scheduleHorizontalOverlapFix();
+  }, [layoutedNodes, scheduleHorizontalOverlapFix]);
 
   const internalGraphRef = useRef<HTMLDivElement>(null);
   const finalRef = graphContainerRef || internalGraphRef;

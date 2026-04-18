@@ -421,3 +421,7 @@
     opacity: 0;
   }
 }
+
+.react-flow__node div[role=list] {
+  height: auto !important;
+}
