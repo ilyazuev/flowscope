@@ -47,7 +47,8 @@ ord AS (
         o.customer_id,
         o.order_dt,
         o.status_cd,
-        o.currency_cd
+        o.currency_cd,
+        p.order_extra, o.CURRENCY_CD1, o.CURRENCY_CD2, o.CURRENCY_CD3, o.CURRENCY_CD4, o.CURRENCY_CD5, o.CURRENCY_CD6, o.CURRENCY_CD7, o.CURRENCY_CD8, o.CURRENCY_CD9, o.CURRENCY_CD10, o.CURRENCY_CD11, o.CURRENCY_CD12, o.CURRENCY_CD13, o.CURRENCY_CD14, o.CURRENCY_CD15, o.CURRENCY_CD16, o.CURRENCY_CD18, o.CURRENCY_CD19, o.CURRENCY_CD20, o.CURRENCY_CD21, o.CURRENCY_CD22, o.CURRENCY_CD23, o.CURRENCY_CD24, o.CURRENCY_CD25
     FROM ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER o
     CROSS JOIN params p
     WHERE o.order_dt >= p.dt_from
@@ -62,7 +63,8 @@ items AS (
         oi.unit_price,
         oi.discount_amt,
         (oi.qty * oi.unit_price - oi.discount_amt) AS line_amount,
-        p.order_extra
+        p.order_extra,
+        o.currency_cd, o.CURRENCY_CD1, o.CURRENCY_CD2, o.CURRENCY_CD3, o.CURRENCY_CD4, o.CURRENCY_CD5, o.CURRENCY_CD6, o.CURRENCY_CD7, o.CURRENCY_CD8, o.CURRENCY_CD9, o.CURRENCY_CD10, o.CURRENCY_CD11, o.CURRENCY_CD12, o.CURRENCY_CD13, o.CURRENCY_CD14, o.CURRENCY_CD15, o.CURRENCY_CD16, o.CURRENCY_CD18, o.CURRENCY_CD19, o.CURRENCY_CD20, o.CURRENCY_CD21, o.CURRENCY_CD22, o.CURRENCY_CD23, o.CURRENCY_CD24, o.CURRENCY_CD25
     FROM ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER_ITEM oi
     JOIN ord o ON o.order_id = oi.order_id
     LEFT JOIN params p ON p.order_id = o.order_id -- check 2 CTE joins
@@ -114,7 +116,9 @@ SELECT
 FROM enriched e
 LEFT JOIN cat_rank cr
     ON cr.customer_id = e.customer_id
-WHERE e.full_name = :full_name -- Alice Korhonen
+WHERE
+  1 = 1
+  and e.full_name = :full_name -- Alice Korhonen
 GROUP BY
     e.customer_no,
     e.full_name
