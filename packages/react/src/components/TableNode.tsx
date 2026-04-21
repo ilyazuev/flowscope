@@ -559,7 +559,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
                 colors,
                 textSecondary: palette.textSecondary,
               }}
-              overscanCount={5}
+              overscanCount={150}
             />
           ) : (
             // Regular rendering for small column counts (avoid virtualization overhead)
