@@ -84,7 +84,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       value,
       isDark,
       highlightedSpan: highlightedSpanProp,
-      lineWrapping = true,
+      lineWrapping = false,
     },
     ref
   ): JSX.Element => {
