@@ -1187,7 +1187,7 @@ export function GraphView({
             />
           )}
           {viewMode !== 'script' && <TableFilterDropdown />}
-          {viewMode !== 'script' && (
+          {viewMode !== 'script' && analysisResult && (
             <div
               className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}
             >
@@ -1224,7 +1224,22 @@ export function GraphView({
                   >
                     <span className={cn('flex-1 truncate text-sm')}>{'456'}</span>
                   </div>
-
+                  {
+                    analysisResult.globalLineage.nodes
+                      .filter(n=>n.type != 'column')
+                      .sort((a, b) => {
+                        return a.label.localeCompare(b.label);
+                      })
+                      .map(n=>
+                      (<div
+                        className={cn(
+                          'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group'
+                        )}
+                        onClick={() => alert(2)}
+                      >
+                        <span className={cn('flex-1 truncate text-sm')}>{`${n.label} (${n.type})`}</span>
+                      </div>))
+                  }
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
