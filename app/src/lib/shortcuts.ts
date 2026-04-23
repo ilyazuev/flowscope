@@ -33,7 +33,11 @@ export interface ShortcutDefinition {
  */
 export function isMac(): boolean {
   if (typeof navigator === 'undefined') return false;
-  return navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  return /mac/i.test(navigator.userAgent) || navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+}
+
+export function modKey(): string {
+  return isMac() ? '⌘' : 'Ctrl'
 }
 
 /**

@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { FileSelector } from './FileSelector';
 import { Dialect, RunMode } from '@/lib/project-store';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { modKey } from '@/lib/shortcuts.ts';
 
 export type SqlViewMode = 'template' | 'resolved';
 
@@ -170,7 +171,7 @@ export function EditorToolbar({
                 <DropdownMenuRadioItem value="current" className="text-xs justify-between">
                   <span>Run Active File Only</span>
                   <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                    <span className="text-xs">⌘</span>⇧↵
+                    <span className="text-xs">{modKey()}</span>⇧↵
                   </kbd>
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="all" className="text-xs" disabled={dialect == 'oracleBackend'}>
@@ -183,7 +184,7 @@ export function EditorToolbar({
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
-                  <span className="text-xs">⌘</span>↵
+                  <span className="text-xs">{modKey()}</span>↵
                 </kbd>
                 <span className="ml-2">Run in current mode</span>
               </div>

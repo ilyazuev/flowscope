@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FileTree, getFilesInTreeOrder } from '@/components/FileTree';
 import { DEFAULT_FILE_NAMES, ACCEPTED_FILE_TYPES } from '@/lib/constants';
+import { modKey } from '@/lib/shortcuts.ts';
 
 interface FileSelectorProps {
   open?: boolean;
@@ -446,7 +447,7 @@ export function FileSelector({ open: controlledOpen, onOpenChange }: FileSelecto
                 data-testid="file-search-input"
               />
               <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded-full border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground shrink-0">
-                <span className="text-xs">⌘</span>O
+                <span className="text-xs">{modKey()}</span>O
               </kbd>
             </div>
           </div>

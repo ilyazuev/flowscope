@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { STORAGE_KEYS } from '@/lib/constants';
+import { modKey } from '@/lib/shortcuts.ts';
 
 interface WelcomeModalProps {
   onClose?: () => void;
@@ -78,9 +79,9 @@ export function WelcomeModal({ onClose }: WelcomeModalProps) {
             <div>
               <p className="font-medium text-sm">Keyboard Driven</p>
               <p className="text-sm text-muted-foreground">
-                <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">⌘P</kbd> projects,{' '}
-                <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">⌘O</kbd> files,{' '}
-                <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">⌘Enter</kbd> analyze
+                <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">{modKey()}P</kbd> projects,{' '}
+                <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">{modKey()}O</kbd> files,{' '}
+                <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">{modKey()}Enter</kbd> analyze
               </p>
             </div>
           </div>

@@ -28,6 +28,7 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/comp
 import { ProjectMenuItem } from './ProjectMenuItem';
 import { isValidTemplateMode, TEMPLATE_MODE_OPTIONS } from '@/types';
 import { DatabasesProvider, useDatabases } from '@/lib/utils_backend.tsx';
+import { modKey } from '@/lib/shortcuts.ts';
 
 interface ProjectSelectorProps {
   open?: boolean;
@@ -218,7 +219,7 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
           <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center justify-between">
             <span>Projects</span>
             <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
-              <span className="text-xs">⌘</span>P
+              <span className="text-xs">{modKey()}</span>P
             </kbd>
           </DropdownMenuLabel>
 
