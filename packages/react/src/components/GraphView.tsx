@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useRef, useState, type JSX } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef, useState, type JSX } from 'react';
 import {
   ReactFlow,
   Background,
@@ -11,7 +11,7 @@ import {
 } from '@xyflow/react';
 import type { Node as FlowNode, Edge as FlowEdge, Viewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { LayoutList, Maximize2, Minimize2, Route, GitBranch } from 'lucide-react';
+import { LayoutList, Maximize2, Minimize2, Route, GitBranch, ChevronDown } from 'lucide-react';
 import type { AnalyzeResult, Node as LineageNode } from '@pondpilot/flowscope-core';
 
 import { useLineage, useLineageStore } from '../store';
@@ -52,6 +52,12 @@ import {
   GraphTooltipPortal,
 } from './ui/graph-tooltip';
 import { GRAPH_CONFIG, PANEL_STYLES, getMinimapNodeColor } from '../constants';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
+import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 
 const MINIMAP_NODE_LIMIT = 2000;
 const ELK_NODE_LIMIT = 2000;
@@ -1181,6 +1187,49 @@ export function GraphView({
             />
           )}
           {viewMode !== 'script' && <TableFilterDropdown />}
+          {viewMode !== 'script' && (
+            <div
+              className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}
+            >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
+                    'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  )}
+                >
+                  <span className="truncate">Focus Table or CTE</span>
+                  <ChevronDown className="size-4 opacity-50 shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-80 p-0"
+                align="start"
+              >
+                <div className="max-h-[300px] overflow-y-auto outline-hidden">
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group'
+                    )}
+                    onClick={() => alert(1)}
+                  >
+                    <span className={cn('flex-1 truncate text-sm')}>{'123'}</span>
+                  </div>
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group'
+                    )}
+                    onClick={() => alert(2)}
+                  >
+                    <span className={cn('flex-1 truncate text-sm')}>{'456'}</span>
+                  </div>
+
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            </div>
+          )}
         </Panel>
         <Panel position="top-right" className="flex gap-3 items-start">
           <Legend viewMode={viewMode} />
