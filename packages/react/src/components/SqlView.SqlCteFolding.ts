@@ -307,10 +307,16 @@ function parseCteAt(text: string, pos: number): { bodyOpen: number; bodyClose: n
  * the fold marker appears exactly on that line.
  */
 function findCteFoldOnLine(docText: string, lineFrom: number, lineTo: number) {
+  const lineText = docText.slice(lineFrom, lineTo);
+
+  // if line starts with SQL line comment — no fold marker here
+  if (/^\s*--/.test(lineText)) {
+    return null;
+  }
+
   const lookAheadLimit = Math.min(docText.length, lineTo + 4000);
   const slice = docText.slice(lineFrom, lookAheadLimit);
 
-  // Skip line indentation/comments/spaces only, then try parse CTE header.
   const parsed = parseCteAt(slice, 0);
   if (!parsed) return null;
 
