@@ -447,6 +447,7 @@ export function GraphView({
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(undefined);
   const [internalFocusNodeOpen, setInternalFocusNodeOpen] = useState(false);
   const [internalFocusNodeOnlyTables, setInternalFocusNodeOnlyTables] = useState(false);
+  const internalFocusNodesList = useRef<HTMLDivElement>(null);
 
   // Handle search term changes - just update store or call callback, no local state
   const handleSearchTermChange = useCallback(
@@ -489,6 +490,19 @@ export function GraphView({
     },
     [actions]
   );
+
+  useEffect(() => {
+    if (!internalFocusNodeOpen || !effectiveFocusNodeId) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      let focusNodeName = internalFocusNodesList.current?.querySelector(`[data-nodeId=${effectiveFocusNodeId}]`);
+      focusNodeName?.scrollIntoView({
+        block: 'center',
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [internalFocusNodeOpen, effectiveFocusNodeId]);
 
   // Cleanup refs on unmount to prevent memory leaks
   useEffect(() => {
@@ -1244,7 +1258,7 @@ export function GraphView({
                     />
                     <label htmlFor={'internalFocusNodeOnlyTables'}>only tables</label>
                   </div>
-                  <div className="max-h-[200px] overflow-y-auto outline-hidden flex-1">
+                  <div className="max-h-[200px] overflow-y-auto outline-hidden flex-1" ref={internalFocusNodesList}>
                     {analysisResult.globalLineage.nodes
                       .filter(
                         (n) =>
@@ -1259,10 +1273,11 @@ export function GraphView({
                             'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group'
                           )}
                           key={n.id}
+                          data-nodeId={n.id}
                           onClick={() => handleFocusNodeSelect(n.id)}
                         >
                           <span
-                            className={`flex-1 truncate text-sm ${n.id == internalFocusNodeId ? 'bold' : ''}`}
+                            className={cn('flex-1 truncate text-sm', n.id === effectiveFocusNodeId && 'font-bold')}
                           >{`${n.label} (${n.type})`}</span>
                         </div>
                       ))}
