@@ -1208,6 +1208,7 @@ export function GraphView({
             <GraphViewFocusNode
               analysisResult={analysisResult}
               focusNodeId={effectiveFocusNodeId}
+              selectedNodeId={selectedNodeId}
               onSelectNode={handleFocusNodeSelect}
               closeRequestKey={focusNodeCloseRequestKey}
             />
@@ -1216,6 +1217,7 @@ export function GraphView({
             <GraphViewFocusColumn
               analysisResult={analysisResult}
               focusNodeId={effectiveFocusNodeId}
+              selectedNodeId={selectedNodeId}
               onSelectNode={handleFocusColumnSelect}
               closeRequestKey={focusNodeCloseRequestKey}
             />

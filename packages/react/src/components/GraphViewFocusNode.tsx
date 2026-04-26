@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import type { Node as LineageNode } from '@pondpilot/flowscope-core';
 import { ChevronDown } from 'lucide-react';
 
@@ -15,6 +15,7 @@ import { GraphViewFocusNodeProps } from '../types';
 export function GraphViewFocusNode({
   analysisResult,
   focusNodeId,
+  selectedNodeId,
   onSelectNode,
   closeRequestKey,
 }: GraphViewFocusNodeProps): JSX.Element {
@@ -22,12 +23,26 @@ export function GraphViewFocusNode({
   const [onlyTables, setOnlyTables] = useState(false);
   const focusNodeNamesListRef = useRef<HTMLDivElement>(null);
 
+  // TODO combine GraphViewFocusNode & GraphViewFocusColumn; implement GraphViewFocusColumn
+
+  const internalFocusNodeId = useMemo((): string | undefined => {
+    if ( focusNodeId ) {
+      return focusNodeId;
+    } else if ( selectedNodeId ) {
+      const edge = analysisResult.globalLineage?.edges.find(edge => edge.to === selectedNodeId && edge.type == 'ownership');
+      console.log(edge?.from);
+      return edge?.from;
+    }
+    return undefined;
+  }, [analysisResult, focusNodeId, selectedNodeId]);
+
+
   const focusedNode = useMemo((): LineageNode | undefined => {
-    if (!focusNodeId) {
+    if (!internalFocusNodeId) {
       return undefined;
     }
-    return analysisResult.globalLineage?.nodes.find((node) => node.id === focusNodeId);
-  }, [analysisResult, focusNodeId]);
+    return analysisResult.globalLineage?.nodes.find((node) => node.id === internalFocusNodeId);
+  }, [analysisResult, internalFocusNodeId]);
 
   const selectableNodes = useMemo(() => {
     return analysisResult.globalLineage.nodes
@@ -40,13 +55,13 @@ export function GraphViewFocusNode({
   }, [closeRequestKey]);
 
   useEffect(() => {
-    if (!open || !focusNodeId) {
+    if (!open || !internalFocusNodeId) {
       return;
     }
 
     const timer = window.setTimeout(() => {
       const selectedNodeElement = focusNodeNamesListRef.current?.querySelector<HTMLElement>(
-        `[data-node-id="${CSS.escape(focusNodeId)}"]`
+        `[data-node-id="${CSS.escape(internalFocusNodeId)}"]`
       );
 
       selectedNodeElement?.scrollIntoView({
@@ -55,7 +70,7 @@ export function GraphViewFocusNode({
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [open, focusNodeId]);
+  }, [open, internalFocusNodeId]);
 
   return (
     <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
@@ -108,7 +123,7 @@ export function GraphViewFocusNode({
                 }}
               >
                 <span
-                  className={cn('flex-1 truncate text-sm', node.id === focusNodeId && 'font-bold')}
+                  className={cn('flex-1 truncate text-sm', node.id === internalFocusNodeId && 'font-bold')}
                 >
                   {`${node.label} (${node.type})`}
                 </span>
