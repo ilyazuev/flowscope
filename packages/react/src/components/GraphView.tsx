@@ -445,9 +445,9 @@ export function GraphView({
   // Focus mode - when enabled, only show nodes in the search lineage path
   const [focusMode, setFocusMode] = useState(false);
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(undefined);
-  const [internalFocusNodeOpen, setInternalFocusNodeOpen] = useState(false);
-  const [internalFocusNodeOnlyTables, setInternalFocusNodeOnlyTables] = useState(false);
-  const internalFocusNodesList = useRef<HTMLDivElement>(null);
+  const [focusNodeOpen, setFocusNodeOpen] = useState(false);
+  const [focusNodeOnlyTables, setFocusNodeOnlyTables] = useState(false);
+  const focusNodeNamessList = useRef<HTMLDivElement>(null);
 
   // Handle search term changes - just update store or call callback, no local state
   const handleSearchTermChange = useCallback(
@@ -484,7 +484,7 @@ export function GraphView({
 
   const handleFocusNodeSelect = useCallback(
     (nodeId: string) => {
-      setInternalFocusNodeOpen(false);
+      setFocusNodeOpen(false);
       actions.selectNode(nodeId);
       setInternalFocusNodeId(nodeId);
     },
@@ -492,17 +492,17 @@ export function GraphView({
   );
 
   useEffect(() => {
-    if (!internalFocusNodeOpen || !effectiveFocusNodeId) {
+    if (!focusNodeOpen || !effectiveFocusNodeId) {
       return;
     }
     const timer = window.setTimeout(() => {
-      let focusNodeName = internalFocusNodesList.current?.querySelector(`[data-nodeId=${effectiveFocusNodeId}]`);
+      const focusNodeName = focusNodeNamessList.current?.querySelector(`[data-nodeId=${effectiveFocusNodeId}]`);
       focusNodeName?.scrollIntoView({
         block: 'center',
       });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [internalFocusNodeOpen, effectiveFocusNodeId]);
+  }, [focusNodeOpen, effectiveFocusNodeId]);
 
   // Cleanup refs on unmount to prevent memory leaks
   useEffect(() => {
@@ -1225,7 +1225,7 @@ export function GraphView({
           {viewMode !== 'script' && <TableFilterDropdown />}
           {viewMode !== 'script' && analysisResult && (
             <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
-              <DropdownMenu open={internalFocusNodeOpen} onOpenChange={setInternalFocusNodeOpen}>
+              <DropdownMenu open={focusNodeOpen} onOpenChange={setFocusNodeOpen}>
                 <DropdownMenuTrigger asChild className={'max-w-[300px]'}>
                   <button
                     className={cn(
@@ -1249,20 +1249,20 @@ export function GraphView({
                   </div>
                   <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
                     <Checkbox
-                      id={'internalFocusNodeOnlyTables'}
-                      checked={internalFocusNodeOnlyTables}
+                      id={'focusNodeOnlyTables'}
+                      checked={focusNodeOnlyTables}
                       onCheckedChange={(checked) =>
-                        setInternalFocusNodeOnlyTables(checked === true)
+                        setFocusNodeOnlyTables(checked === true)
                       }
                       className="shrink-0 border-muted-foreground"
                     />
-                    <label htmlFor={'internalFocusNodeOnlyTables'}>only tables</label>
+                    <label htmlFor={'focusNodeOnlyTables'}>only tables</label>
                   </div>
-                  <div className="max-h-[200px] overflow-y-auto outline-hidden flex-1" ref={internalFocusNodesList}>
+                  <div className="max-h-[200px] overflow-y-auto outline-hidden flex-1" ref={focusNodeNamessList}>
                     {analysisResult.globalLineage.nodes
                       .filter(
                         (n) =>
-                          n.type != 'column' && (!internalFocusNodeOnlyTables || n.type == 'table')
+                          n.type != 'column' && (!focusNodeOnlyTables || n.type == 'table')
                       )
                       .sort((a, b) => {
                         return a.label.localeCompare(b.label);
