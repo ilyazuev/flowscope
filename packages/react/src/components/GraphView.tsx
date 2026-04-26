@@ -11,7 +11,7 @@ import {
 } from '@xyflow/react';
 import type { Node as FlowNode, Edge as FlowEdge, Viewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { LayoutList, Maximize2, Minimize2, Route, GitBranch, ChevronDown } from 'lucide-react';
+import { LayoutList, Maximize2, Minimize2, Route, GitBranch } from 'lucide-react';
 import type { AnalyzeResult, Node as LineageNode } from '@pondpilot/flowscope-core';
 
 import { useLineage, useLineageStore } from '../store';
@@ -42,6 +42,7 @@ import { GraphSearchControl } from './GraphSearchControl';
 import { TableFilterDropdown } from './TableFilterDropdown';
 import { Legend } from './Legend';
 import { LayoutProgressIndicator } from './LayoutProgressIndicator';
+import { GraphViewFocusNode } from './GraphViewFocusNode';
 import type { SearchableType } from '../hooks/useSearchSuggestions';
 import {
   GraphTooltip,
@@ -52,13 +53,6 @@ import {
   GraphTooltipPortal,
 } from './ui/graph-tooltip';
 import { GRAPH_CONFIG, PANEL_STYLES, getMinimapNodeColor } from '../constants';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
-import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
-import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
 
 const MINIMAP_NODE_LIMIT = 2000;
 const ELK_NODE_LIMIT = 2000;
@@ -445,9 +439,7 @@ export function GraphView({
   // Focus mode - when enabled, only show nodes in the search lineage path
   const [focusMode, setFocusMode] = useState(false);
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(undefined);
-  const [focusNodeOpen, setFocusNodeOpen] = useState(false);
-  const [focusNodeOnlyTables, setFocusNodeOnlyTables] = useState(false);
-  const focusNodeNamessList = useRef<HTMLDivElement>(null);
+  const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
 
   // Handle search term changes - just update store or call callback, no local state
   const handleSearchTermChange = useCallback(
@@ -470,39 +462,17 @@ export function GraphView({
 
   const effectiveFocusNodeId = internalFocusNodeId ?? focusNodeId;
 
-  const focusedNode = useMemo(() => {
-    if (!analysisResult?.globalLineage?.nodes || !effectiveFocusNodeId) {
-      return undefined;
-    }
-
-    return analysisResult.globalLineage.nodes.find((node) => node.id === effectiveFocusNodeId);
-  }, [analysisResult, effectiveFocusNodeId]);
-
   const handleFocusAppliedInternal = useCallback(() => {
     onFocusApplied?.();
   }, [onFocusApplied]);
 
   const handleFocusNodeSelect = useCallback(
     (nodeId: string) => {
-      setFocusNodeOpen(false);
       actions.selectNode(nodeId);
       setInternalFocusNodeId(nodeId);
     },
     [actions]
   );
-
-  useEffect(() => {
-    if (!focusNodeOpen || !effectiveFocusNodeId) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      const focusNodeName = focusNodeNamessList.current?.querySelector(`[data-nodeId=${effectiveFocusNodeId}]`);
-      focusNodeName?.scrollIntoView({
-        block: 'center',
-      });
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [focusNodeOpen, effectiveFocusNodeId]);
 
   // Cleanup refs on unmount to prevent memory leaks
   useEffect(() => {
@@ -1130,6 +1100,7 @@ export function GraphView({
   const handlePaneClick = useCallback(() => {
     actions.selectNode(null);
     setInternalFocusNodeId(undefined);
+    setFocusNodeCloseRequestKey((prev) => prev + 1);
   }, [actions]);
 
   if (!result || !result.statements || result.statements.length === 0) {
@@ -1224,67 +1195,12 @@ export function GraphView({
           )}
           {viewMode !== 'script' && <TableFilterDropdown />}
           {viewMode !== 'script' && analysisResult && (
-            <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
-              <DropdownMenu open={focusNodeOpen} onOpenChange={setFocusNodeOpen}>
-                <DropdownMenuTrigger asChild className={'max-w-[300px]'}>
-                  <button
-                    className={cn(
-                      'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
-                      'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                    )}
-                  >
-                    <span className="truncate">
-                      {focusedNode
-                        ? `${focusedNode.label} (${focusedNode.type})`
-                        : 'Focus on Table or CTE'}
-                    </span>
-                    <ChevronDown className="size-4 opacity-50 shrink-0" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-80 p-0 flex flex-col gap-1" align="start">
-                  <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
-                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      Set focus on Table or CTE
-                    </span>
-                  </div>
-                  <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
-                    <Checkbox
-                      id={'focusNodeOnlyTables'}
-                      checked={focusNodeOnlyTables}
-                      onCheckedChange={(checked) =>
-                        setFocusNodeOnlyTables(checked === true)
-                      }
-                      className="shrink-0 border-muted-foreground"
-                    />
-                    <label htmlFor={'focusNodeOnlyTables'}>only tables</label>
-                  </div>
-                  <div className="max-h-[200px] overflow-y-auto outline-hidden flex-1" ref={focusNodeNamessList}>
-                    {analysisResult.globalLineage.nodes
-                      .filter(
-                        (n) =>
-                          n.type != 'column' && (!focusNodeOnlyTables || n.type == 'table')
-                      )
-                      .sort((a, b) => {
-                        return a.label.localeCompare(b.label);
-                      })
-                      .map((n) => (
-                        <div
-                          className={cn(
-                            'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group'
-                          )}
-                          key={n.id}
-                          data-nodeId={n.id}
-                          onClick={() => handleFocusNodeSelect(n.id)}
-                        >
-                          <span
-                            className={cn('flex-1 truncate text-sm', n.id === effectiveFocusNodeId && 'font-bold')}
-                          >{`${n.label} (${n.type})`}</span>
-                        </div>
-                      ))}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <GraphViewFocusNode
+              analysisResult={analysisResult}
+              focusNodeId={effectiveFocusNodeId}
+              onSelectNode={handleFocusNodeSelect}
+              closeRequestKey={focusNodeCloseRequestKey}
+            />
           )}
         </Panel>
         <Panel position="top-right" className="flex gap-3 items-start">
