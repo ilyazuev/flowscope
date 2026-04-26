@@ -45,6 +45,8 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
   const { initialWindows = [] } = options;
   const nextZRef = useRef(INITIAL_Z_INDEX);
   const dragStateRef = useRef<DragState>(null);
+  const frameRef = useRef<number | null>(null);
+  const lastPointerEventRef = useRef<PointerEvent | null>(null);
   const [interactionActive, setInteractionActive] = useState(false);
 
   const [windows, setWindows] = useState<WindowItem[]>(() => {
@@ -197,6 +199,8 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     if (!item) return;
 
     bringToFront(id);
+    const element = event.currentTarget.closest('[data-floating-window-id="' + id + '"]') as HTMLElement | null;
+
     dragStateRef.current = {
       type: 'drag',
       id,
@@ -205,6 +209,11 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
       startPointerY: event.clientY,
       startX: item.x,
       startY: item.y,
+      width: item.width,
+      height: item.height,
+      element,
+      latestX: item.x,
+      latestY: item.y,
     };
 
     setInteractionActive(true);
@@ -241,24 +250,43 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
   );
 
   useEffect(() => {
-    const onPointerMove = (event: PointerEvent) => {
+    const getClampedDragPosition = (
+      state: Extract<NonNullable<DragState>, { type: 'drag' }>,
+      event: PointerEvent
+    ) => {
+      const dx = event.clientX - state.startPointerX;
+      const dy = event.clientY - state.startPointerY;
+      const maxX = Math.max(0, window.innerWidth - state.width);
+      const maxY = Math.max(0, window.innerHeight - state.height);
+
+      return {
+        x: Math.min(Math.max(0, state.startX + dx), maxX),
+        y: Math.min(Math.max(0, state.startY + dy), maxY),
+      };
+    };
+
+    const applyPointerMove = (event: PointerEvent) => {
       const state = dragStateRef.current;
       if (!state) return;
 
       const dx = event.clientX - state.startPointerX;
       const dy = event.clientY - state.startPointerY;
 
+      if (state.type === 'drag') {
+        const next = getClampedDragPosition(state, event);
+        state.latestX = next.x;
+        state.latestY = next.y;
+
+        if (state.element) {
+          state.element.style.transform = `translate3d(${next.x}px, ${next.y}px, 0)`;
+        }
+
+        return;
+      }
+
       setWindows((prev) =>
         prev.map((item) => {
           if (item.id !== state.id || !item.open) return item;
-
-          if (state.type === 'drag') {
-            return clampWindowToViewport({
-              ...item,
-              x: state.startX + dx,
-              y: state.startY + dy,
-            });
-          }
 
           let nextX = state.startX;
           let nextY = state.startY;
@@ -306,12 +334,55 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
       );
     };
 
-    const stopInteraction = () => {
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragStateRef.current) return;
+
+      lastPointerEventRef.current = event;
+
+      if (frameRef.current !== null) return;
+
+      frameRef.current = window.requestAnimationFrame(() => {
+        frameRef.current = null;
+
+        if (lastPointerEventRef.current) {
+          applyPointerMove(lastPointerEventRef.current);
+        }
+      });
+    };
+
+    const stopInteraction = (event?: PointerEvent) => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+
+      const state = dragStateRef.current;
+      const lastEvent = event ?? lastPointerEventRef.current;
+
+      if (state?.type === 'drag') {
+        const finalPosition = lastEvent
+          ? getClampedDragPosition(state, lastEvent)
+          : { x: state.latestX, y: state.latestY };
+
+        if (state.element) {
+          state.element.style.transform = `translate3d(${finalPosition.x}px, ${finalPosition.y}px, 0)`;
+        }
+
+        setWindows((prev) =>
+          prev.map((item) =>
+            item.id === state.id && item.open
+              ? clampWindowToViewport({ ...item, x: finalPosition.x, y: finalPosition.y })
+              : item
+          )
+        );
+      }
+
+      lastPointerEventRef.current = null;
       dragStateRef.current = null;
       setInteractionActive(false);
     };
 
-    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerup', stopInteraction);
     window.addEventListener('pointercancel', stopInteraction);
 
@@ -319,6 +390,11 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', stopInteraction);
       window.removeEventListener('pointercancel', stopInteraction);
+
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
     };
   }, []);
 

@@ -54,13 +54,17 @@ export function FloatingWindow({
             event.preventDefault();
           }}
           onPointerDown={() => onActivate(item.id)}
+          data-floating-window-id={item.id}
           className="fixed outline-none"
           style={{
-            left: item.x,
-            top: item.y,
+            left: 0,
+            top: 0,
             width: item.width,
             height: item.height,
             zIndex: item.zIndex,
+            transform: `translate3d(${item.x}px, ${item.y}px, 0)`,
+            willChange: 'transform',
+            contain: 'layout paint style',
           }}
           aria-describedby={undefined}
         >

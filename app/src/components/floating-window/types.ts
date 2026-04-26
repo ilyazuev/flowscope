@@ -54,6 +54,11 @@ export type DragState =
       startPointerY: number;
       startX: number;
       startY: number;
+      width: number;
+      height: number;
+      element: HTMLElement | null;
+      latestX: number;
+      latestY: number;
     }
   | {
       type: 'resize';
