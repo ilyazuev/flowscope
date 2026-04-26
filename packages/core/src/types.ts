@@ -434,6 +434,8 @@ export interface Node {
   joinCondition?: string;
   /** For column nodes: aggregation information if this column is aggregated or a grouping key */
   aggregation?: AggregationInfo;
+  cachedParent?: Node;
+  cachedChildren?: Node[];
 }
 
 /** The type of a node in the lineage graph. */

@@ -239,6 +239,13 @@ export interface GraphViewProps {
   namespaceFilter?: NamespaceFilter;
 }
 
+export interface GraphViewFocusNodeProps {
+  analysisResult: AnalyzeResult;
+  focusNodeId?: string;
+  onSelectNode: (nodeId: string) => void;
+  closeRequestKey?: number;
+}
+
 /**
  * Props for the SqlView component.
  */

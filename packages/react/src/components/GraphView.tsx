@@ -53,6 +53,7 @@ import {
   GraphTooltipPortal,
 } from './ui/graph-tooltip';
 import { GRAPH_CONFIG, PANEL_STYLES, getMinimapNodeColor } from '../constants';
+import { GraphViewFocusColumn } from './GraphViewFocusColumn';
 
 const MINIMAP_NODE_LIMIT = 2000;
 const ELK_NODE_LIMIT = 2000;
@@ -470,6 +471,15 @@ export function GraphView({
     (nodeId: string) => {
       actions.selectNode(nodeId);
       setInternalFocusNodeId(nodeId);
+    },
+    [actions]
+  );
+
+  const handleFocusColumnSelect = useCallback(
+    (nodeId: string) => {
+      console.log(nodeId);
+      // actions.selectNode(nodeId);
+      // setInternalFocusNodeId(nodeId);
     },
     [actions]
   );
@@ -1199,6 +1209,14 @@ export function GraphView({
               analysisResult={analysisResult}
               focusNodeId={effectiveFocusNodeId}
               onSelectNode={handleFocusNodeSelect}
+              closeRequestKey={focusNodeCloseRequestKey}
+            />
+          )}
+          {viewMode !== 'script' && analysisResult && (
+            <GraphViewFocusColumn
+              analysisResult={analysisResult}
+              focusNodeId={effectiveFocusNodeId}
+              onSelectNode={handleFocusColumnSelect}
               closeRequestKey={focusNodeCloseRequestKey}
             />
           )}
