@@ -243,7 +243,7 @@ export interface GraphViewFocusNodeProps {
   analysisResult: AnalyzeResult;
   focusNodeId?: string;
   selectedNodeId?: string | null;
-  onSelectNode: (nodeId: string, setFocus: boolean) => void;
+  onSelectNode: (nodeId: string, setFocus: boolean, forceFocus: boolean, lastSelectedColumn?: string|null) => void;
   closeRequestKey?: number;
   showColumnEdges: boolean;
 }

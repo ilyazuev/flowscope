@@ -165,7 +165,7 @@ export function GraphViewFocusNode({
                   data-node-id={node.id}
                   onClick={() => {
                     setOpenFocusNodes(false);
-                    onSelectNode(node.id, true);
+                    onSelectNode(node.id, true, node.id == focusNodeId, selectedNodeId);
                   }}
                 >
                   <span
@@ -217,7 +217,7 @@ export function GraphViewFocusNode({
                       data-node-id={node.id}
                       onClick={() => {
                         setOpenSelectNodes(false);
-                        onSelectNode(node.id, false);
+                        onSelectNode(node.id, false, false);
                       }}
                     >
                     <span
