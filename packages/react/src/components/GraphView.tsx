@@ -468,19 +468,20 @@ export function GraphView({
 
   const handleFocusNodeSelect = useCallback(
     (nodeId: string, setFocus: boolean = true, forceFocus: boolean = false, selectedNodeId?: string|null) => {
-      actions.selectNode(nodeId);
-      if( setFocus ) {
-        if( forceFocus ) {
-          actions.selectNode(null);
-          setInternalFocusNodeId(undefined);
-          requestAnimationFrame(() => {
-            setInternalFocusNodeId(nodeId);
-            if(selectedNodeId) {
+      if( !setFocus ) {
+        actions.selectNode(nodeId);
+      } else if( forceFocus ) {
+        setInternalFocusNodeId(undefined);
+        requestAnimationFrame(() => {
+          setInternalFocusNodeId(nodeId);
+          if(selectedNodeId) {
+            requestAnimationFrame(() => {
               actions.selectNode(selectedNodeId);
-            }
-          });
-          return;
-        }
+            });
+          }
+        });
+      } else {
+        actions.selectNode(nodeId);
         setInternalFocusNodeId(nodeId);
       }
     },

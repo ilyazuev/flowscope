@@ -22,28 +22,55 @@ export function GraphViewFocusNode({
 }: GraphViewFocusNodeProps): JSX.Element {
   const [openFocusNodes, setOpenFocusNodes] = useState(false);
   const [openSelectNodes, setOpenSelectNodes] = useState(false);
+  const [openHistoryNodes, setOpenHistoryNodes] = useState(false);
+  const [historyNodes, setHistoryNodes] = useState<GlobalNode[]>([]);
   const [onlyTables, setOnlyTables] = useState(false);
   const focusNodeNamesListRef = useRef<HTMLDivElement>(null);
   const columnsListRef = useRef<HTMLDivElement>(null);
 
+  const addHistory = useCallback((node?: GlobalNode) => {
+    if (!node) {
+      return;
+    }
+    const index = historyNodes.indexOf(node, 0);
+    if (index > -1) {
+      historyNodes.splice(index, 1);
+    } else if (historyNodes.length > 10) {
+      historyNodes.pop();
+    }
+    if (historyNodes[0] == node.cachedParent) {
+      historyNodes.shift();
+    }
+    historyNodes.unshift(node);
+    setHistoryNodes(historyNodes);
+  }, []);
+
+  if (selectedNodeId == focusNodeId) {
+    selectedNodeId = undefined;
+  }
+
   const internalFocusNodeId = useMemo((): string | undefined => {
-    if ( selectedNodeId ) {
-      if( selectedNodeId == focusNodeId ) {
-        selectedNodeId = undefined;
-        return focusNodeId;
-      }
-      const edge = analysisResult.globalLineage?.edges.find(edge => edge.to === selectedNodeId && edge.type == 'ownership');
+    if (selectedNodeId) {
+      const edge = analysisResult.globalLineage?.edges.find(
+        (edge) => edge.to === selectedNodeId && edge.type == 'ownership'
+      );
       console.log(edge?.from);
       return edge?.from;
-    } else if ( focusNodeId ) {
+    } else if (focusNodeId) {
       return focusNodeId;
     }
     return undefined;
   }, [analysisResult, focusNodeId, selectedNodeId]);
 
-
   const focusedNode = useMemo((): GlobalNode | undefined => {
-    return internalFocusNodeId ? analysisResult.globalLineage?.nodes.find((node) => node.id === internalFocusNodeId) : undefined;
+    if (internalFocusNodeId) {
+      const node = analysisResult.globalLineage?.nodes.find(
+        (node) => node.id === internalFocusNodeId
+      );
+      addHistory(node);
+      return node;
+    }
+    return undefined;
   }, [analysisResult, internalFocusNodeId]);
 
   const selectableNodes = useMemo(() => {
@@ -69,10 +96,12 @@ export function GraphViewFocusNode({
   }, [analysisResult, internalFocusNodeId]);
 
   const selectedNode = useMemo((): GlobalNode | undefined => {
-    if( !selectedNodeId || !selectableColumns ) {
+    if (!selectedNodeId || !selectableColumns) {
       return undefined;
     }
-    return selectableColumns.find((node) => node.id == selectedNodeId);
+    const node = selectableColumns.find((node) => node.id == selectedNodeId);
+    addHistory(node);
+    return node;
   }, [analysisResult, internalFocusNodeId, selectedNodeId]);
 
   useEffect(() => {
@@ -81,15 +110,15 @@ export function GraphViewFocusNode({
   }, [closeRequestKey]);
 
   const scrollIntoView = useCallback(
-    (refList:  RefObject<HTMLDivElement | null>, nodeId: string) => {
+    (refList: RefObject<HTMLDivElement | null>, nodeId: string) => {
       return window.setTimeout(() => {
-          const selectedNodeElement = refList.current?.querySelector<HTMLElement>(
-            `[data-node-id="${CSS.escape(nodeId)}"]`
-          );
-          selectedNodeElement?.scrollIntoView({
-            block: 'center',
-          });
-        }, 0)
+        const selectedNodeElement = refList.current?.querySelector<HTMLElement>(
+          `[data-node-id="${CSS.escape(nodeId)}"]`
+        );
+        selectedNodeElement?.scrollIntoView({
+          block: 'center',
+        });
+      }, 0);
     },
     []
   );
@@ -110,12 +139,11 @@ export function GraphViewFocusNode({
     return () => window.clearTimeout(timer);
   }, [openSelectNodes, selectedNodeId]);
 
-  const getCanonicalName = useCallback(
-    (node: GlobalNode| undefined) => {
-      return node ? `${(node.canonicalName.schema ? `${node.canonicalName.schema}.` : '')}${node.canonicalName.name} (${node.type})`: null;
-    },
-    []
-  );
+  const getCanonicalName = useCallback((node: GlobalNode | undefined) => {
+    return node
+      ? `${node.canonicalName.schema ? `${node.canonicalName.schema}.` : ''}${node.canonicalName.name} (${node.type})`
+      : null;
+  }, []);
 
   return (
     <>
@@ -135,7 +163,7 @@ export function GraphViewFocusNode({
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent className="w-80 p-0 flex flex-col gap-1" align="start">
+          <DropdownMenuContent className="max-w-[450px] p-0 flex flex-col gap-1" align="start">
             <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
               <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                 Set focus on Table or CTE
@@ -165,11 +193,14 @@ export function GraphViewFocusNode({
                   data-node-id={node.id}
                   onClick={() => {
                     setOpenFocusNodes(false);
-                    onSelectNode(node.id, true, node.id == focusNodeId, selectedNodeId);
+                    onSelectNode(node.id, true, node.id == internalFocusNodeId, selectedNodeId);
                   }}
                 >
                   <span
-                    className={cn('flex-1 truncate text-sm', node.id === internalFocusNodeId && 'font-bold')}
+                    className={cn(
+                      'flex-1 truncate text-sm',
+                      node.id === internalFocusNodeId && 'font-bold'
+                    )}
                   >
                     {getCanonicalName(node)}
                   </span>
@@ -179,7 +210,7 @@ export function GraphViewFocusNode({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      { showColumnEdges && (
+      {showColumnEdges && (
         <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
           <DropdownMenu open={openSelectNodes} onOpenChange={setOpenSelectNodes}>
             <DropdownMenuTrigger asChild className="max-w-[300px]">
@@ -189,18 +220,18 @@ export function GraphViewFocusNode({
                   'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 )}
               >
-              <span className="truncate">
-                {selectedNode ? selectedNode.label : 'Select Column'}
-              </span>
+                <span className="truncate">
+                  {selectedNode ? selectedNode.label : 'Select Column'}
+                </span>
                 <ChevronDown className="size-4 opacity-50 shrink-0" />
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent className="w-80 p-0 flex flex-col gap-1" align="start">
+            <DropdownMenuContent className="max-w-[200px] p-0 flex flex-col gap-1" align="start">
               <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
-              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Select Column
-              </span>
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Select Column
+                </span>
               </div>
 
               <div
@@ -220,21 +251,21 @@ export function GraphViewFocusNode({
                         onSelectNode(node.id, false, false);
                       }}
                     >
-                    <span
-                      className={cn(
-                        'flex-1 truncate text-sm',
-                        node.id === selectedNodeId && 'font-bold'
-                      )}
-                    >
-                      {`${node.label} (${node.type})`}
-                    </span>
+                      <span
+                        className={cn(
+                          'flex-1 truncate text-sm',
+                          node.id === selectedNodeId && 'font-bold'
+                        )}
+                      >
+                        {node.label}
+                      </span>
                     </div>
                   ))
                 ) : (
                   <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
-                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    No Columns
-                  </span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      No Columns
+                    </span>
                   </div>
                 )}
               </div>
@@ -242,6 +273,64 @@ export function GraphViewFocusNode({
           </DropdownMenu>
         </div>
       )}
+      <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
+        <DropdownMenu open={openHistoryNodes} onOpenChange={setOpenHistoryNodes}>
+          <DropdownMenuTrigger asChild className="max-w-[300px]">
+            <button
+              className={cn(
+                'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
+                'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+              )}
+            >
+              <span className="truncate">Last focused</span>
+              <ChevronDown className="size-4 opacity-50 shrink-0" />
+            </button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent className="max-w-[450px] p-0 flex flex-col gap-1" align="start">
+            <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                Last focused nodes
+              </span>
+            </div>
+
+            <div
+              className="max-h-[200px] overflow-y-auto outline-hidden flex-1"
+              ref={columnsListRef}
+            >
+              {historyNodes && historyNodes.length ? (
+                historyNodes.map((node) => (
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group'
+                    )}
+                    key={node.id}
+                    data-node-id={node.id}
+                    onClick={() => {
+                      setOpenHistoryNodes(false);
+                      if( node.cachedParent ) {
+                        onSelectNode(node.id, false, false);
+                      } else {
+                        onSelectNode(node.id, true, true);
+                      }
+                    }}
+                  >
+                    <span className={'flex-1 truncate text-sm'}>
+                      {`${node.type == 'column' ? `${node.label} - ${getCanonicalName(node.cachedParent)}` : getCanonicalName(node)}`}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    Empty History
+                  </span>
+                </div>
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </>
   );
 }
