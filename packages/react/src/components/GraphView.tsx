@@ -53,7 +53,6 @@ import {
   GraphTooltipPortal,
 } from './ui/graph-tooltip';
 import { GRAPH_CONFIG, PANEL_STYLES, getMinimapNodeColor } from '../constants';
-import { GraphViewFocusColumn } from './GraphViewFocusColumn';
 
 const MINIMAP_NODE_LIMIT = 2000;
 const ELK_NODE_LIMIT = 2000;
@@ -1204,15 +1203,7 @@ export function GraphView({
               selectedNodeId={selectedNodeId}
               onSelectNode={handleFocusNodeSelect}
               closeRequestKey={focusNodeCloseRequestKey}
-            />
-          )}
-          {viewMode !== 'script' && analysisResult && showColumnEdges && (
-            <GraphViewFocusColumn
-              analysisResult={analysisResult}
-              focusNodeId={effectiveFocusNodeId}
-              selectedNodeId={selectedNodeId}
-              onSelectNode={handleFocusNodeSelect}
-              closeRequestKey={focusNodeCloseRequestKey}
+              showColumnEdges={showColumnEdges}
             />
           )}
         </Panel>
