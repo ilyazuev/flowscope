@@ -477,9 +477,7 @@ export function GraphView({
 
   const handleFocusColumnSelect = useCallback(
     (nodeId: string) => {
-      console.log(nodeId);
-      // actions.selectNode(nodeId);
-      // setInternalFocusNodeId(nodeId);
+      actions.selectNode(nodeId);
     },
     [actions]
   );
@@ -1213,7 +1211,7 @@ export function GraphView({
               closeRequestKey={focusNodeCloseRequestKey}
             />
           )}
-          {viewMode !== 'script' && analysisResult && (
+          {viewMode !== 'script' && analysisResult && showColumnEdges && (
             <GraphViewFocusColumn
               analysisResult={analysisResult}
               focusNodeId={effectiveFocusNodeId}
