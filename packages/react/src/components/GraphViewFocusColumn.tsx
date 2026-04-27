@@ -1,5 +1,6 @@
-import { JSX, useEffect, useMemo, useRef, useState } from 'react';
-import { GraphViewFocusNodeProps, type Node as LineageNode } from '../types';
+import { JSX, RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { GlobalNode } from '@pondpilot/flowscope-core';
+import { GraphViewFocusNodeProps } from '../types';
 import { PANEL_STYLES } from '../constants';
 import {
   DropdownMenu,
@@ -17,24 +18,28 @@ export function GraphViewFocusColumn({
   closeRequestKey,
 }: GraphViewFocusNodeProps): JSX.Element {
   const [open, setOpen] = useState(false);
-  const focusNodeNamesListRef = useRef<HTMLDivElement>(null);
+  const columnsListRef = useRef<HTMLDivElement>(null);
 
   const internalFocusNodeId = useMemo((): string | undefined => {
-    if ( focusNodeId ) {
-      return focusNodeId;
-    } else if ( selectedNodeId ) {
+    if ( selectedNodeId ) {
+      if( selectedNodeId == focusNodeId ) {
+        selectedNodeId = undefined;
+        return focusNodeId;
+      }
       const edge = analysisResult.globalLineage?.edges.find(edge => edge.to === selectedNodeId && edge.type == 'ownership');
       console.log(edge?.from);
       return edge?.from;
+    } else if ( focusNodeId ) {
+      return focusNodeId;
     }
     return undefined;
   }, [analysisResult, focusNodeId, selectedNodeId]);
 
-  const focusedNode = useMemo((): LineageNode | undefined => {
+  const focusedNode = useMemo((): GlobalNode | undefined => {
     return internalFocusNodeId ? analysisResult.globalLineage?.nodes.find((node) => node.id === internalFocusNodeId) : undefined;
   }, [analysisResult, internalFocusNodeId]);
 
-  const selectableNodes = useMemo(() => {
+  const selectableColumns = useMemo(() => {
     if (!focusedNode) {
       return [];
     }
@@ -50,31 +55,38 @@ export function GraphViewFocusColumn({
     return focusedNode.cachedChildren;
   }, [analysisResult, internalFocusNodeId]);
 
-  const selectedNode = useMemo((): LineageNode | undefined => {
-    if( !selectedNodeId || !selectableNodes ) {
+  const selectedNode = useMemo((): GlobalNode | undefined => {
+    if( !selectedNodeId || !selectableColumns ) {
       return undefined;
     }
-    return selectableNodes.find((node) => node.id == selectedNodeId);
+    return selectableColumns.find((node) => node.id == selectedNodeId);
   }, [analysisResult, internalFocusNodeId, selectedNodeId]);
 
   useEffect(() => {
     setOpen(false);
   }, [closeRequestKey]);
 
+  const scrollIntoView = useCallback(
+    (refList:  RefObject<HTMLDivElement | null>, nodeId: string) => {
+      return window.setTimeout(() => {
+        const selectedNodeElement = refList.current?.querySelector<HTMLElement>(
+          `[data-node-id="${CSS.escape(nodeId)}"]`
+        );
+        selectedNodeElement?.scrollIntoView({
+          block: 'center',
+        });
+      }, 0)
+    },
+    []
+  );
+
   useEffect(() => {
-    if (!open || !internalFocusNodeId) {
+    if (!open || !selectedNodeId) {
       return;
     }
-    const timer = window.setTimeout(() => {
-      const selectedNodeElement = focusNodeNamesListRef.current?.querySelector<HTMLElement>(
-        `[data-node-id="${CSS.escape(internalFocusNodeId)}"]`
-      );
-      selectedNodeElement?.scrollIntoView({
-        block: 'center',
-      });
-    }, 0);
+    const timer = scrollIntoView(columnsListRef, selectedNodeId);
     return () => window.clearTimeout(timer);
-  }, [open, internalFocusNodeId]);
+  }, [open, selectedNodeId]);
 
   return (
     <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
@@ -102,10 +114,10 @@ export function GraphViewFocusColumn({
 
           <div
             className="max-h-[200px] overflow-y-auto outline-hidden flex-1"
-            ref={focusNodeNamesListRef}
+            ref={columnsListRef}
           >
-            {selectableNodes && selectableNodes.length ? (
-              selectableNodes.map((node) => (
+            {selectableColumns && selectableColumns.length ? (
+              selectableColumns.map((node) => (
                 <div
                   className={cn(
                     'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group'
@@ -114,13 +126,13 @@ export function GraphViewFocusColumn({
                   data-node-id={node.id}
                   onClick={() => {
                     setOpen(false);
-                    onSelectNode(node.id);
+                    onSelectNode(node.id, false);
                   }}
                 >
                   <span
                     className={cn(
                       'flex-1 truncate text-sm',
-                      node.id === internalFocusNodeId && 'font-bold'
+                      node.id === selectedNodeId && 'font-bold'
                     )}
                   >
                     {`${node.label} (${node.type})`}

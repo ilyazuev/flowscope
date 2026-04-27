@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
-import type { Node as LineageNode } from '@pondpilot/flowscope-core';
+import { useEffect, useMemo, useRef, useState, type JSX, useCallback, RefObject } from 'react';
+import type { GlobalNode } from '@pondpilot/flowscope-core';
 import { ChevronDown } from 'lucide-react';
 
 import { PANEL_STYLES } from '../constants';
@@ -23,25 +23,24 @@ export function GraphViewFocusNode({
   const [onlyTables, setOnlyTables] = useState(false);
   const focusNodeNamesListRef = useRef<HTMLDivElement>(null);
 
-  // TODO combine GraphViewFocusNode & GraphViewFocusColumn; implement GraphViewFocusColumn
-
   const internalFocusNodeId = useMemo((): string | undefined => {
-    if ( focusNodeId ) {
-      return focusNodeId;
-    } else if ( selectedNodeId ) {
+    if ( selectedNodeId ) {
+      if( selectedNodeId == focusNodeId ) {
+        selectedNodeId = undefined;
+        return focusNodeId;
+      }
       const edge = analysisResult.globalLineage?.edges.find(edge => edge.to === selectedNodeId && edge.type == 'ownership');
       console.log(edge?.from);
       return edge?.from;
+    } else if ( focusNodeId ) {
+      return focusNodeId;
     }
     return undefined;
   }, [analysisResult, focusNodeId, selectedNodeId]);
 
 
-  const focusedNode = useMemo((): LineageNode | undefined => {
-    if (!internalFocusNodeId) {
-      return undefined;
-    }
-    return analysisResult.globalLineage?.nodes.find((node) => node.id === internalFocusNodeId);
+  const focusedNode = useMemo((): GlobalNode | undefined => {
+    return internalFocusNodeId ? analysisResult.globalLineage?.nodes.find((node) => node.id === internalFocusNodeId) : undefined;
   }, [analysisResult, internalFocusNodeId]);
 
   const selectableNodes = useMemo(() => {
@@ -54,28 +53,39 @@ export function GraphViewFocusNode({
     setOpen(false);
   }, [closeRequestKey]);
 
+  const scrollIntoView = useCallback(
+    (refList:  RefObject<HTMLDivElement | null>, nodeId: string) => {
+      return window.setTimeout(() => {
+          const selectedNodeElement = refList.current?.querySelector<HTMLElement>(
+            `[data-node-id="${CSS.escape(nodeId)}"]`
+          );
+          selectedNodeElement?.scrollIntoView({
+            block: 'center',
+          });
+        }, 0)
+    },
+    []
+  );
+
   useEffect(() => {
     if (!open || !internalFocusNodeId) {
       return;
     }
-
-    const timer = window.setTimeout(() => {
-      const selectedNodeElement = focusNodeNamesListRef.current?.querySelector<HTMLElement>(
-        `[data-node-id="${CSS.escape(internalFocusNodeId)}"]`
-      );
-
-      selectedNodeElement?.scrollIntoView({
-        block: 'center',
-      });
-    }, 0);
-
+    const timer = scrollIntoView(focusNodeNamesListRef, internalFocusNodeId);
     return () => window.clearTimeout(timer);
   }, [open, internalFocusNodeId]);
+
+  const getCanonicalName = useCallback(
+    (node: GlobalNode| undefined) => {
+      return node ? `${(node.canonicalName.schema ? `${node.canonicalName.schema}.` : '')}${node.canonicalName.name} (${node.type})`: null;
+    },
+    []
+  );
 
   return (
     <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
       <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild className="max-w-[300px]">
+        <DropdownMenuTrigger asChild className="max-w-[34 0px]">
           <button
             className={cn(
               'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
@@ -83,7 +93,7 @@ export function GraphViewFocusNode({
             )}
           >
             <span className="truncate">
-              {focusedNode ? `${focusedNode.label} (${focusedNode.type})` : 'Focus on Table or CTE'}
+              {getCanonicalName(focusedNode) ?? 'Focus on Table or CTE'}
             </span>
             <ChevronDown className="size-4 opacity-50 shrink-0" />
           </button>
@@ -119,13 +129,13 @@ export function GraphViewFocusNode({
                 data-node-id={node.id}
                 onClick={() => {
                   setOpen(false);
-                  onSelectNode(node.id);
+                  onSelectNode(node.id, true);
                 }}
               >
                 <span
                   className={cn('flex-1 truncate text-sm', node.id === internalFocusNodeId && 'font-bold')}
                 >
-                  {`${node.label} (${node.type})`}
+                  {getCanonicalName(node)}
                 </span>
               </div>
             ))}

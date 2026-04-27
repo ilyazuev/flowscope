@@ -468,16 +468,11 @@ export function GraphView({
   }, [onFocusApplied]);
 
   const handleFocusNodeSelect = useCallback(
-    (nodeId: string) => {
+    (nodeId: string, setFocus: boolean = true) => {
       actions.selectNode(nodeId);
-      setInternalFocusNodeId(nodeId);
-    },
-    [actions]
-  );
-
-  const handleFocusColumnSelect = useCallback(
-    (nodeId: string) => {
-      actions.selectNode(nodeId);
+      if( setFocus ) {
+        setInternalFocusNodeId(nodeId);
+      }
     },
     [actions]
   );
@@ -1216,7 +1211,7 @@ export function GraphView({
               analysisResult={analysisResult}
               focusNodeId={effectiveFocusNodeId}
               selectedNodeId={selectedNodeId}
-              onSelectNode={handleFocusColumnSelect}
+              onSelectNode={handleFocusNodeSelect}
               closeRequestKey={focusNodeCloseRequestKey}
             />
           )}
