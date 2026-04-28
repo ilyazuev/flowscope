@@ -167,11 +167,13 @@ function spreadNodesHorizontally(nodes: FlowNode[], gap = HORIZONTAL_NODE_GAP): 
 function NodeFocusHandler({
   focusNodeId,
   onFocusApplied,
+  focusNodeRequestKey,
 }: {
   focusNodeId?: string;
   onFocusApplied?: () => void;
+  focusNodeRequestKey: number;
 }): null {
-  useNodeFocus({ focusNodeId, onFocusApplied });
+  useNodeFocus({ focusNodeId, onFocusApplied, focusNodeRequestKey });
   return null;
 }
 
@@ -440,6 +442,7 @@ export function GraphView({
   const [focusMode, setFocusMode] = useState(false);
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(undefined);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
+  const [focusNodeRequestKey, setFocusNodeRequestKey] = useState(0);
 
   // Handle search term changes - just update store or call callback, no local state
   const handleSearchTermChange = useCallback(
@@ -471,7 +474,7 @@ export function GraphView({
       if( !setFocus ) {
         actions.selectNode(nodeId);
       } else if( forceFocus ) {
-        setInternalFocusNodeId(undefined);
+        setFocusNodeRequestKey((prev) => prev + 1); // setInternalFocusNodeId(undefined);
         requestAnimationFrame(() => {
           setInternalFocusNodeId(nodeId);
           if(selectedNodeId) {
@@ -1154,6 +1157,7 @@ export function GraphView({
         <NodeFocusHandler
           focusNodeId={effectiveFocusNodeId}
           onFocusApplied={handleFocusAppliedInternal}
+          focusNodeRequestKey={focusNodeRequestKey}
         />
         <ViewportHandler initialViewport={initialViewport} onViewportChange={onViewportChange} />
         <FitViewHandler trigger={fitViewTrigger} />

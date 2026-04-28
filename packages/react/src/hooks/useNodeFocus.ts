@@ -18,6 +18,7 @@ interface UseNodeFocusOptions {
   duration?: number;
   /** Padding around the focused node */
   padding?: number;
+  focusNodeRequestKey?: number;
 }
 
 /**
@@ -31,12 +32,18 @@ export function useNodeFocus({
   onFocusApplied,
   duration = 500,
   padding = 0.5,
+  focusNodeRequestKey,
 }: UseNodeFocusOptions): void {
   const { fitView, getNode } = useReactFlow();
   const prevFocusRef = useRef<string | undefined>(undefined);
+  const prevFocusNodeRequestKey = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    if (focusNodeId && focusNodeId !== prevFocusRef.current) {
+    if (
+      focusNodeId && (
+        focusNodeId !== prevFocusRef.current ||
+        focusNodeRequestKey !== prevFocusNodeRequestKey.current
+      )) {
       const timer = setTimeout(() => {
         const node = getNode(focusNodeId);
         if (node) {
@@ -49,9 +56,10 @@ export function useNodeFocus({
         onFocusApplied?.();
       }, NODE_FOCUS_DELAY_MS);
       prevFocusRef.current = focusNodeId;
+      prevFocusNodeRequestKey.current = focusNodeRequestKey;
       return () => clearTimeout(timer);
     } else if (!focusNodeId) {
       prevFocusRef.current = undefined;
     }
-  }, [focusNodeId, fitView, getNode, onFocusApplied, duration, padding]);
+  }, [focusNodeId, focusNodeRequestKey, fitView, getNode, onFocusApplied, duration, padding]);
 }

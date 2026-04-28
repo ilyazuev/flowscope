@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type JSX, useCallback, RefObject } from 'react';
 import type { GlobalNode } from '@pondpilot/flowscope-core';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Focus } from 'lucide-react';
 
 import { PANEL_STYLES } from '../constants';
 import {
@@ -11,6 +11,13 @@ import {
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { GraphViewFocusNodeProps } from '../types';
+import {
+  GraphTooltip,
+  GraphTooltipArrow,
+  GraphTooltipContent,
+  GraphTooltipPortal, GraphTooltipProvider,
+  GraphTooltipTrigger,
+} from './ui/graph-tooltip';
 
 export function GraphViewFocusNode({
   analysisResult,
@@ -33,7 +40,9 @@ export function GraphViewFocusNode({
       return;
     }
     const index = historyNodes.indexOf(node, 0);
-    if (index > -1) {
+    if (index == 0 ) {
+      return;
+    } else if (index > -1) {
       historyNodes.splice(index, 1);
     } else if (historyNodes.length > 10) {
       historyNodes.pop();
@@ -107,6 +116,7 @@ export function GraphViewFocusNode({
   useEffect(() => {
     setOpenFocusNodes(false);
     setOpenSelectNodes(false);
+    setOpenHistoryNodes(false);
   }, [closeRequestKey]);
 
   const scrollIntoView = useCallback(
@@ -145,8 +155,13 @@ export function GraphViewFocusNode({
       : null;
   }, []);
 
+  function ToolbarDivider(): JSX.Element {
+    return <div className="self-center mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />;
+  }
+
   return (
     <>
+      <ToolbarDivider />
       <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
         <DropdownMenu open={openFocusNodes} onOpenChange={setOpenFocusNodes}>
           <DropdownMenuTrigger asChild className="max-w-[34 0px]">
@@ -273,6 +288,38 @@ export function GraphViewFocusNode({
           </DropdownMenu>
         </div>
       )}
+
+      <GraphTooltipProvider>
+        <GraphTooltip delayDuration={300}>
+          <GraphTooltipTrigger asChild>
+            <button
+              onClick={() =>
+                internalFocusNodeId
+                  ? onSelectNode(internalFocusNodeId, true, true, selectedNodeId)
+                  : undefined
+              }
+              className={cn(
+                'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
+                internalFocusNodeId
+                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              )}
+              aria-label={'Focus on Table or CTE'}
+              aria-pressed={!!internalFocusNodeId}
+              type="button"
+            >
+              <Focus className="size-3.5" strokeWidth={internalFocusNodeId ? 2.5 : 1.5} />
+            </button>
+          </GraphTooltipTrigger>
+          <GraphTooltipPortal>
+            <GraphTooltipContent side="bottom">
+              <p>Focus on Table or CTE</p>
+              <GraphTooltipArrow />
+            </GraphTooltipContent>
+          </GraphTooltipPortal>
+        </GraphTooltip>
+      </GraphTooltipProvider>
+
       <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
         <DropdownMenu open={openHistoryNodes} onOpenChange={setOpenHistoryNodes}>
           <DropdownMenuTrigger asChild className="max-w-[300px]">
@@ -289,9 +336,14 @@ export function GraphViewFocusNode({
 
           <DropdownMenuContent className="max-w-[450px] p-0 flex flex-col gap-1" align="start">
             <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
-              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Last focused nodes
-              </span>
+              <ul className="pl-4 list-disc text-sm font-medium text-slate-900 dark:text-slate-100">
+                <li>
+                  Focus on the last selected table or CTE
+                </li>
+                <li>
+                  Select the last selected column (without focusing).
+                </li>
+              </ul>
             </div>
 
             <div
@@ -308,7 +360,7 @@ export function GraphViewFocusNode({
                     data-node-id={node.id}
                     onClick={() => {
                       setOpenHistoryNodes(false);
-                      if( node.cachedParent ) {
+                      if (node.cachedParent) {
                         onSelectNode(node.id, false, false);
                       } else {
                         onSelectNode(node.id, true, true);
