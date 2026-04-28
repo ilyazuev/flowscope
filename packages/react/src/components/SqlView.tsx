@@ -11,7 +11,7 @@ import {
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { EditorView, Decoration, type DecorationSet, keymap } from '@codemirror/view';
-import { Compartment, StateField, StateEffect } from '@codemirror/state';
+import { Compartment, StateField, StateEffect, Prec } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import {
   defaultKeymap,
@@ -255,8 +255,23 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
     const bookmarkExtension = useBookmarkExtension();
 
+    const preventRunShortcutNewline = useMemo(
+      () =>
+        Prec.highest(
+          keymap.of([
+            {
+              key: 'Mod-Enter',
+              preventDefault: true,
+              run: () => true,
+            },
+          ])
+        ),
+      []
+    );
+
     const extensions = useMemo(
       () => [
+        preventRunShortcutNewline,
         sql({
           upperCaseKeywords: true,
         }),

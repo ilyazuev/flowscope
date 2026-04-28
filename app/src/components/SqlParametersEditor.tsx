@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,12 +9,14 @@ import {
 } from './ui/dialog';
 import { Button } from './ui/button';
 import { SqlParameters } from '@/lib/project-store.tsx';
+import { GlobalShortcut, useGlobalShortcuts } from '@/hooks';
 
 interface SqlParametersEditorProps {
   open: boolean;
   onOpenChange: (open: boolean, ok?: boolean) => void;
   inputParameters: SqlParameters;
   onRunSql: (editedParameters: SqlParameters) => void;
+  runSqlName?: string | null;
 }
 
 export function SqlParametersEditor({
@@ -22,6 +24,7 @@ export function SqlParametersEditor({
   onOpenChange,
   inputParameters,
   onRunSql,
+  runSqlName,
 }: SqlParametersEditorProps) {
   const [editedParameters, setEditedParameters] = useState<SqlParameters>(inputParameters);
 
@@ -60,12 +63,31 @@ export function SqlParametersEditor({
 
   const entries = Object.entries(editedParameters);
 
+  const shortcuts = useMemo<GlobalShortcut[]>(
+    () =>
+      open
+        ? [
+          {
+            key: 'Enter',
+            handler: handleSave,
+            allowInInput: true,
+          },
+        ]
+        : [],
+    [open, handleSave]
+  );
+
+  useGlobalShortcuts(shortcuts);
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Variables</DialogTitle>
-          <DialogDescription>Fill variables to run SQL</DialogDescription>
+          <DialogDescription>
+            <span>Fill variables to run </span>
+            <span className={'font-bold'}>{runSqlName}</span>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 border rounded-md overflow-auto p-4">
@@ -97,9 +119,17 @@ export function SqlParametersEditor({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            <span>Cancel</span>
+            <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="text-xs">Esc</span>
+            </kbd>
           </Button>
-          <Button onClick={handleSave}>Run SQL</Button>
+          <Button onClick={handleSave}>
+            <span>Run SQL</span>
+            <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              ↵
+            </kbd>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -69,6 +69,8 @@ export function EditorArea({
   const previousSchema = useRef<string | null>(null);
   const previousHideCTEs = useRef<boolean | null>(null);
 
+  const runSqlName = useRef<string | null>(null);
+
   const { hideCTEs, highlightedSpan, result } = useLineageState();
 
   // SQL view mode toggle: 'template' shows original templated SQL, 'resolved' shows compiled SQL
@@ -373,7 +375,8 @@ export function EditorArea({
   const needParametersForSql = (
     activeFile: ProjectFile,
     editedParameters?: SqlParameters,
-    sql?: string
+    sql?: string,
+    sqlName?: string
   ): boolean => {
     if (!editedParameters && activeFile.parameters?.valid) {
       const sqlParameters = sql
@@ -386,6 +389,7 @@ export function EditorArea({
         }
         setNeedParameters(true);
         setParameters(sqlParameters);
+        runSqlName.current = sqlName ?? 'SQL';
         return true;
       }
     }
@@ -405,7 +409,7 @@ export function EditorArea({
       if (selection && selection.from < selection.to) {
         lastExecuteSql.current = false;
         const sql = activeFile.content.substring(selection.from, selection.to + 1);
-        if (!needParametersForSql(activeFile, editedParameters, sql)) {
+        if (!needParametersForSql(activeFile, editedParameters, sql, 'Selection')) {
           void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.selection);
         }
         return;
@@ -436,7 +440,7 @@ export function EditorArea({
                 const sql =
                   activeFile.content.substring(0, node.span.end + 1) +
                   `\n)\nSELECT * FROM ${node.label}`;
-                if (!needParametersForSql(activeFile, editedParameters, sql)) {
+                if (!needParametersForSql(activeFile, editedParameters, sql, `CTE: ${node.label}`)) {
                   void runExecuteSql(
                     sql,
                     activeFile.path,
@@ -596,6 +600,7 @@ export function EditorArea({
             }
           }}
           onRunSql={handleUseParameters}
+          runSqlName={runSqlName.current}
           inputParameters={
             activeFile?.parameters?.parameters
               ? Object.fromEntries(

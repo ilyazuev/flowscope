@@ -120,7 +120,7 @@ export function EditorToolbar({
                   size="sm"
                   className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
                 >
-                  {isDataLoading == SqlPartType.sql ? (
+                  {isDataLoading != SqlPartType.none ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Play className="h-3.5 w-3.5 fill-current" />
@@ -178,7 +178,7 @@ export function EditorToolbar({
             onClick={onAnalyze}
             disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
             size="sm"
-            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
+            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3 ml-1"
           >
             {isAnalyzing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
