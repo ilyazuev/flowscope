@@ -494,13 +494,26 @@ export function EditorArea({
       {
         key: 'Enter',
         cmdOrCtrl: true,
+        alt: true,
         handler: handleAnalyze,
       },
       {
         key: 'Enter',
         cmdOrCtrl: true,
+        alt: true,
         shift: true,
         handler: handleAnalyzeActiveOnly,
+      },
+      {
+        key: 'Enter',
+        cmdOrCtrl: true,
+        handler: handleExecuteSql,
+      },
+      {
+        key: 'Enter',
+        cmdOrCtrl: true,
+        shift: true,
+        handler: handleExecuteCte,
       },
       {
         key: 'F4',
@@ -508,7 +521,7 @@ export function EditorArea({
         handler: handleRunDescribe,
       },
     ],
-    [handleAnalyze, handleAnalyzeActiveOnly, handleRunDescribe]
+    [handleAnalyze, handleAnalyzeActiveOnly, handleExecuteSql, handleExecuteCte, handleRunDescribe ]
   );
 
   useGlobalShortcuts(analysisShortcuts);
@@ -536,6 +549,7 @@ export function EditorArea({
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}
         onExecuteCte={handleExecuteCte}
+        onRunDescribe={handleRunDescribe}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
         fileSelectorOpen={fileSelectorOpen}

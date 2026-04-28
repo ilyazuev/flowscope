@@ -1,4 +1,4 @@
-import { Play, Loader2, ChevronDown, Braces, Code } from 'lucide-react';
+import { Play, Loader2, ChevronDown, Braces, Code  } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,7 +13,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { FileSelector } from './FileSelector';
 import { Dialect, RunMode } from '@/lib/project-store';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
-import { modKey } from '@/lib/shortcuts.ts';
+import { modKey, optionKey } from '@/lib/shortcuts.ts';
+import {
+  GraphTooltip, GraphTooltipArrow, GraphTooltipContent,
+  GraphTooltipPortal, GraphTooltipProvider,
+  GraphTooltipTrigger,
+} from '@pondpilot/flowscope-react';
+
 
 export type SqlViewMode = 'template' | 'resolved';
 
@@ -27,6 +33,7 @@ interface EditorToolbarProps {
   onAnalyze: () => void;
   onExecuteSql: () => void;
   onExecuteCte: () => void;
+  onRunDescribe: () => void;
   allFileCount: number;
   selectedCount: number;
   fileSelectorOpen: boolean;
@@ -47,6 +54,7 @@ export function EditorToolbar({
   onAnalyze,
   onExecuteSql,
   onExecuteCte,
+  onRunDescribe,
   allFileCount,
   selectedCount,
   fileSelectorOpen,
@@ -103,41 +111,69 @@ export function EditorToolbar({
 
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center rounded-full overflow-hidden shadow-xs">
-          <Button
-            onClick={onExecuteSql}
-            disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
-            size="sm"
-            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3 m-1"
-          >
-            {isDataLoading == SqlPartType.sql ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5 fill-current" />
-            )}
-            <span className="hidden sm:inline">Run Sql | Selection</span>
-          </Button>
-          <Button
-            onClick={onExecuteCte}
-            disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
-            size="sm"
-            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full rounded-r-full border-r border-brand-blue-400/30 px-3 m-1"
-          >
-            {isDataLoading == SqlPartType.cte || isDataLoading == SqlPartType.selection ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5 fill-current" />
-            )}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="hidden sm:inline">Run CTE</span>
-                </TooltipTrigger>
-                <TooltipContent>
-                    Run CTE under cursor
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </Button>
+          <GraphTooltipProvider>
+            <GraphTooltip delayDuration={300}>
+              <GraphTooltipTrigger asChild>
+                <Button
+                  onClick={onExecuteSql}
+                  disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
+                  size="sm"
+                  className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
+                >
+                  {isDataLoading == SqlPartType.sql ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                  )}
+                  <span className="hidden sm:inline">Run Sql</span>
+                  <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                    <span className="text-xs">{modKey()}</span>↵
+                  </kbd>
+                </Button>
+              </GraphTooltipTrigger>
+              <GraphTooltipPortal>
+                <GraphTooltipContent side="bottom">
+                  <p>Execute entire SQL query or a selected part of it</p>
+                  <GraphTooltipArrow />
+                </GraphTooltipContent>
+              </GraphTooltipPortal>
+            </GraphTooltip>
+          </GraphTooltipProvider>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
+                disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
+              >
+                <ChevronDown className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <div
+                className={
+                  'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
+                }
+                onClick={onExecuteCte}
+              >
+                <span>Run CTE under cursor</span>
+                <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">{modKey()}</span>⇧↵
+                </kbd>
+              </div>
+              <div
+                className={
+                  'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
+                }
+                onClick={onRunDescribe}
+              >
+                <span>Describe object under cursor</span>
+                <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">F4</span>
+                </kbd>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             onClick={onAnalyze}
             disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
@@ -171,20 +207,30 @@ export function EditorToolbar({
                 <DropdownMenuRadioItem value="current" className="text-xs justify-between">
                   <span>Run Active File Only</span>
                   <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                    <span className="text-xs">{modKey()}</span>⇧↵
+                    <span className="text-xs">{modKey()}</span>
+                    <span className="text-xs">{optionKey()}</span>⇧↵
                   </kbd>
                 </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="all" className="text-xs" disabled={dialect == 'oracleBackend'}>
+                <DropdownMenuRadioItem
+                  value="all"
+                  className="text-xs"
+                  disabled={dialect == 'oracleBackend'}
+                >
                   Run All Files ({allFileCount})
                 </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="custom" className="text-xs" disabled={dialect == 'oracleBackend'}>
+                <DropdownMenuRadioItem
+                  value="custom"
+                  className="text-xs"
+                  disabled={dialect == 'oracleBackend'}
+                >
                   Run Selected ({selectedCount})
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
-                  <span className="text-xs">{modKey()}</span>↵
+                  <span className="text-xs">{modKey()}</span>
+                  <span className="text-xs">{optionKey()}</span>↵
                 </kbd>
                 <span className="ml-2">Run in current mode</span>
               </div>

@@ -104,3 +104,12 @@ export {
 } from './utils/graphTraversal';
 
 export type { ApplyTableFilterResult } from './utils/graphTraversal';
+
+export {
+  GraphTooltip,
+  GraphTooltipContent,
+  GraphTooltipProvider,
+  GraphTooltipTrigger,
+  GraphTooltipArrow,
+  GraphTooltipPortal,
+} from './components/ui/graph-tooltip';

@@ -40,6 +40,10 @@ export function modKey(): string {
   return isMac() ? '⌘' : 'Ctrl'
 }
 
+export function optionKey(): string {
+  return isMac() ? '⌥' : 'Alt'
+}
+
 /**
  * Format a shortcut definition for display.
  * Returns platform-appropriate symbols (⌘ on Mac, Ctrl on Windows/Linux).
