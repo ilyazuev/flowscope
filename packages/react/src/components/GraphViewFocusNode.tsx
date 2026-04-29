@@ -34,6 +34,10 @@ export function GraphViewFocusNode({
   const [onlyTables, setOnlyTables] = useState(false);
   const focusNodeNamesListRef = useRef<HTMLDivElement>(null);
   const columnsListRef = useRef<HTMLDivElement>(null);
+  const cache = useRef<Record<string, {
+    cachedParent?: GlobalNode;
+    cachedChildren?: GlobalNode[];
+  }>>({});
 
   const addHistory = useCallback((node?: GlobalNode) => {
     if (!node) {
@@ -47,7 +51,7 @@ export function GraphViewFocusNode({
     } else if (historyNodes.length > 10) {
       historyNodes.pop();
     }
-    if (historyNodes[0] == node.cachedParent) {
+    if (historyNodes[0] == cache.current[node.id]?.cachedParent) {
       historyNodes.shift();
     }
     historyNodes.unshift(node);
@@ -92,16 +96,26 @@ export function GraphViewFocusNode({
     if (!focusedNode) {
       return [];
     }
-    if (!focusedNode.cachedChildren) {
+    let cacheNode = cache.current[focusedNode.id];
+    if( !cacheNode ) {
+      cacheNode = cache.current[focusedNode.id] = {};
+    }
+    if (!cacheNode.cachedChildren) {
       const ownershipEdgeIds = analysisResult.globalLineage.edges
         .filter((e) => e.from == focusedNode.id && e.type == 'ownership')
         .map((e) => e.to);
-      focusedNode.cachedChildren = analysisResult.globalLineage.nodes
+      cacheNode.cachedChildren = analysisResult.globalLineage.nodes
         .filter((node) => ownershipEdgeIds.includes(node.id))
         .sort((a, b) => a.label.localeCompare(b.label));
-      focusedNode.cachedChildren.forEach((node) => (node.cachedParent = focusedNode));
+      cacheNode.cachedChildren.forEach((node) => {
+        let cacheChildNode = cache.current[node.id];
+        if( !cacheChildNode ) {
+          cacheChildNode = cache.current[node.id] = {};
+        }
+        cacheChildNode.cachedParent = focusedNode
+      });
     }
-    return focusedNode.cachedChildren;
+    return cacheNode.cachedChildren;
   }, [analysisResult, internalFocusNodeId]);
 
   const selectedNode = useMemo((): GlobalNode | undefined => {
@@ -360,7 +374,7 @@ export function GraphViewFocusNode({
                     data-node-id={node.id}
                     onClick={() => {
                       setOpenHistoryNodes(false);
-                      if (node.cachedParent) {
+                      if (cache.current[node.id]?.cachedParent) {
                         onSelectNode(node.id, false, false);
                       } else {
                         onSelectNode(node.id, true, true);
@@ -368,7 +382,7 @@ export function GraphViewFocusNode({
                     }}
                   >
                     <span className={'flex-1 truncate text-sm'}>
-                      {`${node.type == 'column' ? `${node.label} - ${getCanonicalName(node.cachedParent)}` : getCanonicalName(node)}`}
+                      {`${node.type == 'column' ? `${node.label} - ${getCanonicalName(cache.current[node.id]?.cachedParent)}` : getCanonicalName(node)}`}
                     </span>
                   </div>
                 ))

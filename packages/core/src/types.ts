@@ -547,8 +547,6 @@ export interface GlobalNode {
   metadata?: Record<string, unknown>;
   /** How this table was resolved (imported, implied, or unknown) */
   resolutionSource?: ResolutionSource;
-  cachedParent?: GlobalNode;
-  cachedChildren?: GlobalNode[];
 }
 
 export interface CanonicalName {
