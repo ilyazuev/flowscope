@@ -8,7 +8,7 @@ import type {
   StatementLineage,
   SchemaTable,
   FilterPredicate,
-  AggregationInfo,
+  AggregationInfo, Dialect,
 } from '@pondpilot/flowscope-core';
 
 /**
@@ -243,7 +243,12 @@ export interface GraphViewFocusNodeProps {
   analysisResult: AnalyzeResult;
   focusNodeId?: string;
   selectedNodeId?: string | null;
-  onSelectNode: (nodeId: string, setFocus: boolean, forceFocus: boolean, lastSelectedColumn?: string|null) => void;
+  onSelectNode: (
+    nodeId: string,
+    setFocus: boolean,
+    forceFocus: boolean,
+    lastSelectedColumn?: string | null
+  ) => void;
   closeRequestKey?: number;
   showColumnEdges: boolean;
 }
@@ -265,6 +270,7 @@ export interface SqlViewProps {
   /** Span to highlight and scroll to in the editor (for controlled mode navigation) */
   highlightedSpan?: Span | null;
   lineWrapping?: boolean;
+  dialect?: Dialect | null;
 }
 
 /**

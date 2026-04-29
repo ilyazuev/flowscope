@@ -572,6 +572,7 @@ export function EditorArea({
         <ErrorBoundary fallback={<SqlViewFallback />}>
           <SqlView
             ref={sqlViewRef}
+            dialect={currentProject.dialect}
             value={displayContent}
             onChange={(val) => {
               setParameters();

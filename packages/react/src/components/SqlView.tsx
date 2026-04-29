@@ -29,7 +29,7 @@ import {
   searchKeymap,
   searchPanelOpen,
 } from '@codemirror/search';
-import { Clipboard, Copy, Redo2, Scissors, Search, Undo2, WrapText } from 'lucide-react';
+import { Clipboard, Copy, Redo2, Scissors, Search, Undo2, Wand, WrapText } from 'lucide-react';
 
 import { toast } from 'sonner';
 
@@ -37,6 +37,8 @@ import { useLineage } from '../store';
 import type { SqlViewProps } from '../types';
 import { useBookmarkExtension } from './SqlView.Bookmarks';
 import { sqlCteFolding } from './SqlView.SqlCteFolding';
+import { format, SqlLanguage } from 'sql-formatter';
+import { Dialect } from '@pondpilot/flowscope-core';
 
 type HighlightRange = { from: number; to: number; className: string };
 
@@ -171,6 +173,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       isDark,
       highlightedSpan: highlightedSpanProp,
       lineWrapping = true,
+      dialect
     },
     ref
   ): JSX.Element => {
@@ -478,6 +481,54 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       updateToolbarState(view);
     }, [highlightedSpan, issueHighlights, isControlled, editorView, updateToolbarState]);
 
+    const handlePrettify = useCallback(() => {
+      const view = editorRef.current?.view ?? editorView;
+      if (!view ) {
+        return;
+      }
+      try {
+        const sql = view.state.sliceDoc();
+        console.log(dialect);
+        const langMap: Record<Dialect, SqlLanguage> = {
+          'oracleBackend': 'plsql',
+          'generic': 'sql',
+          'ansi': 'sql',
+          'bigquery': 'bigquery',
+          'clickhouse': 'clickhouse',
+          'databricks': 'sql',
+          'duckdb': 'duckdb',
+          'hive': 'hive',
+          'mssql': 'sql',
+          'mysql': 'mariadb',
+          'postgres': 'postgresql',
+          'redshift': 'redshift',
+          'snowflake': 'snowflake',
+          'sqlite': 'sqlite',
+        }
+        const pretty = format(sql, {
+          tabWidth: 1,
+          useTabs: true,
+          keywordCase: "upper",
+          indentStyle: "standard",
+          dataTypeCase: "upper",
+          functionCase: "upper",
+          language: langMap[dialect??'generic'] ?? 'sql',
+          logicalOperatorNewline: "before", // expressionWidth: number,
+          linesBetweenQueries: 1, // denseOperators: boolean;
+          newlineBeforeSemicolon: false, // params?: ParamItems | string[]; paramTypes?: ParamTypes;
+        });
+        view.dispatch({
+          changes: { from: 0, to: sql.length, insert: pretty },
+        });
+        view.focus();
+      } catch (error) {
+        console.error(`Prettify failed`, error);
+        toast.error(`Failed to prettify`, {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }, [editorView]);
+
     const isMac = /mac/i.test(navigator.userAgent);
     const modKey = isMac ? '⌘' : 'Ctrl';
     const redoShortcut = isMac ? '⇧⌘Z' : 'Ctrl+Y';
@@ -549,6 +600,10 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
           <ToolbarButton title={`Find / replace (${modKey} + F)`} onClick={handleFind}>
             <Search className="h-4 w-4" />
+          </ToolbarButton>
+
+          <ToolbarButton title={`Prettify`} onClick={handlePrettify}>
+            <Wand className="h-4 w-4" />
           </ToolbarButton>
         </div>
 
