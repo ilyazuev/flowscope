@@ -378,6 +378,7 @@ export interface ColumnNodeInfo {
   expression?: string;
   /** Whether this column is part of a highlighted path */
   isHighlighted?: boolean;
+  isHidden?: boolean;
   /** Optional source file name */
   sourceName?: string;
   /** Aggregation information if this column is aggregated or a grouping key */
@@ -398,6 +399,7 @@ export interface ColumnNodeData extends Record<string, unknown> {
   isSelected: boolean;
   /** Whether this node matches the current search term */
   isHighlighted: boolean;
+  isHidden?: boolean;
   /** Optional source file name */
   sourceName?: string;
 }

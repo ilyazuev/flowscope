@@ -10,7 +10,7 @@ import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
 
 // Virtualization thresholds
-const COLUMN_VIRTUALIZATION_THRESHOLD = 20;
+const COLUMN_VIRTUALIZATION_THRESHOLD = 200000;
 const COLUMN_ROW_HEIGHT = 24;
 
 interface AggregationIndicatorProps {
@@ -539,7 +539,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
 
       {!isCollapsed && nodeData.columns.length > 0 && (
         <div style={{ padding: '6px 12px', position: 'relative' }}>
-          {nodeData.columns.length >= COLUMN_VIRTUALIZATION_THRESHOLD ? (
+          {nodeData.columns.length >= COLUMN_VIRTUALIZATION_THRESHOLD ? ( // Virtualized list DISABLED !!!
             // Virtualized list for large column counts
             <List
               style={{
@@ -566,8 +566,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             // maxHeight ensures consistent behavior with virtualized list
             <div
               style={{
-                maxHeight: GRAPH_CONFIG.MAX_COLUMN_HEIGHT,
-                overflowY: 'auto',
+                overflowY: 'hidden', // overflowY: 'auto', //maxHeight: GRAPH_CONFIG.MAX_COLUMN_HEIGHT,
                 overflowX: 'hidden',
               }}
             >
