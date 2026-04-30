@@ -560,6 +560,7 @@ export interface ApplyFiltersOptions {
   graph: { nodes: FlowNode[]; edges: FlowEdge[] };
   highlightIds: Set<string>;
   focusMode: boolean;
+  focusSelectMode: boolean;
   effectiveSearchTerm: string | undefined;
   tableFilter: TableFilter;
   /** Optional pre-built graph index for performance */
@@ -579,11 +580,11 @@ export interface ApplyFiltersResult {
  * @returns The filtered graph and the table label map (for potential reuse)
  */
 export function applyFilters(options: ApplyFiltersOptions): ApplyFiltersResult {
-  const { highlightIds, focusMode, effectiveSearchTerm, tableFilter, graphIndex } = options;
+  const { highlightIds, focusMode, focusSelectMode, effectiveSearchTerm, tableFilter, graphIndex } = options;
   let graph = options.graph;
 
   // Apply focus mode filtering if enabled and we have search matches
-  if (focusMode && effectiveSearchTerm && highlightIds.size > 0) {
+  if ( (focusSelectMode || (focusMode && effectiveSearchTerm)) && highlightIds.size > 0) {
     graph = filterGraphToHighlights(graph, highlightIds);
   }
 

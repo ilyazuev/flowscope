@@ -440,6 +440,7 @@ export function GraphView({
 
   // Focus mode - when enabled, only show nodes in the search lineage path
   const [focusMode, setFocusMode] = useState(false);
+  const [focusSelectMode, setFocusSelectMode] = useState(false);
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(undefined);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
   const [focusNodeRequestKey, setFocusNodeRequestKey] = useState(0);
@@ -459,6 +460,10 @@ export function GraphView({
   // Handle focus mode changes
   const handleFocusModeChange = useCallback((enabled: boolean) => {
     setFocusMode(enabled);
+  }, []);
+
+  const handleFocusSelectModeChange = useCallback((enabled: boolean) => {
+    setFocusSelectMode(enabled);
   }, []);
 
   const lineageNodeMapRef = useRef<Map<string, LineageNode>>(new Map());
@@ -642,6 +647,7 @@ export function GraphView({
     viewMode,
     showColumnEdges,
     focusMode,
+    focusSelectMode,
     tableFilter,
     namespaceFilter,
   });
@@ -1117,6 +1123,7 @@ export function GraphView({
   const handlePaneClick = useCallback(() => {
     actions.selectNode(null);
     setInternalFocusNodeId(undefined);
+    setFocusSelectMode(false);
     setFocusNodeCloseRequestKey((prev) => prev + 1);
   }, [actions]);
 
@@ -1220,6 +1227,8 @@ export function GraphView({
               onSelectNode={handleFocusNodeSelect}
               closeRequestKey={focusNodeCloseRequestKey}
               showColumnEdges={showColumnEdges}
+              focusSelectMode={focusSelectMode}
+              onFocusSelectModeChange={handleFocusSelectModeChange}
             />
           )}
         </Panel>

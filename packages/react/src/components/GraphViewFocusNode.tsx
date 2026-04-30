@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type JSX, useCallback, RefObject } from 'react';
 import type { GlobalNode } from '@pondpilot/flowscope-core';
-import { ChevronDown, Focus } from 'lucide-react';
+import { ChevronDown, Focus, Scan } from 'lucide-react';
 
 import { PANEL_STYLES } from '../constants';
 import {
@@ -20,13 +20,15 @@ import {
 } from './ui/graph-tooltip';
 
 export function GraphViewFocusNode({
-  analysisResult,
-  focusNodeId,
-  selectedNodeId,
-  onSelectNode,
-  closeRequestKey,
-  showColumnEdges,
-}: GraphViewFocusNodeProps): JSX.Element {
+                                     analysisResult,
+                                     focusNodeId,
+                                     selectedNodeId,
+                                     onSelectNode,
+                                     closeRequestKey,
+                                     showColumnEdges,
+                                     focusSelectMode = false,
+                                     onFocusSelectModeChange,
+                                   }: GraphViewFocusNodeProps): JSX.Element {
   const [openFocusNodes, setOpenFocusNodes] = useState(false);
   const [openSelectNodes, setOpenSelectNodes] = useState(false);
   const [openHistoryNodes, setOpenHistoryNodes] = useState(false);
@@ -316,13 +318,13 @@ export function GraphViewFocusNode({
                 'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
                 internalFocusNodeId
                   ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  : 'text-slate-400' //  hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700
               )}
               aria-label={'Focus on Table or CTE'}
               aria-pressed={!!internalFocusNodeId}
               type="button"
             >
-              <Focus className="size-3.5" strokeWidth={internalFocusNodeId ? 2.5 : 1.5} />
+              <Scan className="size-3.5" strokeWidth={internalFocusNodeId ? 2.5 : 1.5} />
             </button>
           </GraphTooltipTrigger>
           <GraphTooltipPortal>
@@ -333,7 +335,37 @@ export function GraphViewFocusNode({
           </GraphTooltipPortal>
         </GraphTooltip>
       </GraphTooltipProvider>
-
+      <GraphTooltipProvider>
+        <GraphTooltip delayDuration={300}>
+          <GraphTooltipTrigger asChild>
+            <button
+              onClick={() =>
+                onFocusSelectModeChange?.(!focusSelectMode)
+              }
+              className={cn(
+                'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
+                focusSelectMode && internalFocusNodeId
+                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
+                  : 'text-slate-400'
+              )}
+              aria-label={'Filter focus and selection'}
+              aria-pressed={focusSelectMode && !!internalFocusNodeId}
+              type="button"
+            >
+              <Focus
+                className="size-3.5"
+                strokeWidth={focusSelectMode && internalFocusNodeId ? 2.5 : 1.5}
+              />
+            </button>
+          </GraphTooltipTrigger>
+          <GraphTooltipPortal>
+            <GraphTooltipContent side="bottom">
+              <p>Filter focused and selected</p>
+              <GraphTooltipArrow />
+            </GraphTooltipContent>
+          </GraphTooltipPortal>
+        </GraphTooltip>
+      </GraphTooltipProvider>
       <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
         <DropdownMenu open={openHistoryNodes} onOpenChange={setOpenHistoryNodes}>
           <DropdownMenuTrigger asChild className="max-w-[300px]">
@@ -351,12 +383,8 @@ export function GraphViewFocusNode({
           <DropdownMenuContent className="max-w-[450px] p-0 flex flex-col gap-1" align="start">
             <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
               <ul className="pl-4 list-disc text-sm font-medium text-slate-900 dark:text-slate-100">
-                <li>
-                  Focus on the last selected table or CTE
-                </li>
-                <li>
-                  Select the last selected column (without focusing).
-                </li>
+                <li>Focus on the last selected table or CTE</li>
+                <li>Select the last selected column (without focusing).</li>
               </ul>
             </div>
 

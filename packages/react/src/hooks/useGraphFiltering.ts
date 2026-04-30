@@ -29,6 +29,7 @@ export interface UseGraphFilteringOptions {
   showColumnEdges?: boolean;
   /** Whether focus mode is enabled */
   focusMode: boolean;
+  focusSelectMode: boolean;
   /** Table filter configuration */
   tableFilter: TableFilter;
   /** Namespace filter configuration - filter by schema/database */
@@ -57,6 +58,7 @@ export function useGraphFiltering(options: UseGraphFilteringOptions): UseGraphFi
     viewMode,
     showColumnEdges = false,
     focusMode,
+    focusSelectMode,
     tableFilter,
     namespaceFilter,
   } = options;
@@ -106,6 +108,7 @@ export function useGraphFiltering(options: UseGraphFilteringOptions): UseGraphFi
         graph: namespaceFilteredGraph,
         highlightIds,
         focusMode,
+        focusSelectMode,
         effectiveSearchTerm: searchTerm,
         tableFilter,
         graphIndex, // Pass pre-built index for efficient table filter traversal
@@ -129,6 +132,7 @@ export function useGraphFiltering(options: UseGraphFilteringOptions): UseGraphFi
     viewMode,
     showColumnEdges,
     focusMode,
+    focusSelectMode,
     tableFilter,
     namespaceFilter,
   ]);

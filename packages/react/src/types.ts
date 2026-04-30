@@ -8,7 +8,8 @@ import type {
   StatementLineage,
   SchemaTable,
   FilterPredicate,
-  AggregationInfo, Dialect,
+  AggregationInfo,
+  Dialect,
 } from '@pondpilot/flowscope-core';
 
 /**
@@ -251,6 +252,8 @@ export interface GraphViewFocusNodeProps {
   ) => void;
   closeRequestKey?: number;
   showColumnEdges: boolean;
+  focusSelectMode?: boolean;
+  onFocusSelectModeChange?: (enabled: boolean) => void;
 }
 
 /**
