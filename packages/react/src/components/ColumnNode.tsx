@@ -8,15 +8,13 @@ import type { ColumnNodeData } from '../types';
  */
 function ColumnNodeComponent({ data }: NodeProps): JSX.Element {
   const nodeData = data as ColumnNodeData;
-  const { label, tableName, expression, isSelected, isHighlighted, isHidden } = nodeData;
-console.log(nodeData)
+  const { label, tableName, expression, isSelected, isHighlighted } = nodeData;
   return (
     <div
       className={`
         px-3 py-2 rounded border bg-white shadow-xs min-w-[120px] max-w-[200px]
         ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'}
         ${isHighlighted ? 'ring-2 ring-yellow-300' : ''}
-        ${isHidden ? 'hidden' : ''}
         transition-all duration-200
       `}
     >

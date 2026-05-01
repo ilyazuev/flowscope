@@ -399,7 +399,6 @@ export interface ColumnNodeData extends Record<string, unknown> {
   isSelected: boolean;
   /** Whether this node matches the current search term */
   isHighlighted: boolean;
-  isHidden?: boolean;
   /** Optional source file name */
   sourceName?: string;
 }

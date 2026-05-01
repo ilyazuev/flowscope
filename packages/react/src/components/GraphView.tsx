@@ -349,7 +349,8 @@ function ToolbarToggleButton({
 
 function enhanceGraphWithHighlights(
   graph: { nodes: FlowNode[]; edges: FlowEdge[] },
-  highlightIds: Set<string>
+  highlightIds: Set<string>,
+  focusSelectMode: boolean
 ): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const enhancedNodes = graph.nodes.map((node) => {
     const isHighlighted = highlightIds.has(node.id);
@@ -357,10 +358,14 @@ function enhanceGraphWithHighlights(
     // Handle Table Nodes with columns
     if (isTableNodeData(node.data)) {
       const nodeData = node.data;
-      const enhancedColumns = nodeData.columns.map((col) => ({
-        ...col,
-        isHighlighted: highlightIds.has(col.id),
-      }));
+      const enhancedColumns = nodeData.columns.map((col) => {
+        const isHighlightedColumn = highlightIds.has(col.id);
+        return {
+          ...col,
+          isHighlighted: isHighlightedColumn,
+          ...(focusSelectMode && !isHighlightedColumn ? { isHidden: true } : {})
+        }
+      });
 
       return {
         ...node,
@@ -655,8 +660,8 @@ export function GraphView({
   // Enhance graph with highlight styling (render data), but keep layout inputs separate
   // so highlight-only changes don't trigger full layout recomputation.
   const renderGraph = useMemo(
-    () => enhanceGraphWithHighlights(filteredGraph, highlightIds),
-    [filteredGraph, highlightIds]
+    () => enhanceGraphWithHighlights(filteredGraph, highlightIds, focusSelectMode),
+    [filteredGraph, highlightIds, focusSelectMode]
   );
   const renderGraphRef = useRef(renderGraph);
 

@@ -588,19 +588,6 @@ export function applyFilters(options: ApplyFiltersOptions): ApplyFiltersResult {
     graph = filterGraphToHighlights(graph, highlightIds);
   }
 
-  for (const node of graph.nodes) {
-    if (isTableNodeData(node.data)) {
-      for (const column of node.data.columns) {
-        if( focusSelectMode ) {
-          column.isHidden = true;
-        } else if (column.isHidden) {
-          delete column.isHidden;
-        }      
-      }
-    }
-  }
-  
-
   // Apply table filter (filter only, no highlighting)
   const tableLabelMap = buildTableLabelMap(graph.nodes);
   const filterResult = applyTableFilter(graph, tableFilter, tableLabelMap, graphIndex);

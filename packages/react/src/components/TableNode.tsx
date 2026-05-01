@@ -119,7 +119,7 @@ function ColumnRow({
       style={{
         ...style,
         fontSize: 12,
-        color: col.isHighlighted ? colors.interactive.selection : textSecondary,
+        color: col.isHidden ? 'red' : col.isHighlighted ? colors.interactive.selection : textSecondary,
         fontWeight: col.isHighlighted ? 600 : 400,
         backgroundColor: col.isHighlighted ? colors.interactive.hover : 'transparent',
         padding: '3px 4px',
