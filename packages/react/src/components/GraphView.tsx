@@ -837,7 +837,6 @@ export function GraphView({
           if (GRAPH_DEBUG) console.timeEnd('[Layout] Worker layout total');
           if (!cancelled) {
             if (GRAPH_DEBUG) console.time('[Layout] Apply layouted nodes/edges');
-            layoutJustCompletedRef.current = true;
             setLayoutedNodes(nodes);
             setLayoutedEdges(edges);
             if (GRAPH_DEBUG) console.timeEnd('[Layout] Apply layouted nodes/edges');
@@ -872,7 +871,6 @@ export function GraphView({
               'dagre'
             );
             if (GRAPH_DEBUG) console.timeEnd('[Layout] Fallback sync layout');
-            layoutJustCompletedRef.current = true;
             setLayoutedNodes(nodes);
             setLayoutedEdges(edges);
             const durationMs =
@@ -914,11 +912,12 @@ export function GraphView({
   const lastShowTables = useRef<boolean | null>(null);
   const lastLayoutAlgorithm = useRef<LayoutAlgorithm | null>(null);
   const lastAppliedDefaultCollapsed = useRef<boolean | null>(null);
+  const lastFocusMode = useRef<boolean>(false);
+  const lastFocusSelectMode = useRef<boolean>(false);
 
   // Track last applied collapse states to detect individual node collapse changes
   const lastAppliedCollapseStates = useRef<Map<string, boolean>>(new Map());
   const overlapFixRafRef = useRef<number | null>(null);
-  const layoutJustCompletedRef = useRef(false);
 
 
   const scheduleHorizontalOverlapFix = useCallback(() => {
@@ -1007,12 +1006,13 @@ export function GraphView({
       return lastCollapsed !== undefined && lastCollapsed !== currentCollapsed;
     });
 
-    const layoutJustFinished = layoutJustCompletedRef.current;
-    layoutJustCompletedRef.current = false;
+    const focusModeChanged = lastFocusMode.current != focusMode || lastFocusSelectMode.current != focusSelectMode;
+    lastFocusMode.current = focusMode;
+    lastFocusSelectMode.current = focusSelectMode;
 
     // Trigger full layout reapplication when view-affecting settings change
     const needsFullUpdate =
-      layoutJustFinished ||
+      focusModeChanged ||
       !isInitialized.current ||
       currentResultId !== lastResultId.current ||
       layoutSnapshot.viewMode !== lastViewMode.current ||
@@ -1168,7 +1168,7 @@ export function GraphView({
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        fitView={!initialViewport}
+        fitView={false} // !initialViewport
         minZoom={0.1}
         maxZoom={2}
         onlyRenderVisibleElements
