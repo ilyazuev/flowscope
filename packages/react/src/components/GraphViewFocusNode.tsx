@@ -15,20 +15,21 @@ import {
   GraphTooltip,
   GraphTooltipArrow,
   GraphTooltipContent,
-  GraphTooltipPortal, GraphTooltipProvider,
+  GraphTooltipPortal,
+  GraphTooltipProvider,
   GraphTooltipTrigger,
 } from './ui/graph-tooltip';
 
 export function GraphViewFocusNode({
-                                     analysisResult,
-                                     focusNodeId,
-                                     selectedNodeId,
-                                     onSelectNode,
-                                     closeRequestKey,
-                                     showColumnEdges,
-                                     focusSelectMode = false,
-                                     onFocusSelectModeChange,
-                                   }: GraphViewFocusNodeProps): JSX.Element {
+  analysisResult,
+  focusNodeId,
+  selectedNodeId,
+  onSelectNode,
+  closeRequestKey,
+  showColumnEdges,
+  focusSelectMode = false,
+  onFocusSelectModeChange,
+}: GraphViewFocusNodeProps): JSX.Element {
   const [openFocusNodes, setOpenFocusNodes] = useState(false);
   const [openSelectNodes, setOpenSelectNodes] = useState(false);
   const [openHistoryNodes, setOpenHistoryNodes] = useState(false);
@@ -36,17 +37,22 @@ export function GraphViewFocusNode({
   const [onlyTables, setOnlyTables] = useState(false);
   const focusNodeNamesListRef = useRef<HTMLDivElement>(null);
   const columnsListRef = useRef<HTMLDivElement>(null);
-  const cache = useRef<Record<string, {
-    cachedParent?: GlobalNode;
-    cachedChildren?: GlobalNode[];
-  }>>({});
+  const cache = useRef<
+    Record<
+      string,
+      {
+        cachedParent?: GlobalNode;
+        cachedChildren?: GlobalNode[];
+      }
+    >
+  >({});
 
   const addHistory = useCallback((node?: GlobalNode) => {
     if (!node) {
       return;
     }
     const index = historyNodes.indexOf(node, 0);
-    if (index == 0 ) {
+    if (index == 0) {
       return;
     } else if (index > -1) {
       historyNodes.splice(index, 1);
@@ -99,7 +105,7 @@ export function GraphViewFocusNode({
       return [];
     }
     let cacheNode = cache.current[focusedNode.id];
-    if( !cacheNode ) {
+    if (!cacheNode) {
       cacheNode = cache.current[focusedNode.id] = {};
     }
     if (!cacheNode.cachedChildren) {
@@ -111,10 +117,10 @@ export function GraphViewFocusNode({
         .sort((a, b) => a.label.localeCompare(b.label));
       cacheNode.cachedChildren.forEach((node) => {
         let cacheChildNode = cache.current[node.id];
-        if( !cacheChildNode ) {
+        if (!cacheChildNode) {
           cacheChildNode = cache.current[node.id] = {};
         }
-        cacheChildNode.cachedParent = focusedNode
+        cacheChildNode.cachedParent = focusedNode;
       });
     }
     return cacheNode.cachedChildren;
@@ -339,22 +345,24 @@ export function GraphViewFocusNode({
         <GraphTooltip delayDuration={300}>
           <GraphTooltipTrigger asChild>
             <button
-              onClick={() =>
-                onFocusSelectModeChange?.(!focusSelectMode)
-              }
+              onClick={() => {
+                if (internalFocusNodeId) {
+                  onFocusSelectModeChange?.(!focusSelectMode);
+                }
+              }}
               className={cn(
                 'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
-                focusSelectMode && internalFocusNodeId
+                internalFocusNodeId
                   ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
                   : 'text-slate-400'
               )}
               aria-label={'Filter focus and selection'}
-              aria-pressed={focusSelectMode && !!internalFocusNodeId}
+              aria-pressed={!!internalFocusNodeId}
               type="button"
             >
               <Focus
                 className="size-3.5"
-                strokeWidth={focusSelectMode && internalFocusNodeId ? 2.5 : 1.5}
+                strokeWidth={internalFocusNodeId ? 2.5 : 1.5}
               />
             </button>
           </GraphTooltipTrigger>
