@@ -119,7 +119,7 @@ function ColumnRow({
       style={{
         ...style,
         fontSize: 12,
-        color: col.isHidden ? 'red' : col.isHighlighted ? colors.interactive.selection : textSecondary,
+        color: col.isHighlighted ? colors.interactive.selection : textSecondary,
         fontWeight: col.isHighlighted ? 600 : 400,
         backgroundColor: col.isHighlighted ? colors.interactive.hover : 'transparent',
         padding: '3px 4px',
@@ -570,7 +570,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
                 overflowX: 'hidden',
               }}
             >
-              {nodeData.columns.map((col: ColumnNodeInfo) => (
+              {nodeData.columns.map((col: ColumnNodeInfo) => !col.isHidden && (
                 <ColumnRow
                   key={col.id}
                   col={col}
@@ -702,7 +702,8 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
     return (
       prevCol.id === nextCol.id &&
       prevCol.name === nextCol.name &&
-      prevCol.isHighlighted === nextCol.isHighlighted
+      prevCol.isHighlighted === nextCol.isHighlighted &&
+      prevCol.isHidden === nextCol.isHidden
     );
   };
 
