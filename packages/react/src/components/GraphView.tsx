@@ -9,7 +9,7 @@ import {
   useReactFlow,
   Panel,
 } from '@xyflow/react';
-import type { Node as FlowNode, Edge as FlowEdge, Viewport } from '@xyflow/react';
+import type { Node as FlowNode, Edge as FlowEdge, Viewport, XYPosition } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { LayoutList, Maximize2, Minimize2, Route, GitBranch } from 'lucide-react';
 import type { AnalyzeResult, Node as LineageNode } from '@pondpilot/flowscope-core';
@@ -713,6 +713,33 @@ export function GraphView({
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
 
+  // Last known coordinates for the complete, un-focused graph.
+  // Focus Select is a visibility filter, not a layout event, so toggling it should
+  // reuse these coordinates instead of recomputing dagre/elk for the subgraph.
+  const fullGraphPositionsRef = useRef<Map<string, XYPosition>>(new Map());
+  const wasFocusSelectModeRef = useRef(false);
+
+  useEffect(() => {
+    if (focusSelectMode) {
+      return;
+    }
+
+    if (nodes.length === 0 || builtGraph.nodes.length === 0) {
+      return;
+    }
+
+    // Only capture positions when the full graph is currently rendered.
+    // This avoids replacing the complete graph snapshot with coordinates from
+    // table/search/namespace/focus filtered subsets.
+    if (nodes.length !== builtGraph.nodes.length) {
+      return;
+    }
+
+    fullGraphPositionsRef.current = new Map(
+      nodes.map((node) => [node.id, { ...node.position }])
+    );
+  }, [nodes, builtGraph.nodes.length, focusSelectMode]);
+
   // State for async layout results
   const [layoutedNodes, setLayoutedNodes] = useState<FlowNode[]>([]);
   const [layoutedEdges, setLayoutedEdges] = useState<FlowEdge[]>([]);
@@ -742,6 +769,42 @@ export function GraphView({
       return;
     }
 
+    // Capture renderGraph snapshot for this layout cycle. Using a ref ensures we get
+    // a consistent snapshot even if renderGraph updates during async layout computation.
+    // This prevents race conditions where node counts/IDs change mid-computation.
+    const renderGraphSnapshot = renderGraphRef.current;
+    const wasFocusSelectMode = wasFocusSelectModeRef.current;
+    wasFocusSelectModeRef.current = focusSelectMode;
+
+    // Focus Select must only hide/show a lineage subset. Re-layouting that subset
+    // makes the viewport appear to "fly away", and re-layouting again on restore
+    // shuffles the complete graph. Keep existing full-graph coordinates instead.
+    if (focusSelectMode || wasFocusSelectMode) {
+      setIsLayouting(false);
+      setLayoutedNodes([]);
+      setLayoutedEdges([]);
+
+      setNodes((currentNodes) => {
+        const positionMap = new Map<string, XYPosition>();
+
+        for (const [nodeId, position] of fullGraphPositionsRef.current) {
+          positionMap.set(nodeId, position);
+        }
+
+        // Preserve any positions changed while Focus Select was active.
+        for (const node of currentNodes) {
+          positionMap.set(node.id, node.position);
+        }
+
+        return renderGraphSnapshot.nodes.map((node) => ({
+          ...node,
+          position: positionMap.get(node.id) ?? node.position,
+        }));
+      });
+      setEdges(renderGraphSnapshot.edges);
+      return;
+    }
+
     const effectiveLayoutAlgorithm =
       layoutAlgorithm === 'elk' && layoutNodes.length > ELK_NODE_LIMIT ? 'dagre' : layoutAlgorithm;
 
@@ -757,11 +820,6 @@ export function GraphView({
 
     setIsLayouting(true);
 
-    // Capture renderGraph snapshot for this layout cycle. Using a ref ensures we get
-    // a consistent snapshot even if renderGraph updates during async layout computation.
-    // This prevents race conditions where node counts/IDs change mid-computation.
-    const renderGraphSnapshot = renderGraphRef.current;
-
     if (GRAPH_DEBUG) console.time('[Layout] Stage 1: preserve positions');
     // Stage 1: Preserve existing node positions for smoother transitions.
     // This prevents nodes from jumping to origin (0,0) while layout computes.
@@ -773,7 +831,15 @@ export function GraphView({
         return fastResult;
       }
 
-      const positionMap = new Map(currentNodes.map((node) => [node.id, node.position]));
+      const positionMap = new Map<string, XYPosition>();
+
+      for (const [nodeId, position] of fullGraphPositionsRef.current) {
+        positionMap.set(nodeId, position);
+      }
+
+      for (const node of currentNodes) {
+        positionMap.set(node.id, node.position);
+      }
 
       // Count how many new nodes don't have existing positions
       const nodesWithoutPosition = renderGraphSnapshot.nodes.filter(
@@ -900,6 +966,7 @@ export function GraphView({
     showScriptTables,
     viewMode,
     analysisResult,
+    focusSelectMode,
     setNodes,
     setEdges,
     setLayoutMetrics,
@@ -912,8 +979,6 @@ export function GraphView({
   const lastShowTables = useRef<boolean | null>(null);
   const lastLayoutAlgorithm = useRef<LayoutAlgorithm | null>(null);
   const lastAppliedDefaultCollapsed = useRef<boolean | null>(null);
-  const lastFocusMode = useRef<boolean>(false);
-  const lastFocusSelectMode = useRef<boolean>(false);
 
   // Track last applied collapse states to detect individual node collapse changes
   const lastAppliedCollapseStates = useRef<Map<string, boolean>>(new Map());
@@ -1006,13 +1071,8 @@ export function GraphView({
       return lastCollapsed !== undefined && lastCollapsed !== currentCollapsed;
     });
 
-    const focusModeChanged = lastFocusMode.current != focusMode || lastFocusSelectMode.current != focusSelectMode;
-    lastFocusMode.current = focusMode;
-    lastFocusSelectMode.current = focusSelectMode;
-
     // Trigger full layout reapplication when view-affecting settings change
     const needsFullUpdate =
-      focusModeChanged ||
       !isInitialized.current ||
       currentResultId !== lastResultId.current ||
       layoutSnapshot.viewMode !== lastViewMode.current ||
@@ -1168,7 +1228,7 @@ export function GraphView({
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        fitView={false} // !initialViewport
+        fitView={!initialViewport}
         minZoom={0.1}
         maxZoom={2}
         onlyRenderVisibleElements
