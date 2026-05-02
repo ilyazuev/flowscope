@@ -12,7 +12,7 @@ const DEFAULT_CUSTOMERS_SCHEMA = `${import.meta.env.VITE_DEFAULT_USERNAME || ''}
 // noinspection SqlNoDataSourceInspection
 export const DEFAULT_CUSTOMERS_PROJECT: Project = {
   id: 'default-customers-project',
-  name: `${import.meta.env.VITE_APP_NAME||'Example'} sql`,
+  name: `Lineage Example Project`,
   activeFileId: 'sql-file-1',
   dialect: 'oracleBackend',
   database: import.meta.env.VITE_DEFAULT_DATABASE || 'Autodetect',
