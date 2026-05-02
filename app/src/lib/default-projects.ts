@@ -24,8 +24,8 @@ export const DEFAULT_CUSTOMERS_PROJECT: Project = {
   files: [
     {
       id: 'sql-file-1',
-      name: 'Test_SQL_1.sql',
-      path: 'Test_SQL_1.sql',
+      name: 'Lineage_Test.sql',
+      path: 'Lineage_Test.sql',
       language: 'sql',
       content: `
 WITH
