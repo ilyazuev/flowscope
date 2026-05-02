@@ -9,6 +9,7 @@ import type { Project } from './project-store';
  * Demonstrates sql lineage.
  */
 const DEFAULT_CUSTOMERS_SCHEMA = `${import.meta.env.VITE_DEFAULT_USERNAME || ''}.`;
+// noinspection SqlNoDataSourceInspection
 export const DEFAULT_CUSTOMERS_PROJECT: Project = {
   id: 'default-customers-project',
   name: `${import.meta.env.VITE_APP_NAME||'Example'} sql`,
@@ -27,7 +28,6 @@ export const DEFAULT_CUSTOMERS_PROJECT: Project = {
       path: 'Test_SQL_1.sql',
       language: 'sql',
       content: `
--- noinspection SqlNoDataSourceInspection @ table/"${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER"
 WITH
 params AS (
     select order_id, order_extra, dt_from, dt_to from ( 
@@ -38,7 +38,9 @@ params AS (
             DATE '2026-02-01' AS dt_to
         FROM dual -- test parameter in comment :order_id
     ) /* test parameter in comment :order_id */
-    where order_id = :order_id -- 1
+    where
+        1 = 1
+        and order_id = :order_id -- 1
 ),
 ord AS (
     SELECT
@@ -48,8 +50,9 @@ ord AS (
         o.order_dt,
         o.status_cd,
         o.currency_cd,
-        p.order_extra, o.CURRENCY_CD1, o.CURRENCY_CD2, o.CURRENCY_CD3, o.CURRENCY_CD4, o.CURRENCY_CD5, o.CURRENCY_CD6, o.CURRENCY_CD7, o.CURRENCY_CD8, o.CURRENCY_CD9, o.CURRENCY_CD10, o.CURRENCY_CD11, o.CURRENCY_CD12, o.CURRENCY_CD13, o.CURRENCY_CD14, o.CURRENCY_CD15, o.CURRENCY_CD16, o.CURRENCY_CD18, o.CURRENCY_CD19, o.CURRENCY_CD20, o.CURRENCY_CD21, o.CURRENCY_CD22, o.CURRENCY_CD23, o.CURRENCY_CD24, o.CURRENCY_CD25
-    FROM ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER o
+        p.order_extra, 
+        o.BILLING_NAME, o.BILLING_STREET1, o.BILLING_CITY, o.BILLING_POSTAL_CODE, o.BILLING_COUNTRY_CD, o.SHIPPING_NAME, o.SHIPPING_STREET1, o.SHIPPING_STREET2, o.SHIPPING_CITY, o.SHIPPING_POSTAL_CODE, o.SHIPPING_COUNTRY_CD, o.PAYMENT_METHOD, o.PAYMENT_TXN_ID, o.PAID_AT, o.SHIPPING_METHOD, o.TRACKING_NO, o.SHIPPED_AT, o.DELIVERED_AT, o.SUBTOTAL_AMT, o.TAX_AMT, o.SHIPPING_COST, o.TOTAL_DISCOUNT_AMT, o.TOTAL_AMT, o.CHANNEL_CD, o.COUPON_CD, o.CREATED_AT, o.UPDATED_AT
+    FROM ${DEFAULT_CUSTOMERS_SCHEMA}LINEAGE_TEST_ORDER o
     CROSS JOIN params p
     WHERE o.order_dt >= p.dt_from
       AND o.order_dt <  p.dt_to
@@ -64,8 +67,8 @@ items AS (
         oi.discount_amt,
         (oi.qty * oi.unit_price - oi.discount_amt) AS line_amount,
         p.order_extra,
-        o.currency_cd, o.CURRENCY_CD1, o.CURRENCY_CD2, o.CURRENCY_CD3, o.CURRENCY_CD4, o.CURRENCY_CD5, o.CURRENCY_CD6, o.CURRENCY_CD7, o.CURRENCY_CD8, o.CURRENCY_CD9, o.CURRENCY_CD10, o.CURRENCY_CD11, o.CURRENCY_CD12, o.CURRENCY_CD13, o.CURRENCY_CD14, o.CURRENCY_CD15, o.CURRENCY_CD16, o.CURRENCY_CD18, o.CURRENCY_CD19, o.CURRENCY_CD20, o.CURRENCY_CD21, o.CURRENCY_CD22, o.CURRENCY_CD23, o.CURRENCY_CD24, o.CURRENCY_CD25
-    FROM ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER_ITEM oi
+        o.BILLING_NAME, o.BILLING_STREET1, o.BILLING_CITY, o.BILLING_POSTAL_CODE, o.BILLING_COUNTRY_CD, o.SHIPPING_NAME, o.SHIPPING_STREET1, o.SHIPPING_STREET2, o.SHIPPING_CITY, o.SHIPPING_POSTAL_CODE, o.SHIPPING_COUNTRY_CD, o.PAYMENT_METHOD, o.PAYMENT_TXN_ID, o.PAID_AT, o.SHIPPING_METHOD, o.TRACKING_NO, o.SHIPPED_AT, o.DELIVERED_AT, o.SUBTOTAL_AMT, o.TAX_AMT, o.SHIPPING_COST, o.TOTAL_DISCOUNT_AMT, o.TOTAL_AMT, o.CHANNEL_CD, o.COUPON_CD, o.CREATED_AT, o.UPDATED_AT
+    FROM ${DEFAULT_CUSTOMERS_SCHEMA}LINEAGE_TEST_ORDER_ITEM oi
     JOIN ord o ON o.order_id = oi.order_id
     LEFT JOIN params p ON p.order_id = o.order_id -- check 2 CTE joins
 ),
@@ -84,13 +87,13 @@ enriched AS (
         i.line_amount,
         tbl_ord.status_cd
     FROM ord o
-    JOIN ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}CUSTOMER c ON c.customer_id = o.customer_id
-    LEFT JOIN ${DEFAULT_CUSTOMERS_SCHEMA}${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}ORDER tbl_ord ON tbl_ord.customer_id = c.customer_id -- test double table join
+    JOIN ${DEFAULT_CUSTOMERS_SCHEMA}LINEAGE_TEST_CUSTOMER c ON c.customer_id = o.customer_id
+    LEFT JOIN ${DEFAULT_CUSTOMERS_SCHEMA}LINEAGE_TEST_ORDER tbl_ord ON tbl_ord.customer_id = c.customer_id -- test double table join
     JOIN items i ON i.order_id = o.order_id
-    JOIN ${import.meta.env.VITE_DEFAULT_TABLE_PREFIX}PRODUCT p ON p.product_id = i.product_id
+    JOIN ${DEFAULT_CUSTOMERS_SCHEMA}LINEAGE_TEST_PRODUCT p ON p.product_id = i.product_id
     WHERE 
         1 = 1
-        and c.customer_no = :customer_no -- CUST-001
+        and c.customer_no = :customer_no -- CUST-023
         and p.category = :category -- ELECTRONICS
         and c.customer_no = :customer_no
 ),
@@ -118,7 +121,7 @@ LEFT JOIN cat_rank cr
     ON cr.customer_id = e.customer_id
 WHERE
   1 = 1
-  and e.full_name = :full_name -- Alice Korhonen
+  and e.full_name = :full_name -- Alice Heikkinen
 GROUP BY
     e.customer_no,
     e.full_name
