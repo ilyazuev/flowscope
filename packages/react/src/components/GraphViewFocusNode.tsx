@@ -27,7 +27,7 @@ export function GraphViewFocusNode({
   onSelectNode,
   closeRequestKey,
   showColumnEdges,
-  focusSelectMode = false,
+  focusSelectMode = 'none',
   onFocusSelectModeChange,
 }: GraphViewFocusNodeProps): JSX.Element {
   const [openFocusNodes, setOpenFocusNodes] = useState(false);
@@ -347,13 +347,20 @@ export function GraphViewFocusNode({
             <button
               onClick={() => {
                 if (internalFocusNodeId) {
-                  onFocusSelectModeChange?.(!focusSelectMode);
+                  onFocusSelectModeChange?.(
+                    focusSelectMode == 'none'
+                      ? 'column'
+                      : focusSelectMode == 'column'
+                        ? 'table'
+                        : 'none'
+                  );
                 }
               }}
               className={cn(
                 'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
                 internalFocusNodeId
-                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
+                  ? `bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${focusSelectMode == 'none' 
+                    ? 'text-slate-700' : focusSelectMode == 'column' ? 'text-red-600' : 'text-orange-500'}`
                   : 'text-slate-400'
               )}
               aria-label={'Filter focus and selection'}

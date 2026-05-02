@@ -252,9 +252,11 @@ export interface GraphViewFocusNodeProps {
   ) => void;
   closeRequestKey?: number;
   showColumnEdges: boolean;
-  focusSelectMode?: boolean;
-  onFocusSelectModeChange?: (enabled: boolean) => void;
+  focusSelectMode: FocusSelectMode;
+  onFocusSelectModeChange: (enabled: FocusSelectMode) => void;
 }
+
+export type FocusSelectMode = 'none' | 'column' | 'table';
 
 /**
  * Props for the SqlView component.

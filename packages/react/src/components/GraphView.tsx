@@ -17,7 +17,7 @@ import type { AnalyzeResult, Node as LineageNode } from '@pondpilot/flowscope-co
 import { useLineage, useLineageStore } from '../store';
 import { useNodeFocus } from '../hooks/useNodeFocus';
 import { useGraphFiltering } from '../hooks/useGraphFiltering';
-import type { GraphViewProps, TableNodeData, LayoutAlgorithm } from '../types';
+import type { GraphViewProps, TableNodeData, LayoutAlgorithm, FocusSelectMode } from '../types';
 import {
   getLayoutedElements,
   getLayoutedElementsInWorker,
@@ -350,7 +350,7 @@ function ToolbarToggleButton({
 function enhanceGraphWithHighlights(
   graph: { nodes: FlowNode[]; edges: FlowEdge[] },
   highlightIds: Set<string>,
-  focusSelectMode: boolean
+  focusSelectMode: FocusSelectMode
 ): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const enhancedNodes = graph.nodes.map((node) => {
     const isHighlighted = highlightIds.has(node.id);
@@ -363,7 +363,7 @@ function enhanceGraphWithHighlights(
         return {
           ...col,
           isHighlighted: isHighlightedColumn,
-          ...(focusSelectMode && !isHighlightedColumn ? { isHidden: true } : {})
+          ...(focusSelectMode == 'column' && !isHighlightedColumn ? { isHidden: true } : {})
         }
       });
 
@@ -445,7 +445,7 @@ export function GraphView({
 
   // Focus mode - when enabled, only show nodes in the search lineage path
   const [focusMode, setFocusMode] = useState(false);
-  const [focusSelectMode, setFocusSelectMode] = useState(false);
+  const [focusSelectMode, setFocusSelectMode] = useState<FocusSelectMode>('none');
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(undefined);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
   const [focusNodeRequestKey, setFocusNodeRequestKey] = useState(0);
@@ -467,7 +467,7 @@ export function GraphView({
     setFocusMode(enabled);
   }, []);
 
-  const handleFocusSelectModeChange = useCallback((enabled: boolean) => {
+  const handleFocusSelectModeChange = useCallback((enabled: FocusSelectMode) => {
     setFocusSelectMode(enabled);
   }, []);
 
@@ -717,10 +717,10 @@ export function GraphView({
   // Focus Select is a visibility filter, not a layout event, so toggling it should
   // reuse these coordinates instead of recomputing dagre/elk for the subgraph.
   const fullGraphPositionsRef = useRef<Map<string, XYPosition>>(new Map());
-  const wasFocusSelectModeRef = useRef(false);
+  const wasFocusSelectModeRef = useRef<FocusSelectMode>('none');
 
   useEffect(() => {
-    if (focusSelectMode) {
+    if (focusSelectMode == 'none') {
       return;
     }
 
@@ -779,7 +779,7 @@ export function GraphView({
     // Focus Select must only hide/show a lineage subset. Re-layouting that subset
     // makes the viewport appear to "fly away", and re-layouting again on restore
     // shuffles the complete graph. Keep existing full-graph coordinates instead.
-    if (focusSelectMode || wasFocusSelectMode) {
+    if (focusSelectMode != 'none' || wasFocusSelectMode != 'none' ) {
       setIsLayouting(false);
       setLayoutedNodes([]);
       setLayoutedEdges([]);
@@ -1195,7 +1195,7 @@ export function GraphView({
   const handlePaneClick = useCallback(() => {
     actions.selectNode(null);
     setInternalFocusNodeId(undefined);
-    setFocusSelectMode(false);
+    setFocusSelectMode('none');
     setFocusNodeCloseRequestKey((prev) => prev + 1);
   }, [actions]);
 

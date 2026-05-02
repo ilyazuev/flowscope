@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Node as FlowNode, Edge as FlowEdge } from '@xyflow/react';
-import type { TableFilter, NamespaceFilter } from '../types';
+import type { TableFilter, NamespaceFilter, FocusSelectMode } from '../types';
 import {
   buildGraphIndex,
   findConnectedElementsIndexed,
@@ -29,7 +29,7 @@ export interface UseGraphFilteringOptions {
   showColumnEdges?: boolean;
   /** Whether focus mode is enabled */
   focusMode: boolean;
-  focusSelectMode: boolean;
+  focusSelectMode: FocusSelectMode;
   /** Table filter configuration */
   tableFilter: TableFilter;
   /** Namespace filter configuration - filter by schema/database */

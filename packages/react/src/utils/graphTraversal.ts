@@ -4,7 +4,7 @@ import type {
   ScriptNodeData,
   TableFilterDirection,
   TableFilter,
-  NamespaceFilter,
+  NamespaceFilter, FocusSelectMode,
 } from '../types';
 
 /**
@@ -560,7 +560,7 @@ export interface ApplyFiltersOptions {
   graph: { nodes: FlowNode[]; edges: FlowEdge[] };
   highlightIds: Set<string>;
   focusMode: boolean;
-  focusSelectMode: boolean;
+  focusSelectMode: FocusSelectMode;
   effectiveSearchTerm: string | undefined;
   tableFilter: TableFilter;
   /** Optional pre-built graph index for performance */
@@ -584,7 +584,7 @@ export function applyFilters(options: ApplyFiltersOptions): ApplyFiltersResult {
   let graph = options.graph;
 
   // Apply focus mode filtering if enabled and we have search matches
-  if ( (focusSelectMode || (focusMode && effectiveSearchTerm)) && highlightIds.size > 0) {
+  if ( (focusSelectMode != 'none' || (focusMode && effectiveSearchTerm)) && highlightIds.size > 0) {
     graph = filterGraphToHighlights(graph, highlightIds);
   }
 
