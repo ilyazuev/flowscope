@@ -1,8 +1,19 @@
 -- noinspection SqlResolveForFile
+
+-- DROP TABLE LINEAGE_TEST_PARAMS;
+-- DROP TABLE LINEAGE_TEST_CUSTOMER;
+-- DROP TABLE LINEAGE_TEST_PRODUCT;
+-- DROP TABLE LINEAGE_TEST_ORDER;
+-- DROP TABLE LINEAGE_TEST_ORDER_ITEM;
+
 -- =========================================================
--- ORACLE SQL schema + comments
--- Base schema from <File>schema.sql</File> and extended ORDER table with 25 business fields
+-- PARAMS
 -- =========================================================
+CREATE TABLE LINEAGE_TEST_PARAMS (
+  PARAMS_NAME VARCHAR2(30) NOT NULL,
+  DT_FROM DATE DEFAULT TRUNC(SYSDATE) NOT NULL,
+  DT_TO DATE DEFAULT TRUNC(SYSDATE) NOT NULL
+);
 
 -- =========================================================
 -- CUSTOMER
@@ -62,7 +73,7 @@ COMMENT ON COLUMN LINEAGE_TEST_PRODUCT.CREATED_AT IS 'Row creation timestamp';
 COMMENT ON COLUMN LINEAGE_TEST_PRODUCT.UPDATED_AT IS 'Row last update timestamp';
 
 -- =========================================================
--- ORDER (extended)
+-- ORDER
 -- =========================================================
 CREATE TABLE LINEAGE_TEST_ORDER (
   ORDER_ID NUMBER,

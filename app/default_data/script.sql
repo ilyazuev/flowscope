@@ -2,17 +2,16 @@
 
 WITH
     params AS (
-        select order_id, order_extra, dt_from, dt_to from (
-                                                              SELECT
-                                                                  1 order_id,
-                                                                  'extra' order_extra,
-                                                                  DATE '2026-01-01' AS dt_from,
-                                                                  DATE '2026-02-01' AS dt_to
-                                                              FROM dual -- test parameter in comment :order_id
-                                                          ) /* test parameter in comment :order_id */
+        select params_name, dt_from, dt_to from (
+              SELECT
+                  params_name,
+                  dt_from,
+                  dt_to
+              FROM LINEAGE_TEST_PARAMS -- test parameter in comment :order_id
+          ) /* test parameter in comment :order_id */
         where
             1 = 1
-          and order_id = :order_id -- 1
+          and params_name = :params_name -- DEFAULT_PARAMS
     ),
     ord AS (
         SELECT
@@ -22,7 +21,7 @@ WITH
             o.order_dt,
             o.status_cd,
             o.currency_cd,
-            p.order_extra,
+            p.params_name,
             o.BILLING_NAME, o.BILLING_STREET1, o.BILLING_CITY, o.BILLING_POSTAL_CODE, o.BILLING_COUNTRY_CD, o.SHIPPING_NAME, o.SHIPPING_STREET1, o.SHIPPING_STREET2, o.SHIPPING_CITY, o.SHIPPING_POSTAL_CODE, o.SHIPPING_COUNTRY_CD, o.PAYMENT_METHOD, o.PAYMENT_TXN_ID, o.PAID_AT, o.SHIPPING_METHOD, o.TRACKING_NO, o.SHIPPED_AT, o.DELIVERED_AT, o.SUBTOTAL_AMT, o.TAX_AMT, o.SHIPPING_COST, o.TOTAL_DISCOUNT_AMT, o.TOTAL_AMT, o.CHANNEL_CD, o.COUPON_CD, o.CREATED_AT, o.UPDATED_AT
         FROM LINEAGE_TEST_ORDER o
                  CROSS JOIN params p
@@ -38,7 +37,7 @@ WITH
             oi.unit_price,
             oi.discount_amt,
             (oi.qty * oi.unit_price - oi.discount_amt) AS line_amount,
-            p.order_extra,
+            p.params_name,
             o.BILLING_NAME, o.BILLING_STREET1, o.BILLING_CITY, o.BILLING_POSTAL_CODE, o.BILLING_COUNTRY_CD, o.SHIPPING_NAME, o.SHIPPING_STREET1, o.SHIPPING_STREET2, o.SHIPPING_CITY, o.SHIPPING_POSTAL_CODE, o.SHIPPING_COUNTRY_CD, o.PAYMENT_METHOD, o.PAYMENT_TXN_ID, o.PAID_AT, o.SHIPPING_METHOD, o.TRACKING_NO, o.SHIPPED_AT, o.DELIVERED_AT, o.SUBTOTAL_AMT, o.TAX_AMT, o.SHIPPING_COST, o.TOTAL_DISCOUNT_AMT, o.TOTAL_AMT, o.CHANNEL_CD, o.COUPON_CD, o.CREATED_AT, o.UPDATED_AT
         FROM LINEAGE_TEST_ORDER_ITEM oi
                  JOIN ord o ON o.order_id = oi.order_id

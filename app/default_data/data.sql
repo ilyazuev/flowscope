@@ -1,5 +1,12 @@
 -- noinspection SqlResolveForFile
 
+-- Params
+Insert into LINEAGE_TEST_PARAMS(PARAMS_NAME, DT_FROM, DT_TO)
+Values
+('DEFAULT_PARAMS', DATE  '2026-01-01', DATE  '2026-02-01');
+COMMIT;
+----------------------------------------------------------------------------------------------------------------------------------
+
 -- Customers
 Insert into LINEAGE_TEST_CUSTOMER
  (CUSTOMER_ID, CUSTOMER_NO, FULL_NAME, EMAIL, PHONE, STATUS_CD, CREATED_AT, UPDATED_AT)
