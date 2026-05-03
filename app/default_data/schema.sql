@@ -11,8 +11,9 @@
 -- =========================================================
 CREATE TABLE LINEAGE_TEST_PARAMS (
   PARAMS_NAME VARCHAR2(30) NOT NULL,
-  DT_FROM DATE DEFAULT TRUNC(SYSDATE) NOT NULL,
-  DT_TO DATE DEFAULT TRUNC(SYSDATE) NOT NULL
+  CURRENCY_CD CHAR(3 CHAR) DEFAULT 'EUR' NOT NULL,
+  DT_FROM     DATE DEFAULT TRUNC(SYSDATE) NOT NULL,
+  DT_TO       DATE DEFAULT TRUNC(SYSDATE) NOT NULL
 );
 
 -- =========================================================

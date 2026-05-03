@@ -1,9 +1,9 @@
 -- noinspection SqlResolveForFile
 
 -- Params
-Insert into LINEAGE_TEST_PARAMS(PARAMS_NAME, DT_FROM, DT_TO)
+Insert into LINEAGE_TEST_PARAMS(PARAMS_NAME, CURRENCY_CD, DT_FROM, DT_TO)
 Values
-('DEFAULT_PARAMS', DATE  '2026-01-01', DATE  '2026-02-01');
+('DEFAULT_PARAMS', 'EUR', DATE  '2026-01-01', DATE  '2026-02-01');
 COMMIT;
 ----------------------------------------------------------------------------------------------------------------------------------
 

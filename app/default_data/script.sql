@@ -1,14 +1,14 @@
 -- noinspection SqlResolveForFile
-
 WITH
     params AS (
-        select params_name, dt_from, dt_to from (
-              SELECT
-                  params_name,
-                  dt_from,
-                  dt_to
-              FROM LINEAGE_TEST_PARAMS -- test parameter in comment :order_id
-          ) /* test parameter in comment :order_id */
+        select params_name, currency_cd, dt_from, dt_to from (
+             SELECT
+                 params_name,
+                 currency_cd,
+                 dt_from,
+                 dt_to
+             FROM LINEAGE_TEST_PARAMS -- test parameter in comment :order_id
+         ) /* test parameter in comment :order_id */
         where
             1 = 1
           and params_name = :params_name -- DEFAULT_PARAMS
@@ -41,7 +41,7 @@ WITH
             o.BILLING_NAME, o.BILLING_STREET1, o.BILLING_CITY, o.BILLING_POSTAL_CODE, o.BILLING_COUNTRY_CD, o.SHIPPING_NAME, o.SHIPPING_STREET1, o.SHIPPING_STREET2, o.SHIPPING_CITY, o.SHIPPING_POSTAL_CODE, o.SHIPPING_COUNTRY_CD, o.PAYMENT_METHOD, o.PAYMENT_TXN_ID, o.PAID_AT, o.SHIPPING_METHOD, o.TRACKING_NO, o.SHIPPED_AT, o.DELIVERED_AT, o.SUBTOTAL_AMT, o.TAX_AMT, o.SHIPPING_COST, o.TOTAL_DISCOUNT_AMT, o.TOTAL_AMT, o.CHANNEL_CD, o.COUPON_CD, o.CREATED_AT, o.UPDATED_AT
         FROM LINEAGE_TEST_ORDER_ITEM oi
                  JOIN ord o ON o.order_id = oi.order_id
-                 LEFT JOIN params p ON p.order_id = o.order_id -- check 2 CTE joins
+                 LEFT JOIN params p ON p.currency_cd = o.currency_cd -- check 2 CTE joins
     ),
     enriched AS (
         SELECT
@@ -74,9 +74,9 @@ WITH
             category,
             SUM(line_amount) AS cat_amount,
             ROW_NUMBER() OVER (
-            PARTITION BY customer_id
-            ORDER BY SUM(line_amount) DESC, category
-        ) AS rn
+                PARTITION BY customer_id
+                ORDER BY SUM(line_amount) DESC, category
+                ) AS rn
         FROM enriched
         GROUP BY customer_id, category
     )
