@@ -49,6 +49,14 @@ type ToolbarState = {
   isWrapped: boolean;
 };
 
+type StatusState = {
+  length: number;
+  lines: number;
+  line: number;
+  column: number;
+  position: number;
+};
+
 const setHighlights = StateEffect.define<HighlightRange[]>();
 const lineWrappingCompartment = new Compartment();
 
@@ -172,7 +180,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       value,
       isDark,
       highlightedSpan: highlightedSpanProp,
-      lineWrapping = true,
+      lineWrapping = false,
       dialect
     },
     ref
@@ -225,6 +233,34 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       canRedo: false,
       isWrapped: lineWrapping,
     });
+    const [statusState, setStatusState] = useState<StatusState>(() => {
+      const text = sqlText ?? '';
+      return {
+        length: text.length,
+        lines: text.split('\n').length,
+        line: 1,
+        column: 1,
+        position: 1,
+      };
+    });
+
+    const updateStatusState = useCallback((view: EditorView | null) => {
+      if (!view) {
+        return;
+      }
+
+      const { doc, selection } = view.state;
+      const head = selection.main.head;
+      const line = doc.lineAt(head);
+
+      setStatusState({
+        length: doc.length,
+        lines: doc.lines,
+        line: line.number,
+        column: head - line.from + 1,
+        position: head + 1,
+      });
+    }, []);
 
     const updateToolbarState = useCallback(
       (view: EditorView | null) => {
@@ -294,12 +330,13 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
               canUndo: editable && undoDepth(update.state) > 0,
               canRedo: editable && redoDepth(update.state) > 0,
             }));
+            updateStatusState(update.view);
           }
         }),
         bookmarkExtension,
         sqlCteFolding(),
       ],
-      [editable, bookmarkExtension, lineWrapping]
+      [editable, bookmarkExtension, lineWrapping, updateStatusState]
     );
 
     const theme = useMemo(() => (isDark ? oneDark : 'light'), [isDark]);
@@ -313,6 +350,10 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       },
       [actions, onChange, isControlled]
     );
+
+    useEffect(() => {
+      updateStatusState(editorRef.current?.view ?? editorView);
+    }, [sqlText, editorView, updateStatusState]);
 
     const handleUndo = useCallback(() => {
       const view = editorRef.current?.view ?? editorView;
@@ -615,6 +656,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             onCreateEditor={(view) => {
               setEditorView(view);
               updateToolbarState(view);
+              updateStatusState(view);
             }}
             extensions={extensions}
             editable={editable}
@@ -626,6 +668,15 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             }}
             className="flowscope-codemirror h-full w-full"
           />
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2 border-t bg-background px-2 py-1 text-[11px] leading-none text-muted-foreground">
+          <span>Len: {statusState.length}</span>
+          <span>Lines: {statusState.lines}</span>
+          <ToolbarDivider />
+          <span>Line: {statusState.line}</span>
+          <span>Col: {statusState.column}</span>
+          <span>Pos: {statusState.position}</span>
         </div>
       </div>
     );
