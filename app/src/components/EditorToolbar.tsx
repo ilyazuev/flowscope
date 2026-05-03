@@ -1,4 +1,4 @@
-import { Play, Loader2, ChevronDown, Braces, Code  } from 'lucide-react';
+import { Play, Loader2, ChevronDown, Braces, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,11 +15,13 @@ import { Dialect, RunMode } from '@/lib/project-store';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
 import { modKey, optionKey } from '@/lib/shortcuts.ts';
 import {
-  GraphTooltip, GraphTooltipArrow, GraphTooltipContent,
-  GraphTooltipPortal, GraphTooltipProvider,
+  GraphTooltip,
+  GraphTooltipArrow,
+  GraphTooltipContent,
+  GraphTooltipPortal,
+  GraphTooltipProvider,
   GraphTooltipTrigger,
 } from '@pondpilot/flowscope-react';
-
 
 export type SqlViewMode = 'template' | 'resolved';
 
@@ -34,6 +36,7 @@ interface EditorToolbarProps {
   onExecuteSql: () => void;
   onExecuteCte: () => void;
   onRunDescribe: () => void;
+  onRevealInLineage: () => Promise<void>;
   allFileCount: number;
   selectedCount: number;
   fileSelectorOpen: boolean;
@@ -63,6 +66,7 @@ export function EditorToolbar({
   onSqlViewModeChange,
   showSqlViewToggle = false,
   hasResolvedSql = false,
+  onRevealInLineage,
 }: EditorToolbarProps) {
   return (
     <div className="flex items-center justify-between px-3 py-2 border-b h-[44px] shrink-0 bg-muted/30 overflow-hidden gap-2">
@@ -170,6 +174,18 @@ export function EditorToolbar({
                 <span>Describe object under cursor</span>
                 <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                   <span className="text-xs">F4</span>
+                </kbd>
+              </div>
+              <div
+                className={
+                  'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
+                }
+                onClick={onRevealInLineage}
+              >
+                <span>Reveal object under cursor in Lineage</span>
+                <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">{modKey()}</span>
+                  <span className="text-xs">Q</span>
                 </kbd>
               </div>
             </DropdownMenuContent>

@@ -37,6 +37,7 @@ interface EditorAreaProps {
   className?: string;
   fileSelectorOpen: boolean;
   onFileSelectorOpenChange: (open: boolean) => void;
+  onRevealInLineage: (focusNodeId: string) => void;
 }
 
 export function EditorArea({
@@ -44,6 +45,7 @@ export function EditorArea({
   className,
   fileSelectorOpen,
   onFileSelectorOpenChange,
+  onRevealInLineage,
 }: EditorAreaProps) {
   const {
     currentProject,
@@ -262,7 +264,8 @@ export function EditorArea({
     return (
       <div className={isDark ? 'text-neutral-300' : 'text-neutral-600'}>
         <div className="text-sm font-medium flex gap-2 center">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching description of {tableFullName}...
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching description of {tableFullName}
+          ...
         </div>
       </div>
     );
@@ -284,12 +287,13 @@ export function EditorArea({
     });
     let columnSpan = undefined;
     const dataDescribePayloadResponse = await runDataDescribe(tableName, schema);
-    if( dataDescribePayloadResponse?.script && columnName ) {
+    if (dataDescribePayloadResponse?.script && columnName) {
       const start = dataDescribePayloadResponse.script.indexOf(`"${columnName}"`);
-      if( start != -1 ) {
+      if (start != -1) {
         columnSpan = {
-          start, end: start + columnName.length + 2,
-        }
+          start,
+          end: start + columnName.length + 2,
+        };
       }
     }
     manager.updateWindow(windowId, {
@@ -309,6 +313,44 @@ export function EditorArea({
       ),
     });
   };
+
+  const handleRevealInLineage = useCallback(async () => {
+    clearErrors();
+    if (
+      !currentProject ||
+      !activeProjectId ||
+      !activeFile ||
+      !sqlViewRef.current ||
+      !activeFile.content
+    ) {
+      return;
+    }
+    const selection = sqlViewRef.current.getSelection();
+    if (!selection) {
+      return;
+    }
+    const result = getResult(activeProjectId, hideCTEs);
+    if (!result) {
+      setDataDescribingError('No Lineage Data: need to parse SQL before reveal object in Lineage.');
+      return;
+    }
+    if (result.statements) {
+      for (const statement of result.statements) {
+        if (statement.sourceName == activeFile.name) {
+          for (const node of statement.nodes) {
+            if (node.span && node.span.start <= selection.head && selection.head <= node.span.end) {
+              if (node.type == 'column') {
+                console.log(123);
+              } else {
+                onRevealInLineage(node.id);
+              }
+            }
+          }
+          return;
+        }
+      }
+    }
+  }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage]);
 
   const handleRunDescribe = useCallback(async () => {
     clearErrors();
@@ -440,7 +482,9 @@ export function EditorArea({
                 const sql =
                   activeFile.content.substring(0, node.span.end + 1) +
                   `\n)\nSELECT * FROM ${node.label}`;
-                if (!needParametersForSql(activeFile, editedParameters, sql, `CTE: ${node.label}`)) {
+                if (
+                  !needParametersForSql(activeFile, editedParameters, sql, `CTE: ${node.label}`)
+                ) {
                   void runExecuteSql(
                     sql,
                     activeFile.path,
@@ -524,8 +568,21 @@ export function EditorArea({
         allowInInput: true,
         handler: handleRunDescribe,
       },
+      {
+        key: 'Q',
+        cmdOrCtrl: true,
+        allowInInput: true,
+        handler: handleRevealInLineage,
+      },
     ],
-    [handleAnalyze, handleAnalyzeActiveOnly, handleExecuteSql, handleExecuteCte, handleRunDescribe ]
+    [
+      handleAnalyze,
+      handleAnalyzeActiveOnly,
+      handleExecuteSql,
+      handleExecuteCte,
+      handleRunDescribe,
+      handleRevealInLineage,
+    ]
   );
 
   useGlobalShortcuts(analysisShortcuts);
@@ -554,6 +611,7 @@ export function EditorArea({
         onExecuteSql={handleExecuteSql}
         onExecuteCte={handleExecuteCte}
         onRunDescribe={handleRunDescribe}
+        onRevealInLineage={handleRevealInLineage}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
         fileSelectorOpen={fileSelectorOpen}

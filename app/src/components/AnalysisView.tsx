@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LineageActions } from '@pondpilot/flowscope-react';
 import {
   GraphErrorBoundary,
@@ -31,6 +31,7 @@ import { SchemaEditor } from './SchemaEditor';
 
 interface AnalysisViewProps {
   graphContainerRef?: React.RefObject<HTMLDivElement | null>;
+  editorFocusNodeId?: string | undefined;
 }
 
 /**
@@ -52,7 +53,10 @@ function extractSchemaFromResult(result: AnalyzeResult): SchemaTable[] {
 /**
  * Main analysis view component showing lineage graph, schema, and details.
  */
-export function AnalysisView({ graphContainerRef: externalGraphRef }: AnalysisViewProps) {
+export function AnalysisView({
+  graphContainerRef: externalGraphRef,
+  editorFocusNodeId,
+}: AnalysisViewProps) {
   const { state, actions } = useLineage();
   const { result } = state;
   const internalGraphRef = useRef<HTMLDivElement>(null);
@@ -80,7 +84,7 @@ export function AnalysisView({ graphContainerRef: externalGraphRef }: AnalysisVi
     useProject();
   const [schemaEditorOpen, setSchemaEditorOpen] = useState(false);
   const { activeTab, setActiveTab, navigationTarget, clearNavigationTarget } = useNavigation();
-  const [lineageFocusNodeId, setLineageFocusNodeId] = useState<string | undefined>(undefined);
+  const [lineageFocusNodeId, setLineageFocusNodeId] = useState<string | undefined>(editorFocusNodeId);
   const [fitViewTrigger, setFitViewTrigger] = useState(0);
   const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => new Set([activeTab]));
 

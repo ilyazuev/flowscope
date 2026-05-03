@@ -446,7 +446,7 @@ export function GraphView({
   // Focus mode - when enabled, only show nodes in the search lineage path
   const [focusMode, setFocusMode] = useState(false);
   const [focusSelectMode, setFocusSelectMode] = useState<FocusSelectMode>('none');
-  const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(undefined);
+  const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(focusNodeId);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
   const [focusNodeRequestKey, setFocusNodeRequestKey] = useState(0);
 
