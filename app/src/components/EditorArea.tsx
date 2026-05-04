@@ -336,7 +336,8 @@ export function EditorArea({
     }
     if (result.statements) {
       for (const statement of result.statements) {
-        if (statement.sourceName == activeFile.name) {
+        const activeSourceName = activeFile.path || activeFile.name;
+        if (statement.sourceName === activeSourceName || statement.sourceName === activeFile.name) {
           for (const node of statement.nodes) {
             if (node.span && node.span.start <= selection.head && selection.head <= node.span.end) {
               if (node.type == 'column') {
@@ -569,7 +570,7 @@ export function EditorArea({
         handler: handleRunDescribe,
       },
       {
-        key: 'Q',
+        key: 'q',
         cmdOrCtrl: true,
         allowInInput: true,
         handler: handleRevealInLineage,

@@ -31,7 +31,8 @@ import { SchemaEditor } from './SchemaEditor';
 
 interface AnalysisViewProps {
   graphContainerRef?: React.RefObject<HTMLDivElement | null>;
-  editorFocusNodeId?: string | undefined;
+  editorFocusNodeId?: string;
+  editorFocusRequestKey?: number;
 }
 
 /**
@@ -56,6 +57,7 @@ function extractSchemaFromResult(result: AnalyzeResult): SchemaTable[] {
 export function AnalysisView({
   graphContainerRef: externalGraphRef,
   editorFocusNodeId,
+  editorFocusRequestKey,
 }: AnalysisViewProps) {
   const { state, actions } = useLineage();
   const { result } = state;
@@ -84,7 +86,7 @@ export function AnalysisView({
     useProject();
   const [schemaEditorOpen, setSchemaEditorOpen] = useState(false);
   const { activeTab, setActiveTab, navigationTarget, clearNavigationTarget } = useNavigation();
-  const [lineageFocusNodeId, setLineageFocusNodeId] = useState<string | undefined>(editorFocusNodeId);
+  const [lineageFocusNodeId, setLineageFocusNodeId] = useState<string | undefined>(undefined);
   const [fitViewTrigger, setFitViewTrigger] = useState(0);
   const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => new Set([activeTab]));
 
@@ -102,6 +104,12 @@ export function AnalysisView({
   useEffect(() => {
     matrixStateRef.current = matrixState;
   }, [matrixState]);
+
+  useEffect(() => {
+    if (editorFocusNodeId) {
+      setLineageFocusNodeId(editorFocusNodeId);
+    }
+  }, [editorFocusNodeId, editorFocusRequestKey]);
 
   // Handle navigation target for GraphView - select and focus node/statement when navigating to lineage tab
   useEffect(() => {
@@ -425,6 +433,7 @@ export function AnalysisView({
                 graphContainerRef={graphContainerRef}
                 className="h-full w-full"
                 focusNodeId={lineageFocusNodeId}
+                focusNodeRequestKey={editorFocusRequestKey}
                 onFocusApplied={handleLineageFocusApplied}
                 controlledSearchTerm={lineageState.searchTerm}
                 onSearchTermChange={lineageState.onSearchTermChange}

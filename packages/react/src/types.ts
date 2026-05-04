@@ -238,6 +238,7 @@ export interface GraphViewProps {
   fitViewTrigger?: number;
   /** Namespace filter - when provided, only shows nodes matching the filter */
   namespaceFilter?: NamespaceFilter;
+  focusNodeRequestKey?: number;
 }
 
 export interface GraphViewFocusNodeProps {

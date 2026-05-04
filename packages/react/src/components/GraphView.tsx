@@ -413,6 +413,7 @@ export function GraphView({
   onViewportChange,
   fitViewTrigger,
   namespaceFilter,
+  focusNodeRequestKey
 }: GraphViewProps): JSX.Element {
   const { state, actions } = useLineage();
   const setLayoutMetrics = useLineageStore((store) => store.setLayoutMetrics);
@@ -448,7 +449,15 @@ export function GraphView({
   const [focusSelectMode, setFocusSelectMode] = useState<FocusSelectMode>('none');
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(focusNodeId);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
-  const [focusNodeRequestKey, setFocusNodeRequestKey] = useState(0);
+  const [internalFocusNodeRequestKey, setInternalFocusNodeRequestKey] = useState(0);
+
+  useEffect(() => {
+    if (!focusNodeId) {
+      return;
+    }
+    setInternalFocusNodeId(focusNodeId);
+    setInternalFocusNodeRequestKey((key) => key + 1);
+  }, [focusNodeId, focusNodeRequestKey]);
 
   // Handle search term changes - just update store or call callback, no local state
   const handleSearchTermChange = useCallback(
@@ -484,7 +493,7 @@ export function GraphView({
       if( !setFocus ) {
         actions.selectNode(nodeId);
       } else if( forceFocus ) {
-        setFocusNodeRequestKey((prev) => prev + 1); // setInternalFocusNodeId(undefined);
+        setInternalFocusNodeRequestKey((prev) => prev + 1);
         requestAnimationFrame(() => {
           setInternalFocusNodeId(nodeId);
           if(selectedNodeId) {
@@ -1236,7 +1245,7 @@ export function GraphView({
         <NodeFocusHandler
           focusNodeId={effectiveFocusNodeId}
           onFocusApplied={handleFocusAppliedInternal}
-          focusNodeRequestKey={focusNodeRequestKey}
+          focusNodeRequestKey={internalFocusNodeRequestKey}
         />
         <ViewportHandler initialViewport={initialViewport} onViewportChange={onViewportChange} />
         <FitViewHandler trigger={fitViewTrigger} />
