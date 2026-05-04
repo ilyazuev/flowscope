@@ -54,7 +54,8 @@ export interface Node {
   label: string;
   qualifiedName?: string;
   expression?: string;
-  span?: Span;
+  spans?: Span[];
+  bodySpan?: Span;
   filters?: FilterPredicate[];
   joinType?: JoinType;
   joinCondition?: string;

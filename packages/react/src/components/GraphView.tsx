@@ -1150,9 +1150,9 @@ export function GraphView({
       // 2. Try to get lineage info for table/column nodes
       const lineageNode = lineageNodeMapRef.current.get(node.id);
       if (lineageNode) {
-        if (lineageNode.span) {
-          actions.highlightSpan(lineageNode.span);
-          span = lineageNode.span;
+        if ( lineageNode.spans && lineageNode.spans.length > 0 ) {
+          actions.highlightSpan(lineageNode.spans[0]);
+          span = lineageNode.spans[0];
         }
         onNodeClick?.(lineageNode);
 

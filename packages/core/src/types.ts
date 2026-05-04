@@ -421,7 +421,8 @@ export interface Node {
   /** SQL expression text for computed columns */
   expression?: string;
   /** Source location in original SQL */
-  span?: Span;
+  spans?: Span[];
+  bodySpan?: Span;
   /** Extensible metadata for future use */
   metadata?: Record<string, unknown>;
   /** How this table was resolved (imported, implied, or unknown) */

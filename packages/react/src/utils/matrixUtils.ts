@@ -102,8 +102,10 @@ export function extractTableDependenciesWithDetails(
               });
             }
             const dep = depMap.get(depKey)!;
-            if (sourceNode.span) {
-              dep.spans.push(sourceNode.span);
+            if (sourceNode.spans) {
+              for (const span of sourceNode.spans) {
+                dep.spans.push(span);
+              }
             }
           }
         }

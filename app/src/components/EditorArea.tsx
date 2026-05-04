@@ -339,11 +339,15 @@ export function EditorArea({
         const activeSourceName = activeFile.path || activeFile.name;
         if (statement.sourceName === activeSourceName || statement.sourceName === activeFile.name) {
           for (const node of statement.nodes) {
-            if (node.span && node.span.start <= selection.head && selection.head <= node.span.end) {
-              if (node.type == 'column') {
-                console.log(123);
-              } else {
-                onRevealInLineage(node.id);
+            if( node.spans ) {
+              for (const span of node.spans) {
+                if (span.start <= selection.head && selection.head <= span.end) {
+                  if (node.type == 'column') {
+                    console.log(123);
+                  } else {
+                    onRevealInLineage(node.id);
+                  }
+                }
               }
             }
           }
@@ -476,12 +480,12 @@ export function EditorArea({
               if (
                 node.type == 'cte' &&
                 node.label &&
-                node.span &&
-                node.span.start <= selection.head &&
-                selection.head <= node.span.end
+                node.bodySpan &&
+                node.bodySpan.start <= selection.head &&
+                selection.head <= node.bodySpan.end
               ) {
                 const sql =
-                  activeFile.content.substring(0, node.span.end + 1) +
+                  activeFile.content.substring(0, node.bodySpan.end + 1) +
                   `\n)\nSELECT * FROM ${node.label}`;
                 if (
                   !needParametersForSql(activeFile, editedParameters, sql, `CTE: ${node.label}`)

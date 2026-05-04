@@ -85,8 +85,8 @@ export function ColumnPanel({ className }: ColumnPanelProps): JSX.Element {
 
   const handleColumnClick = (node: Node) => {
     actions.selectNode(node.id);
-    if (node.span) {
-      actions.highlightSpan(node.span);
+    if ( node.spans && node.spans.length > 0 ) {
+      actions.highlightSpan(node.spans[0]);
     }
   };
 
