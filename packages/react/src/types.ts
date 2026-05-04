@@ -223,7 +223,9 @@ export interface GraphViewProps {
   /** Ref to the graph container div for export functionality */
   graphContainerRef?: RefObject<HTMLDivElement | null>;
   /** Node ID to focus/zoom to (will pan and zoom to center this node) */
-  focusNodeId?: string;
+  lineageFocusNodeId?: string;
+  lineageSelectedNodeId?: string;
+  lineageFocusNodeRequestKey?: number;
   /** Callback when focus has been applied (so parent can clear the focusNodeId) */
   onFocusApplied?: () => void;
   /** Controlled search term - when provided, uses this instead of internal state */
@@ -238,7 +240,6 @@ export interface GraphViewProps {
   fitViewTrigger?: number;
   /** Namespace filter - when provided, only shows nodes matching the filter */
   namespaceFilter?: NamespaceFilter;
-  focusNodeRequestKey?: number;
 }
 
 export interface GraphViewFocusNodeProps {

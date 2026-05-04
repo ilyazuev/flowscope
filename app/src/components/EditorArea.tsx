@@ -37,7 +37,7 @@ interface EditorAreaProps {
   className?: string;
   fileSelectorOpen: boolean;
   onFileSelectorOpenChange: (open: boolean) => void;
-  onRevealInLineage: (focusNodeId: string) => void;
+  onRevealInLineage: (focusNodeId: string, selectedNodeId?: string) => void;
 }
 
 export function EditorArea({
@@ -77,6 +77,10 @@ export function EditorArea({
 
   // SQL view mode toggle: 'template' shows original templated SQL, 'resolved' shows compiled SQL
   const [sqlViewMode, setSqlViewMode] = useState<SqlViewMode>('template');
+
+
+  const [revealInLineageError, setRevealInLineageError] = useState<string | null>(null);
+
 
   // Reset view mode to 'template' when active file changes
   useEffect(() => {
@@ -136,6 +140,16 @@ export function EditorArea({
       setDataDescribingError(null);
     }
   }, [dataDescribingError, setDataDescribingError]);
+
+  useEffect(() => {
+    if (revealInLineageError) {
+      toast.error('Reveal in Lineage Error', {
+        description: revealInLineageError,
+        duration: 5000,
+      });
+      setRevealInLineageError(null);
+    }
+  }, [revealInLineageError, setRevealInLineageError]);
 
   // Debounce schema SQL to prevent rapid re-analysis during editing
   const debouncedSchemaSQL = useDebounce(currentProject?.schemaSQL ?? '', 300);
@@ -238,6 +252,7 @@ export function EditorArea({
     setError(null);
     setDataLoadingError(null);
     setDataDescribingError(null);
+    setRevealInLineageError(null);
   }, [setError, setDataLoadingError, setDataDescribingError]);
 
   const handleAnalyze = useCallback(() => {
@@ -331,30 +346,48 @@ export function EditorArea({
     }
     const result = getResult(activeProjectId, hideCTEs);
     if (!result) {
-      setDataDescribingError('No Lineage Data: need to parse SQL before reveal object in Lineage.');
+      setRevealInLineageError('No Lineage Data: need to parse SQL before reveal object in Lineage.');
       return;
     }
     if (result.statements) {
       for (const statement of result.statements) {
         const activeSourceName = activeFile.path || activeFile.name;
         if (statement.sourceName === activeSourceName || statement.sourceName === activeFile.name) {
+          let nodeWithBodySpan = null;
           for (const node of statement.nodes) {
             if( node.spans ) {
               for (const span of node.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
                   if (node.type == 'column') {
-                    console.log(123);
+                    for (const edge of statement.edges) {
+                      if( edge.to == node.id && edge.type == 'ownership' ) {
+                        onRevealInLineage(edge.from, node.id);
+                        return;
+                      }
+                    }
+                    setRevealInLineageError('Column not found');
+                    return;
+                  } else if( node.type == 'output' ) {
+                    nodeWithBodySpan = node;
                   } else {
                     onRevealInLineage(node.id);
+                    return;
                   }
                 }
               }
             }
+            if( !nodeWithBodySpan && node.bodySpan && node.bodySpan.start <= selection.head && selection.head <= node.bodySpan.end ) {
+              nodeWithBodySpan = node;
+            }
           }
-          return;
+          if(nodeWithBodySpan) {
+            onRevealInLineage(nodeWithBodySpan.id);
+            return;
+          }
         }
       }
     }
+    setRevealInLineageError('Object not found');
   }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage]);
 
   const handleRunDescribe = useCallback(async () => {

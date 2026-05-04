@@ -402,19 +402,20 @@ function enhanceGraphWithHighlights(
 }
 
 export function GraphView({
-  className,
-  onNodeClick,
-  graphContainerRef,
-  focusNodeId,
-  onFocusApplied,
-  controlledSearchTerm,
-  onSearchTermChange,
-  initialViewport,
-  onViewportChange,
-  fitViewTrigger,
-  namespaceFilter,
-  focusNodeRequestKey
-}: GraphViewProps): JSX.Element {
+                            className,
+                            onNodeClick,
+                            graphContainerRef,
+                            lineageFocusNodeId,
+                            onFocusApplied,
+                            controlledSearchTerm,
+                            onSearchTermChange,
+                            initialViewport,
+                            onViewportChange,
+                            fitViewTrigger,
+                            namespaceFilter,
+                            lineageFocusNodeRequestKey,
+                            lineageSelectedNodeId
+                          }: GraphViewProps): JSX.Element {
   const { state, actions } = useLineage();
   const setLayoutMetrics = useLineageStore((store) => store.setLayoutMetrics);
   const setGraphMetrics = useLineageStore((store) => store.setGraphMetrics);
@@ -447,17 +448,20 @@ export function GraphView({
   // Focus mode - when enabled, only show nodes in the search lineage path
   const [focusMode, setFocusMode] = useState(false);
   const [focusSelectMode, setFocusSelectMode] = useState<FocusSelectMode>('none');
-  const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(focusNodeId);
+  const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(lineageFocusNodeId);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
   const [internalFocusNodeRequestKey, setInternalFocusNodeRequestKey] = useState(0);
 
   useEffect(() => {
-    if (!focusNodeId) {
+    if (!lineageFocusNodeId) {
       return;
     }
-    setInternalFocusNodeId(focusNodeId);
+    setInternalFocusNodeId(lineageFocusNodeId);
     setInternalFocusNodeRequestKey((key) => key + 1);
-  }, [focusNodeId, focusNodeRequestKey]);
+    if( lineageSelectedNodeId ) {
+      actions.selectNode(lineageSelectedNodeId);
+    }
+  }, [lineageFocusNodeId, lineageSelectedNodeId, lineageFocusNodeRequestKey]);
 
   // Handle search term changes - just update store or call callback, no local state
   const handleSearchTermChange = useCallback(
@@ -482,7 +486,7 @@ export function GraphView({
 
   const lineageNodeMapRef = useRef<Map<string, LineageNode>>(new Map());
 
-  const effectiveFocusNodeId = internalFocusNodeId ?? focusNodeId;
+  const effectiveFocusNodeId = internalFocusNodeId ?? lineageFocusNodeId;
 
   const handleFocusAppliedInternal = useCallback(() => {
     onFocusApplied?.();

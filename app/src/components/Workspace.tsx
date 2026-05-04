@@ -60,6 +60,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [editorFocusNodeId, setEditorFocusNodeId] = useState<string | undefined>(undefined);
+  const [editorSelectedNodeId, setEditorSelectedNodeId] = useState<string | undefined>(undefined);
   const [editorFocusRequestKey, setEditorFocusRequestKey] = useState(0);
 
   // Theme cycling for keyboard shortcut
@@ -81,8 +82,9 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
     currentProjectRef.current = currentProject;
   }, [currentProject]);
 
-  const handleRevealInLineage = useCallback((focusNodeId: string) => {
+  const handleRevealInLineage = useCallback((focusNodeId: string, selectedNodeId?: string) => {
     setEditorFocusNodeId(focusNodeId);
+    setEditorSelectedNodeId(selectedNodeId);
     setEditorFocusRequestKey((key) => key + 1);
   }, []);
 
@@ -492,6 +494,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                       <AnalysisView
                         graphContainerRef={graphContainerRef}
                         editorFocusNodeId={editorFocusNodeId}
+                        editorSelectedNodeId={editorSelectedNodeId}
                         editorFocusRequestKey={editorFocusRequestKey}
                       />
                     </ResizablePanel>

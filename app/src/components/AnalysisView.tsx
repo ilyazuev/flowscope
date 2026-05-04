@@ -32,6 +32,7 @@ import { SchemaEditor } from './SchemaEditor';
 interface AnalysisViewProps {
   graphContainerRef?: React.RefObject<HTMLDivElement | null>;
   editorFocusNodeId?: string;
+  editorSelectedNodeId?: string;
   editorFocusRequestKey?: number;
 }
 
@@ -58,6 +59,7 @@ export function AnalysisView({
   graphContainerRef: externalGraphRef,
   editorFocusNodeId,
   editorFocusRequestKey,
+  editorSelectedNodeId,
 }: AnalysisViewProps) {
   const { state, actions } = useLineage();
   const { result } = state;
@@ -87,6 +89,7 @@ export function AnalysisView({
   const [schemaEditorOpen, setSchemaEditorOpen] = useState(false);
   const { activeTab, setActiveTab, navigationTarget, clearNavigationTarget } = useNavigation();
   const [lineageFocusNodeId, setLineageFocusNodeId] = useState<string | undefined>(undefined);
+  const [lineageSelectedNodeId, setLineageSelectedNodeId] = useState<string | undefined>(undefined);
   const [fitViewTrigger, setFitViewTrigger] = useState(0);
   const [mountedTabs, setMountedTabs] = useState<Set<string>>(() => new Set([activeTab]));
 
@@ -109,7 +112,10 @@ export function AnalysisView({
     if (editorFocusNodeId) {
       setLineageFocusNodeId(editorFocusNodeId);
     }
-  }, [editorFocusNodeId, editorFocusRequestKey]);
+    if(editorSelectedNodeId) {
+      setLineageSelectedNodeId(editorSelectedNodeId);
+    }
+  }, [editorFocusNodeId, editorSelectedNodeId, editorFocusRequestKey]);
 
   // Handle navigation target for GraphView - select and focus node/statement when navigating to lineage tab
   useEffect(() => {
@@ -118,6 +124,7 @@ export function AnalysisView({
         // Navigate to specific table node
         actionsRef.current.selectNode(navigationTarget.tableId);
         setLineageFocusNodeId(navigationTarget.tableId);
+        setLineageSelectedNodeId(undefined);
       } else if (navigationTarget.fitView) {
         // Trigger fitView to show all nodes (e.g., from Issues panel)
         setFitViewTrigger((prev) => prev + 1);
@@ -136,6 +143,7 @@ export function AnalysisView({
 
   const handleLineageFocusApplied = useCallback(() => {
     setLineageFocusNodeId(undefined);
+    setLineageSelectedNodeId(undefined);
   }, []);
 
   const schema = useMemo(() => {
@@ -432,8 +440,9 @@ export function AnalysisView({
               <GraphView
                 graphContainerRef={graphContainerRef}
                 className="h-full w-full"
-                focusNodeId={lineageFocusNodeId}
-                focusNodeRequestKey={editorFocusRequestKey}
+                lineageFocusNodeId={lineageFocusNodeId}
+                lineageSelectedNodeId={lineageSelectedNodeId}
+                lineageFocusNodeRequestKey={editorFocusRequestKey}
                 onFocusApplied={handleLineageFocusApplied}
                 controlledSearchTerm={lineageState.searchTerm}
                 onSearchTermChange={lineageState.onSearchTermChange}
