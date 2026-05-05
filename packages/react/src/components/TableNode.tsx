@@ -570,7 +570,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
                 overflowX: 'hidden',
               }}
             >
-              {nodeData.columns.map((col: ColumnNodeInfo) => !col.isHidden && (
+              {nodeData.columns.map((col: ColumnNodeInfo) => (
                 <ColumnRow
                   key={col.id}
                   col={col}

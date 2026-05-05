@@ -580,20 +580,26 @@ export interface ApplyFiltersResult {
  * @returns The filtered graph and the table label map (for potential reuse)
  */
 export function applyFilters(options: ApplyFiltersOptions): ApplyFiltersResult {
-  const { highlightIds, focusMode, focusSelectMode, effectiveSearchTerm, tableFilter, graphIndex } = options;
+  const { highlightIds, focusMode, focusSelectMode, effectiveSearchTerm, tableFilter } = options;
   let graph = options.graph;
 
   // Apply focus mode filtering if enabled and we have search matches
-  if ( (focusSelectMode != 'none' || (focusMode && effectiveSearchTerm)) && highlightIds.size > 0) {
-    graph = filterGraphToHighlights(graph, highlightIds);
+  if (highlightIds.size > 0) {
+    if (focusSelectMode === 'column') {
+      graph = filterGraphToHighlightedColumns(graph, highlightIds);
+    } else if (focusSelectMode !== 'none' || (focusMode && effectiveSearchTerm)) {
+      graph = filterGraphToHighlights(graph, highlightIds);
+    }
   }
+
+  graph = pruneDanglingEdges(graph);
 
   // Apply table filter (filter only, no highlighting)
   const tableLabelMap = buildTableLabelMap(graph.nodes);
-  const filterResult = applyTableFilter(graph, tableFilter, tableLabelMap, graphIndex);
+  const filterResult = applyTableFilter(graph, tableFilter, tableLabelMap, buildGraphIndex(graph.edges));
 
   return {
-    graph: filterResult.graph,
+    graph: pruneDanglingEdges(filterResult.graph),
     tableLabelMap,
   };
 }
@@ -705,4 +711,82 @@ export function buildTableLabelMap(nodes: FlowNode[]): Map<string, string[]> {
   }
 
   return map;
+}
+
+export function filterGraphToHighlightedColumns(
+  graph: { nodes: FlowNode[]; edges: FlowEdge[] },
+  highlightIds: Set<string>
+): { nodes: FlowNode[]; edges: FlowEdge[] } {
+  const filteredNodes: FlowNode[] = [];
+
+  for (const node of graph.nodes) {
+    if (!isTableNodeData(node.data)) {
+      if (highlightIds.has(node.id)) {
+        filteredNodes.push(node);
+      }
+      continue;
+    }
+
+    const highlightedColumns = node.data.columns.filter((col) => highlightIds.has(col.id));
+
+    if (highlightIds.has(node.id) || highlightedColumns.length > 0) {
+      filteredNodes.push({
+        ...node,
+        data: {
+          ...node.data,
+          columns: highlightedColumns,
+          // В focus-column режиме лучше не показывать "+N hidden",
+          // потому что это уже не collapse, а lineage projection.
+          hiddenColumnCount: 0,
+        },
+      });
+    }
+  }
+
+  const validNodeIds = new Set<string>();
+  const validHandleIdsByNodeId = new Map<string, Set<string>>();
+
+  for (const node of filteredNodes) {
+    validNodeIds.add(node.id);
+
+    if (isTableNodeData(node.data)) {
+      const handleIds = new Set(node.data.columns.map((col) => col.id));
+      validHandleIdsByNodeId.set(node.id, handleIds);
+
+      for (const col of node.data.columns) {
+        validNodeIds.add(col.id);
+      }
+    }
+  }
+
+  const filteredEdges = graph.edges.filter((edge) => {
+    if (!highlightIds.has(edge.id)) {
+      return false;
+    }
+
+    if (!validNodeIds.has(edge.source) || !validNodeIds.has(edge.target)) {
+      return false;
+    }
+
+    if (edge.sourceHandle) {
+      const sourceHandles = validHandleIdsByNodeId.get(edge.source);
+      if (!sourceHandles?.has(edge.sourceHandle)) {
+        return false;
+      }
+    }
+
+    if (edge.targetHandle) {
+      const targetHandles = validHandleIdsByNodeId.get(edge.target);
+      if (!targetHandles?.has(edge.targetHandle)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  return {
+    nodes: filteredNodes,
+    edges: filteredEdges,
+  };
 }

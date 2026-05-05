@@ -349,8 +349,7 @@ function ToolbarToggleButton({
 
 function enhanceGraphWithHighlights(
   graph: { nodes: FlowNode[]; edges: FlowEdge[] },
-  highlightIds: Set<string>,
-  focusSelectMode: FocusSelectMode
+  highlightIds: Set<string>
 ): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const enhancedNodes = graph.nodes.map((node) => {
     const isHighlighted = highlightIds.has(node.id);
@@ -363,7 +362,6 @@ function enhanceGraphWithHighlights(
         return {
           ...col,
           isHighlighted: isHighlightedColumn,
-          ...(focusSelectMode == 'column' && !isHighlightedColumn ? { isHidden: true } : {})
         }
       });
 
@@ -406,6 +404,8 @@ export function GraphView({
                             onNodeClick,
                             graphContainerRef,
                             lineageFocusNodeId,
+                            lineageSelectedNodeId,
+                            lineageFocusNodeRequestKey,
                             onFocusApplied,
                             controlledSearchTerm,
                             onSearchTermChange,
@@ -413,8 +413,6 @@ export function GraphView({
                             onViewportChange,
                             fitViewTrigger,
                             namespaceFilter,
-                            lineageFocusNodeRequestKey,
-                            lineageSelectedNodeId
                           }: GraphViewProps): JSX.Element {
   const { state, actions } = useLineage();
   const setLayoutMetrics = useLineageStore((store) => store.setLayoutMetrics);
@@ -673,8 +671,8 @@ export function GraphView({
   // Enhance graph with highlight styling (render data), but keep layout inputs separate
   // so highlight-only changes don't trigger full layout recomputation.
   const renderGraph = useMemo(
-    () => enhanceGraphWithHighlights(filteredGraph, highlightIds, focusSelectMode),
-    [filteredGraph, highlightIds, focusSelectMode]
+    () => enhanceGraphWithHighlights(filteredGraph, highlightIds),
+    [filteredGraph, highlightIds]
   );
   const renderGraphRef = useRef(renderGraph);
 
