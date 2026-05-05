@@ -179,7 +179,9 @@ export function TableFilterDropdown(): JSX.Element | null {
           onClick={handleToggle}
           className={cn(
             'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
-            isOpen || hasActiveFilter
+              hasActiveFilter || hideCTEs
+              ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'
+              : isOpen
               ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
           )}
