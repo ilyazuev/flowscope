@@ -52,7 +52,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <BackendProvider>
+      <BackendProvider preferWasm={true}>
         <ProjectProvider>
           <AppContent />
         </ProjectProvider>
