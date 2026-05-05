@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Share2 /*, Github*/ } from 'lucide-react';
+import { Keyboard, Share2 /*, Github*/ } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLineageActions, useLineageState } from '@pondpilot/flowscope-react';
 import { Button } from './ui/button';
@@ -401,7 +401,27 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
               </TooltipContent>
             </Tooltip>
           </TooltipProvider> */}
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleExecuteCommand('help')}
+                >
+                    <Keyboard className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Keyboard Shortcuts
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <ThemeToggle />
+
         </div>
       </header>
 

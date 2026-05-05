@@ -118,7 +118,7 @@ export function KeyboardShortcutsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl">Keyboard Shortcuts</DialogTitle>
           <DialogDescription>
@@ -127,7 +127,7 @@ export function KeyboardShortcutsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-8 py-4 overflow-y-auto">
+        <div className="grid grid-cols-3 gap-8 py-4 overflow-y-auto">
           {/* Left column: Navigation */}
           <div className="space-y-6">
             <ShortcutSection
@@ -140,13 +140,16 @@ export function KeyboardShortcutsDialog({
           <div className="space-y-6">
             <ShortcutSection title={viewTitle} shortcuts={shortcutsByCategory.view} />
             <ShortcutSection
-              title={CATEGORY_LABELS.actions}
-              shortcuts={shortcutsByCategory.actions}
-            />
-            <ShortcutSection
               title={CATEGORY_LABELS.settings}
               shortcuts={shortcutsByCategory.settings}
             />
+          </div>
+          <div className="space-y-6">
+            <ShortcutSection
+              title={CATEGORY_LABELS.actions}
+              shortcuts={shortcutsByCategory.actions}
+            />
+
           </div>
         </div>
 
