@@ -342,6 +342,7 @@ export interface ScriptNodeData extends Record<string, unknown> {
 export interface TableNodeData extends Record<string, unknown> {
   /** Display name of the table, view, or CTE */
   label: string;
+  comment?: string;
   /** Type of node: regular table, view, CTE, or virtual output */
   nodeType: 'table' | 'view' | 'cte' | 'virtualOutput';
   /** Whether this CTE is recursive (self-referential) */
@@ -378,6 +379,7 @@ export interface ColumnNodeInfo {
   id: string;
   /** Column name */
   name: string;
+  comment?: string;
   /** Optional SQL expression for computed columns */
   expression?: string;
   /** Whether this column is part of a highlighted path */

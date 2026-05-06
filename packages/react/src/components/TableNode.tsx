@@ -8,6 +8,9 @@ import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
+import { Popover, PopoverTrigger } from '@radix-ui/react-popover';
+import { StickyNote } from 'lucide-react';
+import { ClickTooltipContent } from '@pondpilot/flowscope-app/src/components/ui/popover';
 
 // Virtualization thresholds
 const COLUMN_VIRTUALIZATION_THRESHOLD = 200000;
@@ -150,6 +153,17 @@ function ColumnRow({
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {sanitizeIdentifier(col.name)}
         </span>
+        {col.comment && (
+          <>
+            <span style={{ flex: 1 }}></span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
+              </PopoverTrigger>
+              <ClickTooltipContent>{sanitizeIdentifier(col.comment)}</ClickTooltipContent>
+            </Popover>
+          </>
+        )}
         <AggregationIndicator aggregation={col.aggregation} colors={colors} />
       </span>
       <Handle
@@ -443,6 +457,14 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             {sanitizeIdentifier(nodeData.label)}
           </div>
         </div>
+        {nodeData.comment && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
+            </PopoverTrigger>
+            <ClickTooltipContent>{sanitizeIdentifier(nodeData.comment)}</ClickTooltipContent>
+          </Popover>
+        )}
 
         {isBaseTable && !isVirtualOutput && (
           <span
@@ -681,6 +703,7 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
   if (prevData.isSelected !== nextData.isSelected) return false;
   if (prevData.isHighlighted !== nextData.isHighlighted) return false;
   if (prevData.label !== nextData.label) return false;
+  if (prevData.comment !== nextData.comment) return false;
   if (prevData.nodeType !== nextData.nodeType) return false;
   if (prevData.schema !== nextData.schema) return false;
   if (prevData.database !== nextData.database) return false;
@@ -702,6 +725,7 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
     return (
       prevCol.id === nextCol.id &&
       prevCol.name === nextCol.name &&
+      prevCol.comment === nextCol.comment &&
       prevCol.isHighlighted === nextCol.isHighlighted &&
       prevCol.isHidden === nextCol.isHidden
     );

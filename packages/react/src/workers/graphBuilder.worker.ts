@@ -349,6 +349,7 @@ function buildTableNodeData(
 
   return {
     label: node.label,
+    comment: node.comment,
     nodeType,
     columns,
     isSelected: node.id === options.selectedNodeId,
@@ -434,6 +435,7 @@ function buildFlowNodes(
         cols.push({
           id: childNode.id,
           name: childNode.label,
+          comment: childNode.comment,
           expression: childNode.expression,
           aggregation: childNode.aggregation,
         });

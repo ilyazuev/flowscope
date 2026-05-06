@@ -30,6 +30,7 @@ import type {
 } from '@pondpilot/flowscope-core';
 import { Popover, PopoverTrigger } from '@radix-ui/react-popover';
 import { ClickTooltipContent } from '@pondpilot/flowscope-app/src/components/ui/popover';
+import { sanitizeIdentifier } from '../utils/sanitize';
 
 // ============================================================================
 // Types
@@ -297,7 +298,7 @@ const SchemaTableNodeComponent = ({
               <PopoverTrigger asChild>
                 <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
               </PopoverTrigger>
-              <ClickTooltipContent>{data.comment}</ClickTooltipContent>
+              <ClickTooltipContent>{sanitizeIdentifier(data.comment)}</ClickTooltipContent>
             </Popover>
           )
         }
@@ -415,7 +416,7 @@ const SchemaTableNodeComponent = ({
                       <PopoverTrigger asChild>
                         <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
                       </PopoverTrigger>
-                      <ClickTooltipContent>{col.comment}</ClickTooltipContent>
+                      <ClickTooltipContent>{sanitizeIdentifier(col.comment)}</ClickTooltipContent>
                     </Popover>
                   )
                 }
