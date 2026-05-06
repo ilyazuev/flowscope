@@ -14,7 +14,7 @@ import {
 import type { Node as FlowNode, Edge as FlowEdge, NodeProps, EdgeProps } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
-import { KeyRound, Link2, Table2, Eye, ArrowDownUp, ArrowLeftRight } from 'lucide-react';
+import { KeyRound, Link2, Table2, Eye, ArrowDownUp, ArrowLeftRight, StickyNote } from 'lucide-react';
 
 import { useNodeFocus } from '../hooks/useNodeFocus';
 import { useIsDarkMode } from '../hooks/useColors';
@@ -28,6 +28,8 @@ import type {
   SchemaOrigin,
   ForeignKeyRef,
 } from '@pondpilot/flowscope-core';
+import { Popover, PopoverTrigger } from '@radix-ui/react-popover';
+import { ClickTooltipContent } from '@pondpilot/flowscope-app/src/components/ui/popover';
 
 // ============================================================================
 // Types
@@ -45,6 +47,7 @@ type ColumnWithConstraints = ColumnSchema | ResolvedColumnSchema;
 
 interface SchemaTableNodeData extends Record<string, unknown> {
   label: string;
+  comment?: string;
   columns: ColumnWithConstraints[];
   origin?: SchemaOrigin;
   nodeType?: 'table' | 'view';
@@ -288,6 +291,16 @@ const SchemaTableNodeComponent = ({
         >
           {data.label}
         </span>
+        {
+          data.comment && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
+              </PopoverTrigger>
+              <ClickTooltipContent>{data.comment}</ClickTooltipContent>
+            </Popover>
+          )
+        }
       </div>
 
       {/* Columns */}
@@ -357,7 +370,7 @@ const SchemaTableNodeComponent = ({
                     }}
                   >
                     {typeIcon && <span style={{ fontSize: 10, opacity: 0.7 }}>{typeIcon}</span>}
-                    <span style={{ fontSize: 11 }}>({col.dataType})</span>
+                    <span style={{ fontSize: 11 }}>{col.dataType}</span>
                   </span>
                 )}
 
@@ -396,6 +409,16 @@ const SchemaTableNodeComponent = ({
                     }}
                   />
                 )}
+                {
+                  col.comment && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
+                      </PopoverTrigger>
+                      <ClickTooltipContent>{col.comment}</ClickTooltipContent>
+                    </Popover>
+                  )
+                }
               </div>
             );
           })}
@@ -420,6 +443,7 @@ const areNodePropsEqual = (
     prevData.isHighlighted !== nextData.isHighlighted ||
     prevData.isSelected !== nextData.isSelected ||
     prevData.label !== nextData.label ||
+    prevData.comment !== nextData.comment ||
     prevData.origin !== nextData.origin ||
     prevData.nodeType !== nextData.nodeType
   ) {
@@ -450,6 +474,7 @@ const areNodePropsEqual = (
     const nextCol = nextCols[i];
     if (
       prevCol.name !== nextCol.name ||
+      prevCol.comment !== nextCol.comment ||
       prevCol.dataType !== nextCol.dataType ||
       prevCol.isPrimaryKey !== nextCol.isPrimaryKey ||
       prevCol.foreignKey?.table !== nextCol.foreignKey?.table ||
@@ -832,6 +857,7 @@ export function buildSchemaFlowNodes(
       dragHandle: '.schema-node-header',
       data: {
         label: table.name,
+        comment: table.comment,
         columns: getColumnsWithConstraintMetadata(table),
         origin: isResolvedSchemaTable(table) ? table.origin : undefined,
         nodeType: 'table',

@@ -169,12 +169,14 @@ export interface SchemaTable {
   catalog?: string;
   schema?: string;
   name: string;
+  comment?: string;
   columns?: ColumnSchema[];
 }
 
 export interface ColumnSchema {
   name: string;
   dataType?: string;
+  comment?: string;
   /** True if this column is a primary key (or part of composite PK) */
   isPrimaryKey?: boolean;
   /** Foreign key reference if this column references another table */
@@ -433,6 +435,7 @@ export interface Node {
   joinType?: JoinType;
   /** For table nodes that are JOINed: the join condition (ON clause) */
   joinCondition?: string;
+  comment?: string;
   /** For column nodes: aggregation information if this column is aggregated or a grouping key */
   aggregation?: AggregationInfo;
 }
@@ -657,6 +660,7 @@ export interface ResolvedSchemaTable {
   catalog?: string;
   schema?: string;
   name: string;
+  comment?: string;
   columns: ResolvedColumnSchema[];
   /** Origin of this table's schema information */
   origin: SchemaOrigin;
@@ -675,6 +679,7 @@ export interface ResolvedSchemaTable {
 export interface ResolvedColumnSchema {
   name: string;
   dataType?: string;
+  comment?: string;
   /** Column-level origin (can differ from table origin in future merging) */
   origin?: SchemaOrigin;
   /** True if this column is a primary key (or part of composite PK) */

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { ResolvedSchemaTable, SchemaTable } from '@pondpilot/flowscope-core';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
+
+
 import { buildSchemaFlowEdges, buildSchemaFlowNodes } from '../src/components/SchemaView';
 
 describe('buildSchemaFlowNodes', () => {

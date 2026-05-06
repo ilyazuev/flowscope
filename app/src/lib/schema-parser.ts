@@ -77,8 +77,10 @@ export async function parseSchemaSQL(
           catalog: table.catalog,
           schema: table.schema,
           name: table.name,
+          comment: table.comment,
           columns: table.columns.map((col: ColumnSchema) => ({
             name: col.name,
+            comment: col.comment,
             dataType: col.dataType,
             foreignKey: col.foreignKey,
             isPrimaryKey: col.isPrimaryKey,

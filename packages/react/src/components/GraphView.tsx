@@ -400,20 +400,20 @@ function enhanceGraphWithHighlights(
 }
 
 export function GraphView({
-                            className,
-                            onNodeClick,
-                            graphContainerRef,
-                            lineageFocusNodeId,
-                            lineageSelectedNodeId,
-                            lineageFocusNodeRequestKey,
-                            onFocusApplied,
-                            controlledSearchTerm,
-                            onSearchTermChange,
-                            initialViewport,
-                            onViewportChange,
-                            fitViewTrigger,
-                            namespaceFilter,
-                          }: GraphViewProps): JSX.Element {
+  className,
+  onNodeClick,
+  graphContainerRef,
+  lineageFocusNodeId,
+  lineageSelectedNodeId,
+  lineageFocusNodeRequestKey,
+  onFocusApplied,
+  controlledSearchTerm,
+  onSearchTermChange,
+  initialViewport,
+  onViewportChange,
+  fitViewTrigger,
+  namespaceFilter,
+}: GraphViewProps): JSX.Element {
   const { state, actions } = useLineage();
   const setLayoutMetrics = useLineageStore((store) => store.setLayoutMetrics);
   const setGraphMetrics = useLineageStore((store) => store.setGraphMetrics);
