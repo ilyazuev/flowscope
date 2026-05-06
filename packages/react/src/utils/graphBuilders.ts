@@ -326,6 +326,7 @@ export function buildFlowNodes(
         cols.push({
           id: childNode.id,
           name: childNode.label,
+          dataType: childNode.dataType,
           comment: childNode.comment,
           expression: childNode.expression,
           aggregation: childNode.aggregation,

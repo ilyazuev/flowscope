@@ -8,9 +8,8 @@ import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
-import { Popover, PopoverTrigger } from '@radix-ui/react-popover';
 import { StickyNote } from 'lucide-react';
-import { ClickTooltipContent } from '@pondpilot/flowscope-app/src/components/ui/popover';
+import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 
 // Virtualization thresholds
 const COLUMN_VIRTUALIZATION_THRESHOLD = 200000;
@@ -153,18 +152,14 @@ function ColumnRow({
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {sanitizeIdentifier(col.name)}
         </span>
-        {col.comment && (
-          <>
-            <span style={{ flex: 1 }}></span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
-              </PopoverTrigger>
-              <ClickTooltipContent>{sanitizeIdentifier(col.comment)}</ClickTooltipContent>
-            </Popover>
-          </>
-        )}
+        <span style={{ flex: 1 }}></span>
         <AggregationIndicator aggregation={col.aggregation} colors={colors} />
+        {col.dataType && (<span className={'pr-1 pl-1'}>{col.dataType}</span>)}
+        {col.comment && (
+          <ClickableTooltip content={sanitizeIdentifier(col.comment)}>
+            <StickyNote size={14} style={{ opacity: 0.7 }} />
+          </ClickableTooltip>
+        )}
       </span>
       <Handle
         type="source"
@@ -458,12 +453,9 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
           </div>
         </div>
         {nodeData.comment && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
-            </PopoverTrigger>
-            <ClickTooltipContent>{sanitizeIdentifier(nodeData.comment)}</ClickTooltipContent>
-          </Popover>
+          <ClickableTooltip content={sanitizeIdentifier(nodeData.comment)}>
+            <StickyNote size={14} style={{ opacity: 0.7, margin: '2px' }} />
+          </ClickableTooltip>
         )}
 
         {isBaseTable && !isVirtualOutput && (
@@ -725,6 +717,7 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
     return (
       prevCol.id === nextCol.id &&
       prevCol.name === nextCol.name &&
+      prevCol.dataType === nextCol.dataType &&
       prevCol.comment === nextCol.comment &&
       prevCol.isHighlighted === nextCol.isHighlighted &&
       prevCol.isHidden === nextCol.isHidden

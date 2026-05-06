@@ -379,6 +379,7 @@ export interface ColumnNodeInfo {
   id: string;
   /** Column name */
   name: string;
+  dataType?: string;
   comment?: string;
   /** Optional SQL expression for computed columns */
   expression?: string;

@@ -28,8 +28,7 @@ import type {
   SchemaOrigin,
   ForeignKeyRef,
 } from '@pondpilot/flowscope-core';
-import { Popover, PopoverTrigger } from '@radix-ui/react-popover';
-import { ClickTooltipContent } from '@pondpilot/flowscope-app/src/components/ui/popover';
+import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { sanitizeIdentifier } from '../utils/sanitize';
 
 // ============================================================================
@@ -294,12 +293,9 @@ const SchemaTableNodeComponent = ({
         </span>
         {
           data.comment && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
-              </PopoverTrigger>
-              <ClickTooltipContent>{sanitizeIdentifier(data.comment)}</ClickTooltipContent>
-            </Popover>
+            <ClickableTooltip content={sanitizeIdentifier(data.comment)}>
+              <StickyNote size={14} style={{ opacity: 0.7, margin: '2px' }} />
+            </ClickableTooltip>
           )
         }
       </div>
@@ -412,12 +408,9 @@ const SchemaTableNodeComponent = ({
                 )}
                 {
                   col.comment && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <StickyNote size={14} style={{ opacity: 0.7, flexShrink: 0, cursor: 'pointer' }} />
-                      </PopoverTrigger>
-                      <ClickTooltipContent>{sanitizeIdentifier(col.comment)}</ClickTooltipContent>
-                    </Popover>
+                    <ClickableTooltip content={sanitizeIdentifier(col.comment)}>
+                      <StickyNote size={14} style={{ opacity: 0.7 }} />
+                    </ClickableTooltip>
                   )
                 }
               </div>

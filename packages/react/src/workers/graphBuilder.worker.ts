@@ -28,6 +28,8 @@ import { GRAPH_CONFIG, JOIN_TYPE_LABELS } from '../constants';
 export interface SerializedColumnInfo {
   id: string;
   name: string;
+  comment?: string;
+  dataType?: string;
   expression?: string;
   isHighlighted?: boolean;
   sourceName?: string;
@@ -435,6 +437,7 @@ function buildFlowNodes(
         cols.push({
           id: childNode.id,
           name: childNode.label,
+          dataType: childNode.dataType,
           comment: childNode.comment,
           expression: childNode.expression,
           aggregation: childNode.aggregation,
