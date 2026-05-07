@@ -24,13 +24,15 @@ export function ClickableTooltip({ children, content }: { children: React.ReactN
         align="center"
         className="z-[9999] rounded-lg border bg-popover px-3 py-1.5 text-sm shadow-md"
       >
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(false);
+          }}
+        >
           <span>{content}</span>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-            }}
             className="ml-2 rounded-sm opacity-70 hover:opacity-100"
             aria-label="close"
           >

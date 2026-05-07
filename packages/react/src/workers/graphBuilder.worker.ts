@@ -507,6 +507,8 @@ function buildFlowNodes(
     .map((col) => ({
       id: col.id,
       name: col.label,
+      dataType: col.dataType,
+      comment: col.comment,
       expression: col.expression,
       aggregation: col.aggregation,
     }));
