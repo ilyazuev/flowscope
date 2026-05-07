@@ -20,6 +20,7 @@ import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
 import { FloatingWindows, useWindowManager } from '@/components/floating-window';
+import { configureBackendProgressWindowManager } from '@/lib/utils_backend';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -63,6 +64,15 @@ export function EditorArea({
   const manager = useWindowManager({
     theme: isDark ? 'dark' : 'light',
   });
+
+  useEffect(() => {
+    configureBackendProgressWindowManager({
+      openWindow: manager.openWindow,
+      updateWindow: manager.updateWindow,
+      closeWindow: manager.closeWindow,
+    });
+    return () => configureBackendProgressWindowManager(null);
+  }, [manager.openWindow, manager.updateWindow, manager.closeWindow]);
 
   const activeFile = currentProject?.files.find((f) => f.id === currentProject.activeFileId);
   const editorContainerRef = useRef<HTMLDivElement>(null);

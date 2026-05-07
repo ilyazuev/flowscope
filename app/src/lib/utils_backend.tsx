@@ -7,19 +7,31 @@ import {
 import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import type { WindowManagerApi } from '@/components/floating-window';
+import { runUsecaseViaWebSocket } from '@/lib/usecase-websocket';
 
 const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
 
-function backendUrl<T>(backendEndpoint: string, payload?: T) {
-  let content;
-  if (payload) {
-    const base64 = btoa(JSON.stringify(payload));
-    content = encodeURIComponent(base64);
-  } else {
-    content = '';
-  }
-  return `${baseBackendUrl}${backendEndpoint.replace('{content}', content)}`;
+function encodePayloadContent<T>(payload?: T) {
+  return payload ? encodeURIComponent(btoa(JSON.stringify(payload))) : '';
 }
+
+function backendUsecasePath<T>(backendEndpoint: string, payload?: T) {
+  return backendEndpoint.replace('{content}', encodePayloadContent(payload));
+}
+
+function backendUrl<T>(backendEndpoint: string, payload?: T) {
+  return `${baseBackendUrl}${backendUsecasePath(backendEndpoint, payload)}`;
+}
+
+let progressWindowManager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'> | null = null;
+
+export function configureBackendProgressWindowManager(
+  manager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'> | null
+) {
+  progressWindowManager = manager;
+}
+
 
 export async function devLineageAnalyze(adapterPayload: AnalysisPayload, currentProject: Project) {
   const analysisPayloadEx: AnalysisPayloadEx = {
@@ -27,6 +39,30 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
     database: currentProject.database,
     userName: currentProject.userName,
   };
+
+  if (import.meta.env.VITE_BACKEND_TRANSPORT === 'websocket') {
+    const analysisResponse = await runUsecaseViaWebSocket<Awaited<ReturnType<typeof analyzeWithWorker>>>({
+      wsUrl: import.meta.env.VITE_BACKEND_WS_URL,
+      usecasePath: backendUsecasePath(
+        import.meta.env.VITE_BACKEND_WS_ENDPOINT_parseForLineage,
+        analysisPayloadEx
+      ),
+      reauthUrl: import.meta.env.VITE_BACKEND_WS_REAUTH_ENDPOINT,
+      ui: progressWindowManager
+        ? {
+            manager: progressWindowManager,
+            title: `${currentProject.database ? `${currentProject.database}. ` : ''}Analyze lineage`,
+            closeOnSuccess: true,
+        } : undefined,
+    });
+
+    if ('errorMessage' in analysisResponse && analysisResponse.errorMessage) {
+      throw new Error(analysisResponse.errorMessage as string);
+    }
+    console.log('Received from backend via WebSocket');
+    return analysisResponse;
+  }
+
   const res = await fetch(
     backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_parseForLineage, analysisPayloadEx)
   );
