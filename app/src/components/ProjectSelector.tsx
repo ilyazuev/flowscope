@@ -85,7 +85,7 @@ function DbSelect() {
           <SelectValue placeholder="Database" />
         </SelectTrigger>
         <SelectContent>
-          {dbNames.map((db) => (
+          {dbNames.sort().map((db) => (
             <SelectItem key={db} value={db}>
               {db}
             </SelectItem>
@@ -100,7 +100,7 @@ function DbSelect() {
           <SelectValue placeholder="User" />
         </SelectTrigger>
         <SelectContent>
-          {users.map((u) => (
+          {users.sort().map((u) => (
             <SelectItem key={u} value={u}>
               {u}
             </SelectItem>
