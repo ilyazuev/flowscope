@@ -311,7 +311,7 @@ export function EditorArea({
       content: <LoadingState isDark={isDark} tableFullName={tableFullName} />,
     });
     let columnSpan = undefined;
-    const dataDescribePayloadResponse = await runDataDescribe(tableName, schema);
+    const dataDescribePayloadResponse = await runDataDescribe(tableName, schema, columnName);
     if (dataDescribePayloadResponse?.script && columnName) {
       const start = dataDescribePayloadResponse.script.indexOf(`"${columnName}"`);
       if (start != -1) {
