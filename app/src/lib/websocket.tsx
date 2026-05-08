@@ -1,13 +1,13 @@
 import { Loader2 } from 'lucide-react';
 import type { WindowManagerApi, WindowId } from '@/components/floating-window';
 
-export type UsecaseWebSocketLogItem = {
+export type WebSocketLogItem = {
   id: number;
   kind: 'info' | 'html' | 'error' | 'result';
   text: string;
 };
 
-export type UsecaseWebSocketUi = {
+export type WebSocketUi = {
   manager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'>;
   title: string;
   closeOnSuccess?: boolean;
@@ -15,10 +15,10 @@ export type UsecaseWebSocketUi = {
   height?: number;
 };
 
-export type RunUsecaseWebSocketOptions<TResponse> = {
+export type RunWebSocketOptions<TResponse> = {
   wsUrl: string;
-  usecasePath: string;
-  ui?: UsecaseWebSocketUi;
+  path: string;
+  ui?: WebSocketUi;
   reauthUrl?: string;
   reconnectOnceOn403?: boolean;
   /** Timeout for one WebSocket opening attempt. Default: 10000 ms. */
@@ -86,7 +86,7 @@ function connectionCloseReason(event: CloseEvent) {
   }
 }
 
-function ProgressWindow({ items }: { items: UsecaseWebSocketLogItem[] }) {
+function ProgressWindow({ items }: { items: WebSocketLogItem[] }) {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
@@ -104,7 +104,7 @@ function ProgressWindow({ items }: { items: UsecaseWebSocketLogItem[] }) {
                 ? 'text-destructive whitespace-pre-wrap'
                 : item.kind === 'result'
                   ? 'text-emerald-600 whitespace-pre-wrap'
-                  : 'whitespace-pre-wrap';
+                  : 'whitespace-nowrap';
 
             if (item.kind === 'html') {
               return (
@@ -129,16 +129,16 @@ function ProgressWindow({ items }: { items: UsecaseWebSocketLogItem[] }) {
 }
 
 function appendLog(
-  items: UsecaseWebSocketLogItem[],
-  kind: UsecaseWebSocketLogItem['kind'],
+  items: WebSocketLogItem[],
+  kind: WebSocketLogItem['kind'],
   text: string
 ) {
-  return [...items, { id: Date.now() + items.length, kind, text }];
+  return [{ id: Date.now() + items.length, kind, text }, ...items];
 }
 
-export async function runUsecaseViaWebSocket<TResponse>({
+export async function runWebSocket<TResponse>({
   wsUrl,
-  usecasePath,
+  path,
   ui,
   reauthUrl,
   reconnectOnceOn403 = true,
@@ -148,18 +148,18 @@ export async function runUsecaseViaWebSocket<TResponse>({
   isAuthError = (message) => message === 'error:403 access denied',
   isResultMessage = (message) => message.trimStart().startsWith('{'),
   parseResult = (message) => JSON.parse(message) as TResponse,
-}: RunUsecaseWebSocketOptions<TResponse>): Promise<TResponse> {
+}: RunWebSocketOptions<TResponse>): Promise<TResponse> {
   const resolvedWsUrl = resolveWsUrl(wsUrl);
-  const windowId: WindowId | undefined = ui ? `usecase-ws-${Date.now()}-${++windowSeq}` : undefined;
+  const windowId: WindowId | undefined = ui ? `ws-${Date.now()}-${++windowSeq}` : undefined;
   let socket: WebSocket | null = null;
   let settled = false;
   let authReconnectAttempted = false;
   let activeAttemptId = 0;
   let connectAttemptCount = 0;
   let retryTimer: number | undefined;
-  let logs: UsecaseWebSocketLogItem[] = [];
+  let logs: WebSocketLogItem[] = [];
 
-  const updateProgress = (kind: UsecaseWebSocketLogItem['kind'], text: string) => {
+  const updateProgress = (kind: WebSocketLogItem['kind'], text: string) => {
     logs = appendLog(logs, kind, text);
     if (!ui || !windowId) return;
     ui.manager.updateWindow(windowId, {
@@ -296,7 +296,7 @@ export async function runUsecaseViaWebSocket<TResponse>({
         clearOpenTimeout();
         hasOpened = true;
         updateProgress('info', 'Connection opened');
-        currentSocket.send(usecasePath);
+        currentSocket.send(path);
       };
 
       currentSocket.onerror = () => {

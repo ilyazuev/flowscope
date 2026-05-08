@@ -8,7 +8,7 @@ import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import type { WindowManagerApi } from '@/components/floating-window';
-import { runUsecaseViaWebSocket } from '@/lib/usecase-websocket';
+import { runWebSocket } from '@/lib/websocket';
 
 const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
 
@@ -41,9 +41,9 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
   };
 
   if (import.meta.env.VITE_BACKEND_TRANSPORT === 'websocket') {
-    const analysisResponse = await runUsecaseViaWebSocket<Awaited<ReturnType<typeof analyzeWithWorker>>>({
+    const analysisResponse = await runWebSocket<Awaited<ReturnType<typeof analyzeWithWorker>>>({
       wsUrl: import.meta.env.VITE_BACKEND_WS_URL,
-      usecasePath: backendUsecasePath(
+      path: backendUsecasePath(
         import.meta.env.VITE_BACKEND_WS_ENDPOINT_parseForLineage,
         analysisPayloadEx
       ),
