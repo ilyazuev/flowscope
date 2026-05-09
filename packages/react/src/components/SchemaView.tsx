@@ -39,6 +39,7 @@ import type {
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { sanitizeIdentifier } from '../utils/sanitize';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
+import { useFloatingWindows } from '@pondpilot/flowscope-react';
 
 // ============================================================================
 // Types
@@ -68,6 +69,13 @@ interface SchemaTableNodeData extends Record<string, unknown> {
 }
 
 type LayoutDirection = 'TB' | 'LR';
+
+const SCHEMA_LAYOUT_SPACING = {
+  nodeSepMultiplier: 1.95,
+  rankSepMultiplier: 1.25,
+  edgeSep: 70,
+  margin: 80,
+};
 
 // ============================================================================
 // Utility Functions
@@ -185,13 +193,20 @@ function getSchemaLayoutedElements(
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   const isHorizontal = direction === 'LR';
+  const nodeSep = isHorizontal
+    ? SCHEMA_CONFIG.DAGRE_NODESEP_LR
+    : SCHEMA_CONFIG.DAGRE_NODESEP_TB;
+  const rankSep = isHorizontal
+    ? SCHEMA_CONFIG.DAGRE_RANKSEP_LR
+    : SCHEMA_CONFIG.DAGRE_RANKSEP_TB;
+
   dagreGraph.setGraph({
     rankdir: direction,
-    nodesep: isHorizontal ? SCHEMA_CONFIG.DAGRE_NODESEP_LR : SCHEMA_CONFIG.DAGRE_NODESEP_TB,
-    ranksep: isHorizontal ? SCHEMA_CONFIG.DAGRE_RANKSEP_LR : SCHEMA_CONFIG.DAGRE_RANKSEP_TB,
-    edgesep: 50,
-    marginx: 40,
-    marginy: 40,
+    nodesep: nodeSep * SCHEMA_LAYOUT_SPACING.nodeSepMultiplier,
+    ranksep: rankSep * SCHEMA_LAYOUT_SPACING.rankSepMultiplier,
+    edgesep: SCHEMA_LAYOUT_SPACING.edgeSep,
+    marginx: SCHEMA_LAYOUT_SPACING.margin,
+    marginy: SCHEMA_LAYOUT_SPACING.margin,
   });
 
   nodes.forEach((node) => {
@@ -253,6 +268,7 @@ const SchemaTableNodeComponent = ({
   const fullName = `${data.catalog ? `${data.catalog}.` : ''}${data.schema ? `${data.schema}.` : ''}${data.label}`;
 
   const NodeIcon = isView ? Eye : Table2;
+  const windowManager = useFloatingWindows();
 
   return (
     <div
@@ -421,23 +437,17 @@ const SchemaTableNodeComponent = ({
                     <StickyNote size={14} style={{ opacity: 0.7 }} />
                   </ClickableTooltip>
                 )}
-                {/*{col.info && (*/}
-                {/*  // <ClickableTooltip content={sanitizeIdentifier(col.info)}>*/}
-                {/*  //   <StickyNote size={14} style={{ opacity: 0.7 }} />*/}
-                {/*  // </ClickableTooltip>*/}
-
-                {/*)}*/}
                 <button
                   onClick={() => {
-                    // windowManager.openWindow({
-                    //   id: `columnInfo-${Date.now()}`,
-                    //   title: `${fullName}.${col.name}`,
-                    //   //content: `${col.info}`,
-                    //   content: `123`,
-                    // });
+                    windowManager.openWindow({
+                      id: `columnInfo-${Date.now()}`,
+                      title: `${fullName}.${col.name}`,
+                      //content: `${col.info}`,
+                      content: `123`,
+                    });
                   }}
                   className={cn(
-                    'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
+                    'self-center flex size-6 items-center justify-center transition-colors duration-200 border-transparent outline-none rounded-full',
                     'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                   )}
                   aria-label={'Show column information'}
