@@ -1,18 +1,20 @@
 import { Loader2 } from 'lucide-react';
-import type { WindowManagerApi, WindowId } from '@pondpilot/flowscope-react';
+import {
+  getFloatingWindowManager,
+  type WindowId,
+} from '@pondpilot/flowscope-react';
+
+export type WebSocketUi = {
+  title: string;
+  closeOnSuccess?: boolean;
+  width?: number;
+  height?: number;
+};
 
 export type WebSocketLogItem = {
   id: number;
   kind: 'info' | 'html' | 'error' | 'result';
   text: string;
-};
-
-export type WebSocketUi = {
-  manager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'>;
-  title: string;
-  closeOnSuccess?: boolean;
-  width?: number;
-  height?: number;
 };
 
 export type RunWebSocketOptions<TResponse> = {
@@ -150,7 +152,13 @@ export async function runWebSocket<TResponse>({
   parseResult = (message) => JSON.parse(message) as TResponse,
 }: RunWebSocketOptions<TResponse>): Promise<TResponse> {
   const resolvedWsUrl = resolveWsUrl(wsUrl);
-  const windowId: WindowId | undefined = ui ? `ws-${Date.now()}-${++windowSeq}` : undefined;
+  const uiManager = getFloatingWindowManager();
+  const windowId: WindowId | undefined =
+    ui && uiManager ? `ws-${Date.now()}-${++windowSeq}` : undefined;
+  if (!ui || !windowId) {
+    throw new Error("UI provider not defined");
+  }
+
   let socket: WebSocket | null = null;
   let settled = false;
   let authReconnectAttempted = false;
@@ -161,14 +169,14 @@ export async function runWebSocket<TResponse>({
 
   const updateProgress = (kind: WebSocketLogItem['kind'], text: string) => {
     logs = appendLog(logs, kind, text);
-    if (!ui || !windowId) return;
-    ui.manager.updateWindow(windowId, {
+    if (!uiManager || !windowId) return;
+    uiManager.updateWindow(windowId, {
       content: <ProgressWindow items={logs} />,
     });
   };
 
-  if (ui && windowId) {
-    ui.manager.openWindow({
+  if (ui && uiManager && windowId) {
+    uiManager.openWindow({
       id: windowId,
       title: ui.title,
       width: ui.width ?? 760,
@@ -202,8 +210,8 @@ export async function runWebSocket<TResponse>({
       clearRetryTimer();
       activeAttemptId += 1;
       closeSocket(socket);
-      if (ui?.closeOnSuccess !== false && windowId) {
-        ui?.manager.closeWindow(windowId);
+      if (ui?.closeOnSuccess !== false && uiManager && windowId) {
+        uiManager.closeWindow(windowId);
       }
       resolve(value);
     };

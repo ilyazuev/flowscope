@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
-import { SqlView, useLineageState } from '@pondpilot/flowscope-react';
+import { SqlView, useLineageState, useFloatingWindows, type WindowManagerApi, } from '@pondpilot/flowscope-react';
+import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
 import { Project, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
@@ -18,8 +19,7 @@ import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
-  import { type WindowManagerApi, useWindowManager } from '@pondpilot/flowscope-react';
-import { configureBackendProgressWindowManager } from '@/lib/utils_backend';
+
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -38,8 +38,6 @@ interface EditorAreaProps {
   fileSelectorOpen: boolean;
   onFileSelectorOpenChange: (open: boolean) => void;
   onRevealInLineage: (focusNodeId: string, selectedNodeId?: string) => void;
-  windowManager: WindowManagerApi;
-  isDark: boolean;
 }
 
 export function EditorArea({
@@ -48,8 +46,6 @@ export function EditorArea({
   fileSelectorOpen,
   onFileSelectorOpenChange,
   onRevealInLineage,
-  windowManager,
-  isDark,
 }: EditorAreaProps) {
   const {
     currentProject,
@@ -61,14 +57,9 @@ export function EditorArea({
     isReadOnly,
   } = useProject();
 
-  useEffect(() => {
-    configureBackendProgressWindowManager({
-      openWindow: windowManager.openWindow,
-      updateWindow: windowManager.updateWindow,
-      closeWindow: windowManager.closeWindow,
-    });
-    return () => configureBackendProgressWindowManager(null);
-  }, [windowManager.openWindow, windowManager.updateWindow, windowManager.closeWindow]);
+  const windowManager = useFloatingWindows();
+  const theme = useThemeStore((s) => s.theme);
+  const isDark = resolveTheme(theme) === 'dark';
 
   const activeFile = currentProject?.files.find((f) => f.id === currentProject.activeFileId);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -293,7 +284,7 @@ export function EditorArea({
   }
 
   const openDescribeWindow = async (
-    manager: ReturnType<typeof useWindowManager>,
+    manager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'>,
     project: Project,
     tableName: string,
     schema?: string,

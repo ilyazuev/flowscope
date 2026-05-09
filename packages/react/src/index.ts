@@ -8,7 +8,7 @@ export { LineageExplorer } from './components/LineageExplorer';
 export { SchemaView } from './components/SchemaView';
 export { ViewModeSelector } from './components/ViewModeSelector';
 export { LayoutSelector } from './components/LayoutSelector';
-export { FloatingWindows } from './components/floating-window/FloatingWindows';
+export { FloatingWindowsProvider, useFloatingWindows, getFloatingWindowManager } from './components/floating-window/FloatingWindowsProvider';
 export { useWindowManager } from './components/floating-window/useWindowManager';
 export type { WindowManagerApi } from './components/floating-window/types';
 export type { WindowId } from './components/floating-window/index';

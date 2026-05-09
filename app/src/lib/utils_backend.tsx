@@ -7,7 +7,6 @@ import {
 import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import type { WindowManagerApi } from '@pondpilot/flowscope-react';
 import { runWebSocket } from '@/lib/websocket';
 
 const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
@@ -24,15 +23,6 @@ function backendUrl<T>(backendEndpoint: string, payload?: T) {
   return `${baseBackendUrl}${backendUsecasePath(backendEndpoint, payload)}`;
 }
 
-let progressWindowManager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'> | null = null;
-
-export function configureBackendProgressWindowManager(
-  manager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'> | null
-) {
-  progressWindowManager = manager;
-}
-
-
 export async function devLineageAnalyze(adapterPayload: AnalysisPayload, currentProject: Project) {
   const analysisPayloadEx: AnalysisPayloadEx = {
     analysisPayload: adapterPayload,
@@ -48,12 +38,10 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
         analysisPayloadEx
       ),
       reauthUrl: import.meta.env.VITE_BACKEND_WS_REAUTH_ENDPOINT,
-      ui: progressWindowManager
-        ? {
-            manager: progressWindowManager,
-            title: `${currentProject.database ? `${currentProject.database}. ` : ''}Analyze lineage`,
-            closeOnSuccess: true,
-        } : undefined,
+      ui: {
+        title: `${currentProject.database ? `${currentProject.database}. ` : ''}Analyze lineage`,
+        closeOnSuccess: true,
+      },
     });
 
     if ('errorMessage' in analysisResponse && analysisResponse.errorMessage) {
