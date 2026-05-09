@@ -413,6 +413,13 @@ const SchemaTableNodeComponent = ({
                     </ClickableTooltip>
                   )
                 }
+                {
+                  col.info && (
+                    <ClickableTooltip content={sanitizeIdentifier(col.info)}>
+                      <StickyNote size={14} style={{ opacity: 0.7 }} />
+                    </ClickableTooltip>
+                  )
+                }
               </div>
             );
           })}
@@ -469,6 +476,7 @@ const areNodePropsEqual = (
     if (
       prevCol.name !== nextCol.name ||
       prevCol.comment !== nextCol.comment ||
+      prevCol.info !== nextCol.info ||
       prevCol.dataType !== nextCol.dataType ||
       prevCol.isPrimaryKey !== nextCol.isPrimaryKey ||
       prevCol.foreignKey?.table !== nextCol.foreignKey?.table ||

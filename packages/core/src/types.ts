@@ -177,6 +177,7 @@ export interface ColumnSchema {
   name: string;
   dataType?: string;
   comment?: string;
+  info?: string;
   /** True if this column is a primary key (or part of composite PK) */
   isPrimaryKey?: boolean;
   /** Foreign key reference if this column references another table */
@@ -681,6 +682,7 @@ export interface ResolvedColumnSchema {
   name: string;
   dataType?: string;
   comment?: string;
+  info?: string;
   /** Column-level origin (can differ from table origin in future merging) */
   origin?: SchemaOrigin;
   /** True if this column is a primary key (or part of composite PK) */
