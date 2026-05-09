@@ -7,7 +7,7 @@ import {
 import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import type { WindowManagerApi } from '@/components/floating-window';
+import type { WindowManagerApi } from '@pondpilot/flowscope-react';
 import { runWebSocket } from '@/lib/websocket';
 
 const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';

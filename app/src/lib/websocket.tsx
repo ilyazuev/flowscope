@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react';
-import type { WindowManagerApi, WindowId } from '@/components/floating-window';
+import type { WindowManagerApi, WindowId } from '@pondpilot/flowscope-react';
 
 export type WebSocketLogItem = {
   id: number;

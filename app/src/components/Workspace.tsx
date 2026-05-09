@@ -26,7 +26,7 @@ import { useViewStateStore } from '@/lib/view-state-store';
 import { getShortcutDisplay } from '@/lib/shortcuts';
 import { DataView } from '@/components/DataView.tsx';
 import { DataLoadProvider } from '@/components/DataLoadContext.tsx';
-import { FloatingWindows, useWindowManager } from '@/components/floating-window';
+import { FloatingWindows, useWindowManager } from '@pondpilot/flowscope-react';
 
 interface WorkspaceProps {
   backendReady: boolean;

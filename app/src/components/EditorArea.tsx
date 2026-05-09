@@ -18,7 +18,7 @@ import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
-import { useWindowManager, WindowManagerApi } from '@/components/floating-window';
+  import { type WindowManagerApi, useWindowManager } from '@pondpilot/flowscope-react';
 import { configureBackendProgressWindowManager } from '@/lib/utils_backend';
 
 // Fallback component shown when SqlView encounters an error
