@@ -14,7 +14,15 @@ import {
 import type { Node as FlowNode, Edge as FlowEdge, NodeProps, EdgeProps } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
-import { KeyRound, Link2, Table2, Eye, ArrowDownUp, ArrowLeftRight, StickyNote } from 'lucide-react';
+import {
+  KeyRound,
+  Link2,
+  Table2,
+  Eye,
+  ArrowDownUp,
+  ArrowLeftRight,
+  StickyNote,
+} from 'lucide-react';
 
 import { useNodeFocus } from '../hooks/useNodeFocus';
 import { useIsDarkMode } from '../hooks/useColors';
@@ -30,6 +38,7 @@ import type {
 } from '@pondpilot/flowscope-core';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { sanitizeIdentifier } from '../utils/sanitize';
+import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 
 // ============================================================================
 // Types
@@ -46,6 +55,8 @@ interface SchemaViewProps {
 type ColumnWithConstraints = ColumnSchema | ResolvedColumnSchema;
 
 interface SchemaTableNodeData extends Record<string, unknown> {
+  catalog?: string;
+  schema?: string;
   label: string;
   comment?: string;
   columns: ColumnWithConstraints[];
@@ -239,6 +250,7 @@ const SchemaTableNodeComponent = ({
   const isHighlighted = data.isHighlighted === true;
   const highlightedColumns = data.highlightedColumns || [];
   const isView = data.nodeType === 'view';
+  const fullName = `${data.catalog ? `${data.catalog}.` : ''}${data.schema ? `${data.schema}.` : ''}${data.label}`;
 
   const NodeIcon = isView ? Eye : Table2;
 
@@ -289,15 +301,13 @@ const SchemaTableNodeComponent = ({
             whiteSpace: 'nowrap',
           }}
         >
-          {data.label}
+          {fullName}
         </span>
-        {
-          data.comment && (
-            <ClickableTooltip content={sanitizeIdentifier(data.comment)}>
-              <StickyNote size={14} style={{ opacity: 0.7, margin: '2px' }} />
-            </ClickableTooltip>
-          )
-        }
+        {data.comment && (
+          <ClickableTooltip content={sanitizeIdentifier(data.comment)}>
+            <StickyNote size={14} style={{ opacity: 0.7, margin: '2px' }} />
+          </ClickableTooltip>
+        )}
       </div>
 
       {/* Columns */}
@@ -406,20 +416,35 @@ const SchemaTableNodeComponent = ({
                     }}
                   />
                 )}
-                {
-                  col.comment && (
-                    <ClickableTooltip content={sanitizeIdentifier(col.comment)}>
-                      <StickyNote size={14} style={{ opacity: 0.7 }} />
-                    </ClickableTooltip>
-                  )
-                }
-                {
-                  col.info && (
-                    <ClickableTooltip content={sanitizeIdentifier(col.info)}>
-                      <StickyNote size={14} style={{ opacity: 0.7 }} />
-                    </ClickableTooltip>
-                  )
-                }
+                {col.comment && (
+                  <ClickableTooltip content={sanitizeIdentifier(col.comment)}>
+                    <StickyNote size={14} style={{ opacity: 0.7 }} />
+                  </ClickableTooltip>
+                )}
+                {/*{col.info && (*/}
+                {/*  // <ClickableTooltip content={sanitizeIdentifier(col.info)}>*/}
+                {/*  //   <StickyNote size={14} style={{ opacity: 0.7 }} />*/}
+                {/*  // </ClickableTooltip>*/}
+
+                {/*)}*/}
+                <button
+                  onClick={() => {
+                    // windowManager.openWindow({
+                    //   id: `columnInfo-${Date.now()}`,
+                    //   title: `${fullName}.${col.name}`,
+                    //   //content: `${col.info}`,
+                    //   content: `123`,
+                    // });
+                  }}
+                  className={cn(
+                    'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
+                    'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  )}
+                  aria-label={'Show column information'}
+                  type="button"
+                >
+                  <StickyNote size={14} style={{ opacity: 0.7 }} />
+                </button>
               </div>
             );
           })}
@@ -858,6 +883,8 @@ export function buildSchemaFlowNodes(
       position: { x: 0, y: 0 },
       dragHandle: '.schema-node-header',
       data: {
+        catalog: table.catalog,
+        schema: table.schema,
         label: table.name,
         comment: table.comment,
         columns: getColumnsWithConstraintMetadata(table),

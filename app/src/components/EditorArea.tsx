@@ -6,7 +6,6 @@ import { SqlView, useLineageState } from '@pondpilot/flowscope-react';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
 import { Project, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
-import { resolveTheme, useThemeStore } from '@/lib/theme-store';
 import { useBackend } from '@/lib/backend-context';
 import type { GlobalShortcut } from '@/hooks';
 import { useAnalysis, useDebounce, useFileNavigation, useGlobalShortcuts } from '@/hooks';
@@ -19,7 +18,7 @@ import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
-import { FloatingWindows, useWindowManager } from '@/components/floating-window';
+import { useWindowManager, WindowManagerApi } from '@/components/floating-window';
 import { configureBackendProgressWindowManager } from '@/lib/utils_backend';
 
 // Fallback component shown when SqlView encounters an error
@@ -39,6 +38,8 @@ interface EditorAreaProps {
   fileSelectorOpen: boolean;
   onFileSelectorOpenChange: (open: boolean) => void;
   onRevealInLineage: (focusNodeId: string, selectedNodeId?: string) => void;
+  windowManager: WindowManagerApi;
+  isDark: boolean;
 }
 
 export function EditorArea({
@@ -47,6 +48,8 @@ export function EditorArea({
   fileSelectorOpen,
   onFileSelectorOpenChange,
   onRevealInLineage,
+  windowManager,
+  isDark,
 }: EditorAreaProps) {
   const {
     currentProject,
@@ -58,21 +61,14 @@ export function EditorArea({
     isReadOnly,
   } = useProject();
 
-  const theme = useThemeStore((state) => state.theme);
-  const isDark = resolveTheme(theme) === 'dark';
-
-  const manager = useWindowManager({
-    theme: isDark ? 'dark' : 'light',
-  });
-
   useEffect(() => {
     configureBackendProgressWindowManager({
-      openWindow: manager.openWindow,
-      updateWindow: manager.updateWindow,
-      closeWindow: manager.closeWindow,
+      openWindow: windowManager.openWindow,
+      updateWindow: windowManager.updateWindow,
+      closeWindow: windowManager.closeWindow,
     });
     return () => configureBackendProgressWindowManager(null);
-  }, [manager.openWindow, manager.updateWindow, manager.closeWindow]);
+  }, [windowManager.openWindow, windowManager.updateWindow, windowManager.closeWindow]);
 
   const activeFile = currentProject?.files.find((f) => f.id === currentProject.activeFileId);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -356,7 +352,9 @@ export function EditorArea({
     }
     const result = getResult(activeProjectId, hideCTEs);
     if (!result) {
-      setRevealInLineageError('No Lineage Data: need to parse SQL before reveal object in Lineage.');
+      setRevealInLineageError(
+        'No Lineage Data: need to parse SQL before reveal object in Lineage.'
+      );
       return;
     }
     if (result.statements) {
@@ -365,19 +363,19 @@ export function EditorArea({
         if (statement.sourceName === activeSourceName || statement.sourceName === activeFile.name) {
           let nodeWithBodySpan = null;
           for (const node of statement.nodes) {
-            if( node.spans ) {
+            if (node.spans) {
               for (const span of node.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
                   if (node.type == 'column') {
                     for (const edge of statement.edges) {
-                      if( edge.to == node.id && edge.type == 'ownership' ) {
+                      if (edge.to == node.id && edge.type == 'ownership') {
                         onRevealInLineage(edge.from, node.id);
                         return;
                       }
                     }
                     setRevealInLineageError('Column not found');
                     return;
-                  } else if( node.type == 'output' ) {
+                  } else if (node.type == 'output') {
                     nodeWithBodySpan = node;
                   } else {
                     onRevealInLineage(node.id);
@@ -386,11 +384,16 @@ export function EditorArea({
                 }
               }
             }
-            if( !nodeWithBodySpan && node.bodySpan && node.bodySpan.start <= selection.head && selection.head <= node.bodySpan.end ) {
+            if (
+              !nodeWithBodySpan &&
+              node.bodySpan &&
+              node.bodySpan.start <= selection.head &&
+              selection.head <= node.bodySpan.end
+            ) {
               nodeWithBodySpan = node;
             }
           }
-          if(nodeWithBodySpan) {
+          if (nodeWithBodySpan) {
             onRevealInLineage(nodeWithBodySpan.id);
             return;
           }
@@ -425,7 +428,7 @@ export function EditorArea({
         if (table.spans) {
           for (const span of table.spans) {
             if (span.start <= selection.head && selection.head <= span.end) {
-              void openDescribeWindow(manager, currentProject, table.name, table.schema); // await openDescribeWindow(manager, currentProject, 'IZ_TEST_1_ORDER', 'DWHKIT');
+              void openDescribeWindow(windowManager, currentProject, table.name, table.schema); // await openDescribeWindow(windowManager, currentProject, 'IZ_TEST_1_ORDER', 'DWHKIT');
               return;
             }
           }
@@ -436,7 +439,7 @@ export function EditorArea({
               for (const span of column.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
                   void openDescribeWindow(
-                    manager,
+                    windowManager,
                     currentProject,
                     table.name,
                     table.schema,
@@ -459,7 +462,7 @@ export function EditorArea({
     setDataDescribingError,
     runDataDescribe,
     dataDescriptionScript,
-    manager,
+    windowManager,
   ]);
 
   const needParametersForSql = (
@@ -720,8 +723,6 @@ export function EditorArea({
           }
         />
       )}
-
-      <FloatingWindows manager={manager} theme={isDark ? 'dark' : 'light'} />
     </div>
   );
 }

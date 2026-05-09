@@ -21,11 +21,12 @@ import { NavigationProvider } from '@/lib/navigation-context';
 import { FocusRegistryProvider } from '@/lib/focus-registry';
 import { useGlobalShortcuts } from '@/hooks';
 import type { GlobalShortcut } from '@/hooks';
-import { useThemeStore, type Theme } from '@/lib/theme-store';
+import { useThemeStore, type Theme, resolveTheme } from '@/lib/theme-store';
 import { useViewStateStore } from '@/lib/view-state-store';
 import { getShortcutDisplay } from '@/lib/shortcuts';
 import { DataView } from '@/components/DataView.tsx';
 import { DataLoadProvider } from '@/components/DataLoadContext.tsx';
+import { FloatingWindows, useWindowManager } from '@/components/floating-window';
 
 interface WorkspaceProps {
   backendReady: boolean;
@@ -72,6 +73,10 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
     setTheme(nextTheme);
     toast.success(`Theme: ${nextTheme.charAt(0).toUpperCase() + nextTheme.slice(1)}`);
   }, [theme, setTheme]);
+  const isDark = resolveTheme(theme) === 'dark';
+  const windowManager = useWindowManager({
+    theme: isDark ? 'dark' : 'light',
+  });
 
   const editorPanelRef = useRef<ImperativePanelHandle>(null);
   const graphContainerRef = useRef<HTMLDivElement>(null);
@@ -498,6 +503,8 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                         fileSelectorOpen={fileSelectorOpen}
                         onFileSelectorOpenChange={setFileSelectorOpen}
                         onRevealInLineage={handleRevealInLineage}
+                        windowManager={windowManager}
+                        isDark={isDark}
                       />
                     </ResizablePanel>
 
@@ -540,6 +547,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
       <div className={"text-xs text-right pt-2 pb-1 text-slate-600"}>
         Flowscope Enterprise Edition. Trial Version. <a href={"https://www.data-analytics.biz/"} target={"_blank"} className={"underline"}>Data Analytics GmbH und Co KG</a>. Copyright 2025.
       </div>
+      <FloatingWindows manager={windowManager} theme={isDark ? 'dark' : 'light'} />
     </div>
   );
 }
