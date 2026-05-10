@@ -1,4 +1,13 @@
-import { useMemo, useEffect, useCallback, useState, memo, type JSX } from 'react';
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useEffect,
+  useCallback,
+  useState,
+  memo,
+  type JSX,
+} from 'react';
 import {
   ReactFlow,
   Background,
@@ -35,11 +44,13 @@ import type {
   ResolvedColumnSchema,
   SchemaOrigin,
   ForeignKeyRef,
+  ColumnInfoSchema,
 } from '@pondpilot/flowscope-core';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { sanitizeIdentifier } from '../utils/sanitize';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { useFloatingWindows } from '@pondpilot/flowscope-react';
+import { ColumnInfoForm } from './ColumnInfoForm';
 
 // ============================================================================
 // Types
@@ -51,6 +62,7 @@ interface SchemaViewProps {
   selectedTableName?: string;
   /** Callback when selection should be cleared */
   onClearSelection?: () => void;
+  columnInfoSchemas?: ColumnInfoSchema;
 }
 
 type ColumnWithConstraints = ColumnSchema | ResolvedColumnSchema;
@@ -69,6 +81,12 @@ interface SchemaTableNodeData extends Record<string, unknown> {
 }
 
 type LayoutDirection = 'TB' | 'LR';
+
+const ColumnInfoSchemasContext = createContext<ColumnInfoSchema | null>(null);
+
+function useColumnInfoSchemas(): ColumnInfoSchema | null {
+  return useContext(ColumnInfoSchemasContext);
+}
 
 const SCHEMA_LAYOUT_SPACING = {
   nodeSepMultiplier: 1.95,
@@ -193,12 +211,8 @@ function getSchemaLayoutedElements(
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   const isHorizontal = direction === 'LR';
-  const nodeSep = isHorizontal
-    ? SCHEMA_CONFIG.DAGRE_NODESEP_LR
-    : SCHEMA_CONFIG.DAGRE_NODESEP_TB;
-  const rankSep = isHorizontal
-    ? SCHEMA_CONFIG.DAGRE_RANKSEP_LR
-    : SCHEMA_CONFIG.DAGRE_RANKSEP_TB;
+  const nodeSep = isHorizontal ? SCHEMA_CONFIG.DAGRE_NODESEP_LR : SCHEMA_CONFIG.DAGRE_NODESEP_TB;
+  const rankSep = isHorizontal ? SCHEMA_CONFIG.DAGRE_RANKSEP_LR : SCHEMA_CONFIG.DAGRE_RANKSEP_TB;
 
   dagreGraph.setGraph({
     rankdir: direction,
@@ -253,7 +267,7 @@ function getSchemaLayoutedElements(
 // Schema Table Node Component
 // ============================================================================
 
-const SchemaTableNodeComponent = ({
+  const SchemaTableNodeComponent = ({
   data,
 }: NodeProps<FlowNode<SchemaTableNodeData>>): JSX.Element => {
   const isDark = useIsDarkMode();
@@ -269,6 +283,7 @@ const SchemaTableNodeComponent = ({
 
   const NodeIcon = isView ? Eye : Table2;
   const windowManager = useFloatingWindows();
+  const columnInfoSchemas = useColumnInfoSchemas();
 
   return (
     <div
@@ -440,10 +455,14 @@ const SchemaTableNodeComponent = ({
                 <button
                   onClick={() => {
                     windowManager.openWindow({
-                      id: `columnInfo-${Date.now()}`,
+                      id: `columnInfo-${fullName}.${col.name}`,
                       title: `${fullName}.${col.name}`,
-                      //content: `${col.info}`,
-                      content: `123`,
+                      content: (
+                        <ColumnInfoForm
+                          info={col.info}
+                          columnInfoSchemas={columnInfoSchemas}
+                        />
+                      ),
                     });
                   }}
                   className={cn(
@@ -983,6 +1002,7 @@ function SchemaViewInner({
   schema,
   selectedTableName,
   onClearSelection,
+  columnInfoSchemas,
 }: SchemaViewProps): JSX.Element {
   const isDark = useIsDarkMode();
   const [direction, setDirection] = useState<LayoutDirection>('TB');
@@ -1040,35 +1060,37 @@ function SchemaViewInner({
   }, []);
 
   return (
-    <div style={{ height: '100%', position: 'relative' }}>
-      <SchemaSvgDefs />
-      <SchemaControls direction={direction} onDirectionChange={handleDirectionChange} />
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onPaneClick={handlePaneClick}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        minZoom={0.05}
-        maxZoom={2}
-      >
-        <Background color={isDark ? '#334155' : '#e2e8f0'} gap={20} size={1} />
-        <Controls />
-        <MiniMap
-          nodeColor={(node) => {
-            const nodeData = node.data as SchemaTableNodeData;
-            if (nodeData?.isSelected) return SCHEMA_COLORS.selection.border;
-            if (nodeData?.isHighlighted) return SCHEMA_COLORS.edge.selected;
-            const origin = nodeData?.origin;
-            return origin === 'imported' ? COLORS.nodes.table.accent : COLORS.nodes.cte.accent;
-          }}
-          maskColor={isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'}
-        />
-      </ReactFlow>
-    </div>
+    <ColumnInfoSchemasContext.Provider value={columnInfoSchemas ?? null}>
+      <div style={{ height: '100%', position: 'relative' }}>
+        <SchemaSvgDefs />
+        <SchemaControls direction={direction} onDirectionChange={handleDirectionChange} />
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onPaneClick={handlePaneClick}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          minZoom={0.05}
+          maxZoom={2}
+        >
+          <Background color={isDark ? '#334155' : '#e2e8f0'} gap={20} size={1} />
+          <Controls />
+          <MiniMap
+            nodeColor={(node) => {
+              const nodeData = node.data as SchemaTableNodeData;
+              if (nodeData?.isSelected) return SCHEMA_COLORS.selection.border;
+              if (nodeData?.isHighlighted) return SCHEMA_COLORS.edge.selected;
+              const origin = nodeData?.origin;
+              return origin === 'imported' ? COLORS.nodes.table.accent : COLORS.nodes.cte.accent;
+            }}
+            maskColor={isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'}
+          />
+        </ReactFlow>
+      </div>
+    </ColumnInfoSchemasContext.Provider>
   );
 }
 

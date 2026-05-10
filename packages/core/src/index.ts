@@ -22,6 +22,7 @@ export type {
   // Request types
   AnalyzeRequest,
   AnalysisOptions,
+  ColumnInfoSchema,
   CompletionClause,
   CompletionColumn,
   CompletionContext,

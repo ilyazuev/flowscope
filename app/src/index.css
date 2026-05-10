@@ -4,6 +4,8 @@
 
 @source '../../packages/react/src/**/*.{js,ts,jsx,tsx}';
 
+@source "../node_modules/@rjsf/shadcn/src";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

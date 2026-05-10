@@ -367,6 +367,11 @@ export interface StatementSplitResult {
 
 // Response Types
 
+export interface ColumnInfoSchema {
+  uiSchema: string;
+  jsonSchema: string;
+}
+
 /**
  * The result of analyzing SQL for data lineage.
  *
@@ -384,6 +389,7 @@ export interface AnalyzeResult {
   summary: Summary;
   /** Effective schema used during analysis (imported + implied) */
   resolvedSchema?: ResolvedSchemaMetadata;
+  columnInfoSchemas?: ColumnInfoSchema;
 }
 
 /** Lineage information for a single SQL statement. */
