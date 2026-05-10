@@ -874,9 +874,9 @@
   dependencies:
     "@tybys/wasm-util" "^0.10.1"
 
-"@perspective-dev/client@", "@perspective-dev/client@^4.3.0":
+"@perspective-dev/client@", "@perspective-dev/client@4.4.1":
   version "4.4.1"
-  resolved "https://registry.npmjs.org/@perspective-dev/client/-/client-4.4.1.tgz"
+  resolved "https://registry.yarnpkg.com/@perspective-dev/client/-/client-4.4.1.tgz#964370c08bd0033b7cbb571dd1b4515f58fb7a1a"
   integrity sha512-2CWBNx1yOjXpbGdFcRrk34TDodeGojWVhUJWFAQmBCacF8YLRueC16iJeqqDGQP0NQ+dWfkDy5uABVi/6YoAvQ==
   dependencies:
     "@perspective-dev/server" ""
@@ -884,9 +884,9 @@
     stoppable "=1.1.0"
     ws "^8.17.0"
 
-"@perspective-dev/react@^4.3.0":
+"@perspective-dev/react@4.4.1":
   version "4.4.1"
-  resolved "https://registry.npmjs.org/@perspective-dev/react/-/react-4.4.1.tgz"
+  resolved "https://registry.yarnpkg.com/@perspective-dev/react/-/react-4.4.1.tgz#cbd75615160bb71cac16934e08f1cba7f685a409"
   integrity sha512-Cz65yRNuiJ7Q3tXCfRC+fzTm3NVFbX5cvK1g46oK7z6+yf7T3aZLz3nSLb5dVOCZSFjp+czw4dZEt/njgFk6lw==
   dependencies:
     "@perspective-dev/client" ""
@@ -896,14 +896,14 @@
     react ">17 <20"
     react-dom ">17 <20"
 
-"@perspective-dev/server@":
+"@perspective-dev/server@", "@perspective-dev/server@4.4.1":
   version "4.4.1"
   resolved "https://registry.npmjs.org/@perspective-dev/server/-/server-4.4.1.tgz"
   integrity sha512-eOWr0qy2T2KwClbYgRjfDrcnkR023gHn/7J/tQEPa6rEYTfqXwicWsObFU4mZHi3rTySxYf6qsY6O+SJIM+BzA==
 
-"@perspective-dev/viewer-d3fc@^4.3.0":
+"@perspective-dev/viewer-d3fc@4.4.1":
   version "4.4.1"
-  resolved "https://registry.npmjs.org/@perspective-dev/viewer-d3fc/-/viewer-d3fc-4.4.1.tgz"
+  resolved "https://registry.yarnpkg.com/@perspective-dev/viewer-d3fc/-/viewer-d3fc-4.4.1.tgz#38b1d5c5228b2f11649cdc94f187b2766866d226"
   integrity sha512-sVM0DAP1hLWjenkRZRBVZ1PEEtzvFITvFeoR2R9Iqdfhrkj6qaW/m1dmRkCEnenCSpbXuOD35Y2g2wxwmp7Fqg==
   dependencies:
     "@d3fc/d3fc-chart" "5.1.9"
@@ -919,16 +919,16 @@
     d3fc "^15.2.13"
     gradient-parser ">=1 <2"
 
-"@perspective-dev/viewer-datagrid@^4.3.0":
+"@perspective-dev/viewer-datagrid@4.4.1":
   version "4.4.1"
-  resolved "https://registry.npmjs.org/@perspective-dev/viewer-datagrid/-/viewer-datagrid-4.4.1.tgz"
+  resolved "https://registry.yarnpkg.com/@perspective-dev/viewer-datagrid/-/viewer-datagrid-4.4.1.tgz#c117d57e99c8ff93fe4b8ff732f0fef3d08b7baa"
   integrity sha512-vQkI4x9kqY+Nrj+YSijvXXqoBrCvlUp1+sKS81S913CkFbLLQMJGLtso/KP1JGw9bQkNUanpQ5B5Otkmrb8Gcw==
   dependencies:
     "@perspective-dev/client" ""
     "@perspective-dev/viewer" ""
     regular-table "=0.8.4"
 
-"@perspective-dev/viewer@", "@perspective-dev/viewer@^4.3.0":
+"@perspective-dev/viewer@", "@perspective-dev/viewer@4.4.1":
   version "4.4.1"
   resolved "https://registry.npmjs.org/@perspective-dev/viewer/-/viewer-4.4.1.tgz"
   integrity sha512-Mkox9AywVVgZJfMsdrMqtANIZrrJodbfumHzHv9NhlKneNAtTa1Wvpof7E9r9M25Mo9nDkoKmEM4MdlsdU6Ulw==

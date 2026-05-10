@@ -90,7 +90,7 @@ export function DataView() {
       const tds = elements[0].shadowRoot?.querySelectorAll('regular-table > table td, regular-table > table th');
       if (tds && elements.length > 0) {
         for (const td of tds) {
-          (td as HTMLElement).style.boxShadow = '1px 0px var(--inactive--border-color, #8b868045)';
+          (td as HTMLElement).style.boxShadow = '1px 0px var(--psp-inactive--border-color, #8b868045)'; //style.boxShadow = '1px 0px var(--inactive--border-color, #8b868045)';
         }
       }
       
