@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useMemo,
   useEffect,
   useCallback,
@@ -44,13 +42,13 @@ import type {
   ResolvedColumnSchema,
   SchemaOrigin,
   ForeignKeyRef,
-  ColumnInfoSchema,
 } from '@pondpilot/flowscope-core';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { sanitizeIdentifier } from '../utils/sanitize';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { useFloatingWindows } from '@pondpilot/flowscope-react';
 import { ColumnInfoForm } from './ColumnInfoForm';
+import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
 
 // ============================================================================
 // Types
@@ -260,9 +258,10 @@ function getSchemaLayoutedElements(
 // Schema Table Node Component
 // ============================================================================
 
-  const SchemaTableNodeComponent = ({
+const SchemaTableNodeComponent = ({
   data,
 }: NodeProps<FlowNode<SchemaTableNodeData>>): JSX.Element => {
+  const {columnInfoSchema} = useGenericForm();
   const isDark = useIsDarkMode();
   const paletteKey = data.origin === 'imported' ? 'imported' : 'cte';
   const colors = isDark
@@ -453,7 +452,7 @@ function getSchemaLayoutedElements(
                         content: (
                           <ColumnInfoForm
                             info={col.info}
-                            columnInfoSchemas={null}
+                            columnInfoSchemas={columnInfoSchema}
                           />
                         ),
                       });

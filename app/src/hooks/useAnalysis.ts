@@ -8,7 +8,8 @@ import { useAnalysisStore } from '@/lib/analysis-store';
 import { FILE_LIMITS, ANALYSIS_SQL_PREVIEW_LIMITS } from '@/lib/constants';
 import { AnalysisErrorCode, isAnalysisError } from '@/types';
 import type { AnalysisState, AnalysisContext, FileValidationResult } from '@/types';
-import { devLineageAnalyze } from '@/lib/utils_backend.tsx';
+import { devLineageAnalyze, loadGenericForms } from '@/lib/utils_backend.tsx';
+import { useGenericForm } from '@/lib/generic-form-context.tsx';
 
 // Maximum retry attempts for file sync errors to prevent infinite loops
 const MAX_FILE_SYNC_RETRIES = 1;
@@ -44,6 +45,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
   const { actions, state: lineageState } = useLineage();
   const { hideCTEs } = lineageState;
   const { getResult, getMetrics, setResult: storeResult, setMetrics } = useAnalysisStore();
+  const { columnInfoSchema, setColumnInfoSchema } = useGenericForm();
   const [state, setState] = useState<AnalysisState>({
     isAnalyzing: false,
     error: null,
@@ -397,6 +399,12 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
         let analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>>;
         let fileSyncRetries = 0;
         if (currentProject.dialect === 'oracleBackend') {
+          if( !columnInfoSchema ) {
+            const columnInfoSchemaResponse = await loadGenericForms();
+            if( columnInfoSchemaResponse ) {
+              setColumnInfoSchema(columnInfoSchemaResponse);
+            }
+          }
           analysisResponse = await devLineageAnalyze(adapterPayload, currentProject);
         } else if (adapter) { // Use adapter if available, otherwise fall back to direct worker calls
           while (true) {

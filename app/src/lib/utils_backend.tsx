@@ -8,7 +8,6 @@ import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { runWebSocket } from '@/lib/websocket';
-import { useGenericForm } from '@/lib/generic-form-context.tsx';
 import type { ColumnInfoSchema } from '@pondpilot/flowscope-core';
 
 const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
@@ -25,15 +24,8 @@ function backendUrl<T>(backendEndpoint: string, payload?: T) {
   return `${baseBackendUrl}${backendUsecasePath(backendEndpoint, payload)}`;
 }
 
-export async function devLineageAnalyze(adapterPayload: AnalysisPayload, currentProject: Project) {
-  const analysisPayloadEx: AnalysisPayloadEx = {
-    analysisPayload: adapterPayload,
-    database: currentProject.database,
-    userName: currentProject.userName,
-  };
-
-  const {columnInfoSchema, setColumnInfoSchema} = useGenericForm();
-  if( !columnInfoSchema && import.meta.env.VITE_BACKEND_ENDPOINT_loadGenericForms ) {
+export async function loadGenericForms() {
+  if( import.meta.env.VITE_BACKEND_ENDPOINT_loadGenericForms ) {
     const res = await fetch(
       backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_loadGenericForms, null)
     );
@@ -46,11 +38,16 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
       // noinspection ExceptionCaughtLocallyJS
       throw new Error(columnInfoSchemaResponse.errorMessage as string);
     }
-
-    if(columnInfoSchemaResponse) {
-      setColumnInfoSchema(columnInfoSchemaResponse);
-    }
+    return columnInfoSchemaResponse;
   }
+}
+
+export async function devLineageAnalyze(adapterPayload: AnalysisPayload, currentProject: Project) {
+  const analysisPayloadEx: AnalysisPayloadEx = {
+    analysisPayload: adapterPayload,
+    database: currentProject.database,
+    userName: currentProject.userName,
+  };
 
   if (import.meta.env.VITE_BACKEND_TRANSPORT === 'websocket') {
     const analysisResponse = await runWebSocket<Awaited<ReturnType<typeof analyzeWithWorker>>>({

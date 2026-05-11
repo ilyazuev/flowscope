@@ -12,19 +12,14 @@ interface GenericFormProviderProps {
   children: ReactNode;
 }
 
-export function GenericFormProvider({
-    children
-}: GenericFormProviderProps) {
+export function GenericFormProvider({children}: GenericFormProviderProps) {
   const [columnInfoSchema, setColumnInfoSchema] = useState<ColumnInfoSchema|null>(null)
-
-
   const value = useMemo(
     () => ({
       columnInfoSchema,
       setColumnInfoSchema,
     }),[columnInfoSchema, setColumnInfoSchema]
   );
-
   return <GenericFormContext.Provider value={value}>{children}</GenericFormContext.Provider>;
 }
 
