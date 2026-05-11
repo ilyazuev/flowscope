@@ -389,7 +389,6 @@ export interface AnalyzeResult {
   summary: Summary;
   /** Effective schema used during analysis (imported + implied) */
   resolvedSchema?: ResolvedSchemaMetadata;
-  columnInfoSchemas?: ColumnInfoSchema;
 }
 
 /** Lineage information for a single SQL statement. */

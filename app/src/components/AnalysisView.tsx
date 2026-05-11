@@ -494,7 +494,6 @@ export function AnalysisView({
                 schema={schema}
                 selectedTableName={schemaState.selectedTableName}
                 onClearSelection={schemaState.clearSelection}
-                columnInfoSchemas={result.columnInfoSchemas}
               />
             )}
           </TabsContent>

@@ -62,7 +62,6 @@ interface SchemaViewProps {
   selectedTableName?: string;
   /** Callback when selection should be cleared */
   onClearSelection?: () => void;
-  columnInfoSchemas?: ColumnInfoSchema;
 }
 
 type ColumnWithConstraints = ColumnSchema | ResolvedColumnSchema;
@@ -81,12 +80,6 @@ interface SchemaTableNodeData extends Record<string, unknown> {
 }
 
 type LayoutDirection = 'TB' | 'LR';
-
-const ColumnInfoSchemasContext = createContext<ColumnInfoSchema | null>(null);
-
-function useColumnInfoSchemas(): ColumnInfoSchema | null {
-  return useContext(ColumnInfoSchemasContext);
-}
 
 const SCHEMA_LAYOUT_SPACING = {
   nodeSepMultiplier: 1.95,
@@ -283,7 +276,6 @@ function getSchemaLayoutedElements(
 
   const NodeIcon = isView ? Eye : Table2;
   const windowManager = useFloatingWindows();
-  const columnInfoSchemas = useColumnInfoSchemas();
 
   return (
     <div
@@ -452,28 +444,30 @@ function getSchemaLayoutedElements(
                     <StickyNote size={14} style={{ opacity: 0.7 }} />
                   </ClickableTooltip>
                 )}
-                <button
-                  onClick={() => {
-                    windowManager.openWindow({
-                      id: `columnInfo-${fullName}.${col.name}`,
-                      title: `${fullName}.${col.name}`,
-                      content: (
-                        <ColumnInfoForm
-                          info={col.info}
-                          columnInfoSchemas={columnInfoSchemas}
-                        />
-                      ),
-                    });
-                  }}
-                  className={cn(
-                    'self-center flex size-6 items-center justify-center transition-colors duration-200 border-transparent outline-none rounded-full',
-                    'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                  )}
-                  aria-label={'Show column information'}
-                  type="button"
-                >
-                  <StickyNote size={14} style={{ opacity: 0.7 }} />
-                </button>
+                {col.info && (
+                  <button
+                    onClick={() => {
+                      windowManager.openWindow({
+                        id: `columnInfo-${fullName}.${col.name}`,
+                        title: `${fullName}.${col.name}`,
+                        content: (
+                          <ColumnInfoForm
+                            info={col.info}
+                            columnInfoSchemas={null}
+                          />
+                        ),
+                      });
+                    }}
+                    className={cn(
+                      'self-center flex size-6 items-center justify-center transition-colors duration-200 border-transparent outline-none rounded-full',
+                      'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    )}
+                    aria-label={'Show column information'}
+                    type="button"
+                  >
+                    <StickyNote size={14} style={{ opacity: 0.7 }} />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -1002,7 +996,6 @@ function SchemaViewInner({
   schema,
   selectedTableName,
   onClearSelection,
-  columnInfoSchemas,
 }: SchemaViewProps): JSX.Element {
   const isDark = useIsDarkMode();
   const [direction, setDirection] = useState<LayoutDirection>('TB');
@@ -1060,37 +1053,35 @@ function SchemaViewInner({
   }, []);
 
   return (
-    <ColumnInfoSchemasContext.Provider value={columnInfoSchemas ?? null}>
-      <div style={{ height: '100%', position: 'relative' }}>
-        <SchemaSvgDefs />
-        <SchemaControls direction={direction} onDirectionChange={handleDirectionChange} />
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onPaneClick={handlePaneClick}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          fitView
-          minZoom={0.05}
-          maxZoom={2}
-        >
-          <Background color={isDark ? '#334155' : '#e2e8f0'} gap={20} size={1} />
-          <Controls />
-          <MiniMap
-            nodeColor={(node) => {
-              const nodeData = node.data as SchemaTableNodeData;
-              if (nodeData?.isSelected) return SCHEMA_COLORS.selection.border;
-              if (nodeData?.isHighlighted) return SCHEMA_COLORS.edge.selected;
-              const origin = nodeData?.origin;
-              return origin === 'imported' ? COLORS.nodes.table.accent : COLORS.nodes.cte.accent;
-            }}
-            maskColor={isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'}
-          />
-        </ReactFlow>
-      </div>
-    </ColumnInfoSchemasContext.Provider>
+    <div style={{ height: '100%', position: 'relative' }}>
+      <SchemaSvgDefs />
+      <SchemaControls direction={direction} onDirectionChange={handleDirectionChange} />
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onPaneClick={handlePaneClick}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        fitView
+        minZoom={0.05}
+        maxZoom={2}
+      >
+        <Background color={isDark ? '#334155' : '#e2e8f0'} gap={20} size={1} />
+        <Controls />
+        <MiniMap
+          nodeColor={(node) => {
+            const nodeData = node.data as SchemaTableNodeData;
+            if (nodeData?.isSelected) return SCHEMA_COLORS.selection.border;
+            if (nodeData?.isHighlighted) return SCHEMA_COLORS.edge.selected;
+            const origin = nodeData?.origin;
+            return origin === 'imported' ? COLORS.nodes.table.accent : COLORS.nodes.cte.accent;
+          }}
+          maskColor={isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)'}
+        />
+      </ReactFlow>
+    </div>
   );
 }
 
