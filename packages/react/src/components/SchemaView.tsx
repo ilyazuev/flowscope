@@ -46,7 +46,7 @@ import type {
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { sanitizeIdentifier } from '../utils/sanitize';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
-import { useFloatingWindows } from '@pondpilot/flowscope-react';
+import { useFloatingWindows } from './floating-window';
 import { ColumnInfoForm } from './ColumnInfoForm';
 import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
 

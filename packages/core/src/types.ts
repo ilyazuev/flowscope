@@ -442,6 +442,7 @@ export interface Node {
   /** For table nodes that are JOINed: the join condition (ON clause) */
   joinCondition?: string;
   comment?: string;
+  info?: string;
   dataType?: string;
   /** For column nodes: aggregation information if this column is aggregated or a grouping key */
   aggregation?: AggregationInfo;

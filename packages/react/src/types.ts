@@ -381,6 +381,7 @@ export interface ColumnNodeInfo {
   name: string;
   dataType?: string;
   comment?: string;
+  info?: string;
   /** Optional SQL expression for computed columns */
   expression?: string;
   /** Whether this column is part of a highlighted path */

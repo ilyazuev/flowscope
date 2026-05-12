@@ -328,6 +328,7 @@ export function buildFlowNodes(
           name: childNode.label,
           dataType: childNode.dataType,
           comment: childNode.comment,
+          info: childNode.info,
           expression: childNode.expression,
           aggregation: childNode.aggregation,
         });

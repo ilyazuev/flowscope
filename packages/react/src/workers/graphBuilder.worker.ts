@@ -29,6 +29,7 @@ export interface SerializedColumnInfo {
   id: string;
   name: string;
   comment?: string;
+  info?: string;
   dataType?: string;
   expression?: string;
   isHighlighted?: boolean;
@@ -439,6 +440,7 @@ function buildFlowNodes(
           name: childNode.label,
           dataType: childNode.dataType,
           comment: childNode.comment,
+          info: childNode.info,
           expression: childNode.expression,
           aggregation: childNode.aggregation,
         });
@@ -509,6 +511,7 @@ function buildFlowNodes(
       name: col.label,
       dataType: col.dataType,
       comment: col.comment,
+      info: col.info,
       expression: col.expression,
       aggregation: col.aggregation,
     }));

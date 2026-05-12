@@ -10,6 +10,10 @@ import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
 import { StickyNote } from 'lucide-react';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
+import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
+import { useFloatingWindows } from './floating-window';
+import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
+import { ColumnInfoForm } from './ColumnInfoForm';
 
 // Virtualization thresholds
 const COLUMN_VIRTUALIZATION_THRESHOLD = 200000;
@@ -106,6 +110,9 @@ function ColumnRow({
   colors,
   textSecondary,
 }: ColumnRowProps): JSX.Element {
+  const windowManager = useFloatingWindows();
+  const {columnInfoSchema} = useGenericForm();
+
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (showColumnEdges) {
@@ -159,6 +166,31 @@ function ColumnRow({
           <ClickableTooltip content={sanitizeIdentifier(col.comment)}>
             <StickyNote size={14} style={{ opacity: 0.7 }} />
           </ClickableTooltip>
+        )}
+        {col.info && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              windowManager.openWindow({
+                id: `columnInfo-${col.id}.${col.name}`,
+                title: `${col.name}`,
+                content: (
+                  <ColumnInfoForm
+                    info={col.info}
+                    columnInfoSchemas={columnInfoSchema}
+                  />
+                ),
+              });
+            }}
+            className={cn(
+              'self-center flex size-6 items-center justify-center transition-colors duration-200 border-transparent outline-none rounded-full',
+              'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            )}
+            aria-label={'Show column information'}
+            type="button"
+          >
+            <StickyNote size={14} style={{ opacity: 0.7 }} />
+          </button>
         )}
       </span>
       <Handle
@@ -719,6 +751,7 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
       prevCol.name === nextCol.name &&
       prevCol.dataType === nextCol.dataType &&
       prevCol.comment === nextCol.comment &&
+      prevCol.info === nextCol.info &&
       prevCol.isHighlighted === nextCol.isHighlighted &&
       prevCol.isHidden === nextCol.isHidden
     );
