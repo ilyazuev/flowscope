@@ -4,6 +4,21 @@ import { X } from 'lucide-react';
 
 import type { FloatingWindowProps, ResizeDirection } from './types';
 
+const WINDOW_SHADOWS = {
+  light: {
+    active:
+      '0 28px 80px rgba(15, 23, 42, 0.24), 0 12px 32px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.10)',
+    inactive:
+      '0 18px 48px rgba(15, 23, 42, 0.16), 0 8px 20px rgba(15, 23, 42, 0.10)',
+  },
+  dark: {
+    active:
+      '0 32px 90px rgba(0, 0, 0, 0.72), 0 14px 36px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+    inactive:
+      '0 22px 58px rgba(0, 0, 0, 0.56), 0 10px 24px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+  },
+} as const;
+
 function ResizeHandle({
   direction,
   onPointerDown,
@@ -55,7 +70,7 @@ export function FloatingWindow({
           }}
           onPointerDown={() => onActivate(item.id)}
           data-floating-window-id={item.id}
-          className="fixed outline-none"
+          className="fixed outline-none transition-[box-shadow] duration-200"
           style={{
             left: 0,
             top: 0,
@@ -64,13 +79,17 @@ export function FloatingWindow({
             zIndex: item.zIndex,
             transform: `translate3d(${item.x}px, ${item.y}px, 0)`,
             willChange: 'transform',
-            contain: 'layout paint style',
+            contain: 'layout style',
+            boxShadow: WINDOW_SHADOWS[isDark ? 'dark' : 'light'][isTopmost ? 'active' : 'inactive'],
+            borderTopRightRadius: '5%',
+            borderTopLeftRadius: '5%',
+            borderBottomLeftRadius: '5%',
           }}
           aria-describedby={undefined}
         >
           <div
             className={[
-              'relative flex h-full w-full flex-col overflow-hidden rounded-2xl border shadow-2xl',
+              'relative flex h-full w-full flex-col overflow-hidden rounded-2xl border',
               isDark
                 ? 'border-white/10 bg-neutral-900 text-neutral-100'
                 : 'border-black/10 bg-white text-neutral-900',
