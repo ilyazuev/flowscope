@@ -115,81 +115,85 @@ export function EditorToolbar({
 
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center rounded-full overflow-hidden shadow-xs">
-          <GraphTooltipProvider>
-            <GraphTooltip delayDuration={300}>
-              <GraphTooltipTrigger asChild>
+        {dialect == 'oracleBackend' && (
+          <>
+            <GraphTooltipProvider>
+              <GraphTooltip delayDuration={300}>
+                <GraphTooltipTrigger asChild>
+                  <Button
+                    onClick={onExecuteSql}
+                    disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
+                    size="sm"
+                    className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
+                  >
+                    {isDataLoading != SqlPartType.none ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                    )}
+                    <span className="hidden sm:inline">Run Sql</span>
+                    <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                      <span className="text-xs">{modKey()}</span>↵
+                    </kbd>
+                  </Button>
+                </GraphTooltipTrigger>
+                <GraphTooltipPortal>
+                  <GraphTooltipContent side="bottom">
+                    <p>Execute entire SQL query or a selected part of it</p>
+                    <GraphTooltipArrow />
+                  </GraphTooltipContent>
+                </GraphTooltipPortal>
+              </GraphTooltip>
+            </GraphTooltipProvider>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
-                  onClick={onExecuteSql}
-                  disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
                   size="sm"
-                  className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
+                  className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
+                  disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
                 >
-                  {isDataLoading != SqlPartType.none ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Play className="h-3.5 w-3.5 fill-current" />
-                  )}
-                  <span className="hidden sm:inline">Run Sql</span>
-                  <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                    <span className="text-xs">{modKey()}</span>↵
-                  </kbd>
+                  <ChevronDown className="size-3.5" />
                 </Button>
-              </GraphTooltipTrigger>
-              <GraphTooltipPortal>
-                <GraphTooltipContent side="bottom">
-                  <p>Execute entire SQL query or a selected part of it</p>
-                  <GraphTooltipArrow />
-                </GraphTooltipContent>
-              </GraphTooltipPortal>
-            </GraphTooltip>
-          </GraphTooltipProvider>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
-                disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
-              >
-                <ChevronDown className="size-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <div
-                className={
-                  'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                }
-                onClick={onExecuteCte}
-              >
-                <span>Run CTE under cursor</span>
-                <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  <span className="text-xs">{modKey()}</span>⇧↵
-                </kbd>
-              </div>
-              <div
-                className={
-                  'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                }
-                onClick={onRunDescribe}
-              >
-                <span>Describe object under cursor</span>
-                <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  <span className="text-xs">F4</span>
-                </kbd>
-              </div>
-              <div
-                className={
-                  'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                }
-                onClick={onRevealInLineage}
-              >
-                <span>Reveal object under cursor in Lineage</span>
-                <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  <span className="text-xs">{modKey()}</span>
-                  <span className="text-xs">Q</span>
-                </kbd>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <div
+                  className={
+                    'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
+                  }
+                  onClick={onExecuteCte}
+                >
+                  <span>Run CTE under cursor</span>
+                  <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                    <span className="text-xs">{modKey()}</span>⇧↵
+                  </kbd>
+                </div>
+                <div
+                  className={
+                    'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
+                  }
+                  onClick={onRunDescribe}
+                >
+                  <span>Describe object under cursor</span>
+                  <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                    <span className="text-xs">F4</span>
+                  </kbd>
+                </div>
+                <div
+                  className={
+                    'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
+                  }
+                  onClick={onRevealInLineage}
+                >
+                  <span>Reveal object under cursor in Lineage</span>
+                  <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                    <span className="text-xs">{modKey()}</span>
+                    <span className="text-xs">Q</span>
+                  </kbd>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+      )}
           <Button
             onClick={onAnalyze}
             disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}

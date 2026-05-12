@@ -25,9 +25,9 @@ function backendUrl<T>(backendEndpoint: string, payload?: T) {
 }
 
 export async function loadGenericForms() {
-  if( import.meta.env.VITE_BACKEND_ENDPOINT_loadGenericForms ) {
+  if( import.meta.env.VITE_BACKEND_ENDPOINT_LOADGENERICFORMS ) {
     const res = await fetch(
-      backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_loadGenericForms, null)
+      backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADGENERICFORMS, null)
     );
     if (!res.ok) {
       // noinspection ExceptionCaughtLocallyJS
@@ -53,7 +53,7 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
     const analysisResponse = await runWebSocket<Awaited<ReturnType<typeof analyzeWithWorker>>>({
       wsUrl: import.meta.env.VITE_BACKEND_WS_URL,
       path: backendUsecasePath(
-        import.meta.env.VITE_BACKEND_WS_ENDPOINT_parseForLineage,
+        import.meta.env.VITE_BACKEND_WS_ENDPOINT_PARSEFORLINEAGE,
         analysisPayloadEx
       ),
       reauthUrl: import.meta.env.VITE_BACKEND_WS_REAUTH_ENDPOINT,
@@ -71,7 +71,7 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
   }
 
   const res = await fetch(
-    backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_parseForLineage, analysisPayloadEx)
+    backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_PARSEFORLINEAGE, analysisPayloadEx)
   );
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
@@ -87,7 +87,7 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
 }
 
 export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProject: Project) {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_toCsv, sqlPayload));
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV, sqlPayload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
@@ -102,7 +102,7 @@ export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProje
 }
 
 export async function devLineageDataDescribe(dataDescribePayload: DataDescribePayload, _currentProject: Project) {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_dataDescribe, dataDescribePayload));
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_DATADESCRIBE, dataDescribePayload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
@@ -125,7 +125,7 @@ let _inflight: Promise<DatabaseUsers> | null = null;
 async function DATABASES(): Promise<DatabaseUsers> {
   let res;
   try {
-    res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_loadDatabases)); // Simulate error example: // throw new Error("Backend is down");
+    res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADDATABASES)); // Simulate error example: // throw new Error("Backend is down");
     if (!res.ok) {
       // noinspection ExceptionCaughtLocallyJS
       throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);

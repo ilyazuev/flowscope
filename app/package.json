@@ -6,6 +6,9 @@
   "description": "FlowScope web application for SQL lineage visualization",
   "scripts": {
     "dev": "vite",
+    "dev:da": "vite --mode da",
+    "dev:da_backend": "vite --mode da_backend",
+    "dev:idaf": "vite --mode idaf",
     "build": "tsc && vite build",
     "buildProdBackend": "node ./scripts/build-prod-backend.mjs",
     "preview": "vite preview",
@@ -59,10 +62,10 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.4.0",
-    "postcss": "^8.5.6",
+    "postcss": "8.5.10",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.9.0",
-    "vite": "^6.3.0",
+    "vite": "8.0.5",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.5.0"
   }
