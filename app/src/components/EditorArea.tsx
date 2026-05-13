@@ -331,7 +331,7 @@ export function EditorArea({
     columnName?: string
   ) => {
     const tableFullName = `${schema ? schema + '.' : ''}${tableName}`;
-    const windowId = `describeWindow-${Date.now()}`;
+    const windowId = `describeWindow-${tableFullName}`; // Date.now()
     manager.openWindow({
       id: windowId,
       title: `${project.database ? `${project.database}. ` : ''}Describe object ${tableFullName}`,
