@@ -167,7 +167,7 @@ function ColumnRow({
             <StickyNote size={14} style={{ opacity: 0.7 }} />
           </ClickableTooltip>
         )}
-        {col.info && (
+        {(col.info || col.schemaColumn?.info) && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -176,7 +176,7 @@ function ColumnRow({
                 title: `${col.name}`,
                 content: (
                   <ColumnInfoForm
-                    info={col.info}
+                    info={col.info ?? col.schemaColumn?.info}
                     columnInfoSchemas={columnInfoSchema}
                   />
                 ),
@@ -752,6 +752,7 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
       prevCol.dataType === nextCol.dataType &&
       prevCol.comment === nextCol.comment &&
       prevCol.info === nextCol.info &&
+      prevCol.schemaColumn === nextCol.schemaColumn &&
       prevCol.isHighlighted === nextCol.isHighlighted &&
       prevCol.isHidden === nextCol.isHidden
     );

@@ -5,7 +5,7 @@
  * This worker handles the CPU-intensive task of transforming lineage data into
  * React Flow nodes and edges, which can take several seconds for large SQL files.
  */
-import type {
+import {
   Node,
   Edge,
   StatementLineage,
@@ -13,7 +13,7 @@ import type {
   GlobalLineage,
   GlobalNode,
   FilterPredicate,
-  AggregationInfo,
+  AggregationInfo, ResolvedColumnSchema,
 } from '@pondpilot/flowscope-core';
 import { isTableLikeType } from '@pondpilot/flowscope-core';
 import { GRAPH_CONFIG, JOIN_TYPE_LABELS } from '../constants';
@@ -28,6 +28,7 @@ import { GRAPH_CONFIG, JOIN_TYPE_LABELS } from '../constants';
 export interface SerializedColumnInfo {
   id: string;
   name: string;
+  schemaColumn?: ResolvedColumnSchema;
   comment?: string;
   info?: string;
   dataType?: string;
@@ -222,11 +223,22 @@ function processTableColumns(
     return { columns: existingColumns, hiddenColumnCount: 0 };
   }
 
-  const existingColumnNames = new Set(existingColumns.map((col) => col.name.toLowerCase()));
-  const schemaColumns = schemaTable.columns || [];
-  const missingColumns = schemaColumns.filter(
-    (col) => !existingColumnNames.has(col.name.toLowerCase())
-  );
+  const schemaColumns = schemaTable.columns || []; // const existingColumnNames = new Set(existingColumns.map((col) => col.name.toLowerCase()));
+  const missingColumns = [];
+  for (const schemaColumn of schemaColumns) {
+    const schemaColumnName = schemaColumn.name.toLowerCase();
+    let found = false;
+    for (const existingColumn of existingColumns) {
+      if( schemaColumnName === existingColumn.name.toLowerCase() ) {
+        existingColumn.schemaColumn = schemaColumn;
+        found = true;
+        break;
+      }
+    }
+    if( !found) {
+      missingColumns.push(schemaColumn);
+    }
+  } // const missingColumns = schemaColumns.filter( (col) => !existingColumnNames.has(col.name.toLowerCase()) );
 
   const hiddenColumnCount = missingColumns.length;
 

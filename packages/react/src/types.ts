@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type {
+import {
   AnalyzeResult,
   Node,
   Edge,
@@ -9,7 +9,7 @@ import type {
   SchemaTable,
   FilterPredicate,
   AggregationInfo,
-  Dialect,
+  Dialect, ResolvedColumnSchema,
 } from '@pondpilot/flowscope-core';
 
 /**
@@ -382,6 +382,7 @@ export interface ColumnNodeInfo {
   dataType?: string;
   comment?: string;
   info?: string;
+  schemaColumn?: ResolvedColumnSchema;
   /** Optional SQL expression for computed columns */
   expression?: string;
   /** Whether this column is part of a highlighted path */
