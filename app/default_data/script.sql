@@ -61,7 +61,7 @@ WITH
                  JOIN LINEAGE_TEST_CUSTOMER c ON c.customer_id = o.customer_id
                  LEFT JOIN LINEAGE_TEST_ORDER tbl_ord ON tbl_ord.customer_id = c.customer_id -- test double table join
                  JOIN items i ON i.order_id = o.order_id
-                 JOIN LINEAGE_TEST_PRODUCT p ON p.product_id = i.product_id
+                 JOIN LINEAGE_TEST_PRODUCT_V p ON p.product_id = i.product_id
         WHERE
             1 = 1
           and c.customer_no = :customer_no -- CUST-023

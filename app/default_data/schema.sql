@@ -74,6 +74,13 @@ COMMENT ON COLUMN LINEAGE_TEST_PRODUCT.CREATED_AT IS 'Row creation timestamp';
 COMMENT ON COLUMN LINEAGE_TEST_PRODUCT.UPDATED_AT IS 'Row last update timestamp';
 
 -- =========================================================
+-- PRODUCT VIEW
+-- =========================================================
+CREATE VIEW DWHKIT.LINEAGE_TEST_PRODUCT_V AS
+SELECT *
+FROM DWHKIT.LINEAGE_TEST_PRODUCT;
+
+-- =========================================================
 -- ORDER
 -- =========================================================
 CREATE TABLE LINEAGE_TEST_ORDER (
@@ -157,6 +164,13 @@ COMMENT ON COLUMN LINEAGE_TEST_ORDER.CHANNEL_CD IS 'Sales channel';
 COMMENT ON COLUMN LINEAGE_TEST_ORDER.COUPON_CD IS 'Coupon code';
 COMMENT ON COLUMN LINEAGE_TEST_ORDER.CREATED_AT IS 'Row creation timestamp';
 COMMENT ON COLUMN LINEAGE_TEST_ORDER.UPDATED_AT IS 'Row last update timestamp';
+
+-- =========================================================
+-- ORDER VIEW
+-- =========================================================
+CREATE VIEW DWHKIT.LINEAGE_TEST_ORDER_V AS
+SELECT *
+FROM DWHKIT.LINEAGE_TEST_ORDER;
 
 -- =========================================================
 -- ORDER_ITEM
