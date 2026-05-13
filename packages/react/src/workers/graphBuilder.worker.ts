@@ -246,6 +246,9 @@ function processTableColumns(
     const injectedColumns: SerializedColumnInfo[] = missingColumns.map((col) => ({
       id: `${nodeId}__schema_${col.name}`,
       name: col.name,
+      dataType: col.dataType,
+      comment: col.comment,
+      schemaColumn: col,
       expression: col.dataType,
     }));
     return {
