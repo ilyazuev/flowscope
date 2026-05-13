@@ -1,6 +1,7 @@
 // Components
 export { GraphView } from './components/GraphView';
 export { SqlView } from './components/SqlView';
+export { ToolbarButton } from './components/ToolbarButton';
 export type { SqlViewSelection } from './components/SqlView';
 export { ColumnPanel } from './components/ColumnPanel';
 export { IssuesPanel } from './components/IssuesPanel';

@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { JSX, RefObject } from 'react';
 import {
   AnalyzeResult,
   Node,
@@ -278,6 +278,7 @@ export interface SqlViewProps {
   highlightedSpan?: Span | null;
   lineWrapping?: boolean;
   dialect?: Dialect | null;
+  extraToolbarElements?: JSX.Element;
 }
 
 /**
@@ -418,4 +419,4 @@ export interface ColumnNodeData extends Record<string, unknown> {
  */
 export type StatementLineageWithSource = StatementLineage;
 
-export { AnalyzeResult, Node, Edge, Issue, Span, StatementLineage };
+export type { AnalyzeResult, Node, Edge, Issue, Span, StatementLineage };

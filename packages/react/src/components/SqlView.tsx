@@ -11,7 +11,7 @@ import {
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { EditorView, Decoration, type DecorationSet, keymap } from '@codemirror/view';
-import { Compartment, StateField, StateEffect, Prec } from '@codemirror/state';
+import { Compartment, StateField, StateEffect, Prec, EditorSelection } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import {
   defaultKeymap,
@@ -29,8 +29,8 @@ import {
   searchKeymap,
   searchPanelOpen,
 } from '@codemirror/search';
-import { Clipboard, Copy, Redo2, Scissors, Search, Undo2, Wand, WrapText } from 'lucide-react';
-
+import { Clipboard, Copy, Redo2, Scissors, Search, SquareDashed, Undo2, Wand, WrapText } from 'lucide-react';
+import {ToolbarButton} from './ToolbarButton'
 import { toast } from 'sonner';
 
 import { useLineage } from '../store';
@@ -115,11 +115,6 @@ const baseTheme = EditorView.baseTheme({
   },
 });
 
-const toolbarButtonBaseClass =
-  'inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent transition-colors duration-150 outline-none';
-const toolbarButtonEnabledClass =
-  'hover:bg-muted active:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring/50';
-const toolbarButtonDisabledClass = 'cursor-not-allowed opacity-40';
 
 export interface SqlViewSelection {
   from: number;
@@ -130,42 +125,6 @@ export interface SqlViewSelection {
 export type SqlViewRef = {
   getSelection: () => SqlViewSelection | undefined;
 };
-
-type ToolbarButtonProps = {
-  title: string;
-  onClick: () => void | Promise<void>;
-  disabled?: boolean;
-  active?: boolean;
-  children: JSX.Element;
-};
-
-function ToolbarButton({
-  title,
-  onClick,
-  disabled = false,
-  active = false,
-  children,
-}: ToolbarButtonProps): JSX.Element {
-  return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      disabled={disabled}
-      onMouseDown={(event) => {
-        event.preventDefault();
-      }}
-      onClick={onClick}
-      className={[
-        toolbarButtonBaseClass,
-        disabled ? toolbarButtonDisabledClass : toolbarButtonEnabledClass,
-        active ? 'bg-muted text-foreground' : 'text-muted-foreground',
-      ].join(' ')}
-    >
-      {children}
-    </button>
-  );
-}
 
 function ToolbarDivider(): JSX.Element {
   return <div className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />;
@@ -181,7 +140,8 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       isDark,
       highlightedSpan: highlightedSpanProp,
       lineWrapping = false,
-      dialect
+      dialect,
+      extraToolbarElements,
     },
     ref
   ): JSX.Element => {
@@ -378,7 +338,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     const showClipboardError = useCallback((action: 'cut' | 'copy' | 'paste', error: unknown) => {
       console.error(`Clipboard ${action} failed`, error);
       toast.error(`Failed to ${action}`, {
-        description: 'Clipboard access is unavailable or blocked by the browser.',
+          description: 'Clipboard access is unavailable or blocked by the browser.',
       });
     }, []);
 
@@ -388,7 +348,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       if (!view || !selection || selection.empty) {
         return;
       }
-      try {
+        try {
         const selectedText = view.state.sliceDoc(selection.from, selection.to);
         await navigator.clipboard.writeText(selectedText);
         view.focus();
@@ -435,6 +395,21 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         showClipboardError('paste', error);
       }
     }, [editable, editorView, showClipboardError, updateToolbarState]);
+
+    const handleSelectAll = useCallback(async () => {
+      const view = editorRef.current?.view ?? editorView;
+      if (!view) {
+        return;
+      }
+      const sql = view.state.sliceDoc();
+      view.dispatch({
+        selection: EditorSelection.create([
+          EditorSelection.range(0, sql.length - 1),
+          EditorSelection.cursor(sql.length - 1)
+        ], 1)
+      });
+
+    }, [editorView]);
 
     const handleWrapToggle = useCallback(() => {
       const view = editorRef.current?.view ?? editorView;
@@ -609,6 +584,13 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             <Clipboard className="h-4 w-4" />
           </ToolbarButton>
 
+          <ToolbarButton
+            title={`Select All (${modKey} + A)`}
+            onClick={handleSelectAll}
+          >
+            <SquareDashed className="h-4 w-4" />
+          </ToolbarButton>
+
           <ToolbarDivider />
 
           <ToolbarButton
@@ -646,6 +628,13 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           <ToolbarButton title={`Prettify`} onClick={handlePrettify}>
             <Wand className="h-4 w-4" />
           </ToolbarButton>
+
+          { extraToolbarElements && (
+            <>
+              <ToolbarDivider />
+              {extraToolbarElements}
+            </>
+          )}
         </div>
 
         <div className="min-h-0 min-w-0 flex-1">

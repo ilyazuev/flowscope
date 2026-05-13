@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertCircle, Check, CopyPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
-import { SqlView, useLineageState, useFloatingWindows, type WindowManagerApi, } from '@pondpilot/flowscope-react';
+import { SqlView, ToolbarButton, useLineageState, useFloatingWindows, type WindowManagerApi, } from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
 import { Project, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
@@ -19,6 +19,7 @@ import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { Input } from '@/components/ui/input.tsx';
 
 
 // Fallback component shown when SqlView encounters an error
@@ -283,6 +284,45 @@ export function EditorArea({
     );
   }
 
+  function CopyDescribedColumns({columnNames}: {columnNames: string[]}): JSX.Element {
+    const [columnsCopied, setColumnsCopied] = useState(false);
+    const inputDescribeCopyColumnsAliasRef = useRef<HTMLInputElement>(null);
+    return (
+      <>
+        <Input
+          ref={inputDescribeCopyColumnsAliasRef}
+          placeholder="Copy columns alias"
+          className="h-7 focus-visible:ring-0 text-sm w-45"
+        />
+        <ToolbarButton
+          title={columnsCopied ? 'Copied' : `Copy columns`}
+          aria-label={columnsCopied ? 'Copied' : 'Copy columns'}
+          onClick={async () => {
+            try {
+              const alias = inputDescribeCopyColumnsAliasRef.current?.value;
+              await navigator.clipboard.writeText(
+                columnNames.map(cn => `${alias ? `${alias}.` : ''}${cn}`)
+                  .join(', '));
+              setColumnsCopied(true);
+              window.setTimeout(() => setColumnsCopied(false), 1200);
+            } catch (error) {
+              setColumnsCopied(false);
+              console.error(`Clipboard copy failed`, error);
+              toast.error(`Failed to Copy columns`, {
+                description: 'Clipboard access is unavailable or blocked by the browser.',
+              });
+            }
+          }}>
+          {columnsCopied ? (
+            <Check className="size-3.5" />
+          ) : (
+            <CopyPlus className="size-3.5" />
+          )}
+        </ToolbarButton>
+      </>
+    );
+  }
+
   const openDescribeWindow = async (
     manager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'>,
     project: Project,
@@ -318,6 +358,9 @@ export function EditorArea({
             lineWrapping={false}
             value={dataDescribePayloadResponse?.script}
             highlightedSpan={columnSpan}
+            extraToolbarElements={dataDescribePayloadResponse?.columnNames && (
+              <CopyDescribedColumns columnNames={dataDescribePayloadResponse?.columnNames} />
+            )}
           />
         </div>
       ) : (
