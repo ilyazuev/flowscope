@@ -41,7 +41,10 @@ interface WorkspaceProps {
  * - Left: SQL editor with file selector
  * - Right: Lineage visualization
  */
+const TOP_PANEL_DEFAULT_SIZE = 77;
 const EDITOR_PANEL_DEFAULT_SIZE = 33;
+const ANALYSIS_VIEW_PANEL_DEFAULT_SIZE = 67;
+const Data_View_PANEL_DEFAULT_SIZE = 23;
 
 export function Workspace({ backendReady, error, onRetry, isRetrying }: WorkspaceProps) {
   const { currentProject, selectFile, activeProjectId, isBackendMode } = useProject();
@@ -482,7 +485,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                 <div className="flex-1 overflow-hidden">
                   <ResizablePanelGroup direction="vertical">
                     <ResizablePanel
-                      defaultSize={67}
+                      defaultSize={TOP_PANEL_DEFAULT_SIZE}
                       minSize={30}
                       collapsible
                       collapsedSize={0}
@@ -510,7 +513,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
 
                         {/* Right: Visualization */}
                         <ResizablePanel
-                          defaultSize={87}
+                          defaultSize={ANALYSIS_VIEW_PANEL_DEFAULT_SIZE}
                           minSize={30}
                           collapsible
                           collapsedSize={0}
@@ -529,7 +532,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                     <ResizableHandle withHandleHoriz />
 
                     <ResizablePanel
-                      defaultSize={23}
+                      defaultSize={Data_View_PANEL_DEFAULT_SIZE}
                       minSize={10}
                       collapsible
                       collapsedSize={0}
