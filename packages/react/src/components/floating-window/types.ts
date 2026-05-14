@@ -47,6 +47,15 @@ export type ResizeDirection =
   | 'se'
   | 'sw';
 
+export type WindowScaleDirection = 'expand' | 'shrink';
+
+export type WindowScaleAnchor = {
+  clientX: number;
+  clientY: number;
+  offsetFromRight: number;
+  offsetFromTop: number;
+};
+
 export type DragState =
   | {
       type: 'drag';
@@ -100,6 +109,7 @@ export type WindowManagerApi = {
   closeAllWindows: () => void;
   bringToFront: (id: WindowId) => void;
   replaceWindows: (windows: WindowDefinition[]) => void;
+  scaleWindow: (id: WindowId, direction: WindowScaleDirection, anchor?: WindowScaleAnchor) => void;
   startDrag: (id: WindowId, event: React.PointerEvent<HTMLDivElement>) => void;
   startResize: (
     id: WindowId,
@@ -119,6 +129,7 @@ export type FloatingWindowProps = {
   isDark: boolean;
   onActivate: (id: WindowId) => void;
   onClose: (id: WindowId) => void;
+  onScale: (id: WindowId, direction: WindowScaleDirection, anchor?: WindowScaleAnchor) => void;
   onDragStart: (id: WindowId, event: React.PointerEvent<HTMLDivElement>) => void;
   onResizeStart: (
     id: WindowId,

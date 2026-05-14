@@ -1,8 +1,9 @@
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { Expand, Shrink, X } from 'lucide-react';
 
-import type { FloatingWindowProps, ResizeDirection } from './types';
+import type { FloatingWindowProps, ResizeDirection, WindowScaleDirection } from './types';
+import { WINDOW_SCALE_STEP } from './constants';
 
 const WINDOW_SHADOWS = {
   light: {
@@ -18,6 +19,29 @@ const WINDOW_SHADOWS = {
       '0 22px 58px rgba(0, 0, 0, 0.56), 0 10px 24px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.05)',
   },
 } as const;
+
+
+function getScaleAnchor(
+  item: FloatingWindowProps['item'],
+  event: React.MouseEvent<HTMLButtonElement>
+) {
+  return {
+    clientX: event.clientX,
+    clientY: event.clientY,
+    offsetFromRight: item.x + item.width - event.clientX,
+    offsetFromTop: event.clientY - item.y,
+  };
+}
+
+function scaleFromButton(
+  item: FloatingWindowProps['item'],
+  direction: WindowScaleDirection,
+  event: React.MouseEvent<HTMLButtonElement>,
+  onScale: FloatingWindowProps['onScale']
+) {
+  event.stopPropagation();
+  onScale(item.id, direction, getScaleAnchor(item, event));
+}
 
 function ResizeHandle({
   direction,
@@ -52,6 +76,7 @@ export function FloatingWindow({
   isDark,
   onActivate,
   onClose,
+  onScale,
   onDragStart,
   onResizeStart,
 }: FloatingWindowProps) {
@@ -119,22 +144,57 @@ export function FloatingWindow({
                   {item.title}
                 </div>
 
-                <button
-                  type="button"
-                  className={[
-                    'inline-flex h-8 w-8 items-center justify-center rounded-lg transition focus:outline-none focus:ring-2',
-                    isDark
-                      ? 'text-neutral-400 hover:bg-white/10 hover:text-white focus:ring-neutral-500'
-                      : 'text-neutral-500 hover:bg-black/5 hover:text-neutral-900 focus:ring-neutral-400',
-                  ].join(' ')}
-                  aria-label={`Close ${item.title}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onClose(item.id);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    className={[
+                      'inline-flex h-8 w-8 items-center justify-center rounded-lg transition',
+                      'focus:shadow-none focus:border-transparent focus:ring-0 focus:outline-none',
+                      isDark
+                        ? 'text-neutral-400 hover:bg-white/10 hover:text-white focus:ring-neutral-500'
+                        : 'text-neutral-500 hover:bg-black/5 hover:text-neutral-900 focus:ring-neutral-400',
+                    ].join(' ')}
+                    aria-label={`Shrink ${item.title}`}
+                    title={`Shrink window by ${WINDOW_SCALE_STEP*100}%`}
+                    onClick={(event) => scaleFromButton(item, 'shrink', event, onScale)}
+                  >
+                    <Shrink className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={[
+                      'inline-flex h-8 w-8 items-center justify-center rounded-lg transition',
+                      'focus:shadow-none focus:border-transparent focus:ring-0 focus:outline-none',
+                      isDark
+                        ? 'text-neutral-400 hover:bg-white/10 hover:text-white focus:ring-neutral-500'
+                        : 'text-neutral-500 hover:bg-black/5 hover:text-neutral-900 focus:ring-neutral-400',
+                    ].join(' ')}
+                    aria-label={`Expand ${item.title}`}
+                    title={`Expand window by ${WINDOW_SCALE_STEP*100}%`}
+                    onClick={(event) => scaleFromButton(item, 'expand', event, onScale)}
+                  >
+                    <Expand className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={[
+                      'inline-flex h-8 w-8 items-center justify-center rounded-lg transition',
+                      'focus:shadow-none focus:border-transparent focus:ring-0 focus:outline-none',
+                      isDark
+                        ? 'text-neutral-400 hover:bg-white/10 hover:text-white focus:ring-neutral-500'
+                        : 'text-neutral-500 hover:bg-black/5 hover:text-neutral-900 focus:ring-neutral-400',
+                    ].join(' ')}
+                    aria-label={`Close ${item.title}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onClose(item.id);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </Dialog.Title>
 

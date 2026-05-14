@@ -24,7 +24,7 @@ const FloatingWindowsContext = createContext<WindowManagerApi | null>(null);
 
 let activeWindowManager: Pick<
   WindowManagerApi,
-  'openWindow' | 'updateWindow' | 'closeWindow' | 'bringToFront'
+  'openWindow' | 'updateWindow' | 'closeWindow' | 'bringToFront' | 'scaleWindow'
 > | null = null;
 
 export function getFloatingWindowManager() {

@@ -2,6 +2,8 @@ import {
   DEFAULT_MIN_HEIGHT,
   DEFAULT_MIN_WIDTH,
   INITIAL_Z_INDEX,
+  VIEWPORT_MARGIN,
+  WINDOW_SCALE_STEP,
 } from './constants';
 import type {
   DragState,
@@ -10,10 +12,12 @@ import type {
   UseWindowManagerOptions,
   WindowDefinition,
   WindowId,
+  WindowScaleAnchor,
+  WindowScaleDirection,
   WindowItem,
   WindowManagerApi,
 } from './types';
-import { clampWindowToViewport, createWindow } from './utils';
+import { clamp, clampWindowToViewport, createWindow } from './utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 function useGlobalEscape(onEscape: () => void) {
@@ -183,6 +187,37 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
 
     nextZRef.current = INITIAL_Z_INDEX + nextWindows.length;
     setWindows(nextWindows);
+  }, []);
+
+  const scaleWindow = useCallback((id: WindowId, direction: WindowScaleDirection, anchor?: WindowScaleAnchor) => {
+    setWindows((prev) =>
+      prev.map((item) => {
+        if (item.id !== id || !item.open) return item;
+
+        const multiplier = direction === 'expand' ? 1 + WINDOW_SCALE_STEP : 1 - WINDOW_SCALE_STEP;
+        const maxWidth = Math.max(item.minWidth, window.innerWidth - VIEWPORT_MARGIN * 2);
+        const maxHeight = Math.max(item.minHeight, window.innerHeight - VIEWPORT_MARGIN * 2);
+        const nextWidth = clamp(item.width * multiplier, item.minWidth, maxWidth);
+        const nextHeight = clamp(item.height * multiplier, item.minHeight, maxHeight);
+
+        const centerX = item.x + item.width / 2;
+        const centerY = item.y + item.height / 2;
+        const centeredX = centerX - nextWidth / 2;
+        const centeredY = centerY - nextHeight / 2;
+        const anchoredX = anchor ? anchor.clientX + anchor.offsetFromRight - nextWidth : centeredX;
+        const anchoredY = anchor ? anchor.clientY - anchor.offsetFromTop : centeredY;
+        const maxX = Math.max(VIEWPORT_MARGIN, window.innerWidth - nextWidth - VIEWPORT_MARGIN);
+        const maxY = Math.max(VIEWPORT_MARGIN, window.innerHeight - nextHeight - VIEWPORT_MARGIN);
+
+        return {
+          ...item,
+          width: nextWidth,
+          height: nextHeight,
+          x: clamp(anchoredX, VIEWPORT_MARGIN, maxX),
+          y: clamp(anchoredY, VIEWPORT_MARGIN, maxY),
+        };
+      })
+    );
   }, []);
 
   useGlobalEscape(closeTopmost);
@@ -413,6 +448,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     closeAllWindows,
     bringToFront,
     replaceWindows,
+    scaleWindow,
     startDrag,
     startResize,
   };

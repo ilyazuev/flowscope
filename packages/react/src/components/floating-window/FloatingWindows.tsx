@@ -17,6 +17,7 @@ export function FloatingWindows({ manager, theme }: FloatingWindowsProps) {
             isDark={isDark}
             onActivate={manager.bringToFront}
             onClose={manager.closeWindow}
+            onScale={manager.scaleWindow}
             onDragStart={manager.startDrag}
             onResizeStart={manager.startResize}
           />
