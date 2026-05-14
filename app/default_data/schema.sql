@@ -80,6 +80,8 @@ CREATE VIEW DWHKIT.LINEAGE_TEST_PRODUCT_V AS
 SELECT *
 FROM DWHKIT.LINEAGE_TEST_PRODUCT;
 
+COMMENT ON TABLE LINEAGE_TEST_PRODUCT_V IS 'Products catalog view (test)';
+
 -- =========================================================
 -- ORDER
 -- =========================================================

@@ -29,6 +29,7 @@ import {
   ArrowDownUp,
   ArrowLeftRight,
   StickyNote,
+  DatabaseSearch,
 } from 'lucide-react';
 
 import { useNodeFocus } from '../hooks/useNodeFocus';
@@ -49,6 +50,8 @@ import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { useFloatingWindows } from './floating-window';
 import { ColumnInfoForm } from './ColumnInfoForm';
 import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
+import { openFloatingSQLPreview } from './FloatingSQL';
+import type { Dialect } from '@pondpilot/flowscope-core';
 
 // ============================================================================
 // Types
@@ -60,6 +63,7 @@ interface SchemaViewProps {
   selectedTableName?: string;
   /** Callback when selection should be cleared */
   onClearSelection?: () => void;
+  dialect: Dialect;
 }
 
 type ColumnWithConstraints = ColumnSchema | ResolvedColumnSchema;
@@ -75,6 +79,7 @@ interface SchemaTableNodeData extends Record<string, unknown> {
   isSelected?: boolean;
   isHighlighted?: boolean;
   highlightedColumns?: string[];
+  dialect: Dialect;
 }
 
 type LayoutDirection = 'TB' | 'LR';
@@ -276,6 +281,19 @@ const SchemaTableNodeComponent = ({
   const NodeIcon = isView ? Eye : Table2;
   const windowManager = useFloatingWindows();
 
+  const handleOpenFloatingSql = useCallback(() => {
+    openFloatingSQLPreview({
+      windowManager,
+      dialect: data.dialect,
+      table: {
+        catalog: data.catalog,
+        schema: data.schema,
+        tableName: data.label,
+        columns: data.columns,
+      },
+    });
+  }, [windowManager, data.catalog, data.schema, data.label, data.columns, data.dialect]);
+
   return (
     <div
       className="schema-table-node"
@@ -321,10 +339,28 @@ const SchemaTableNodeComponent = ({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {fullName}
         </span>
+        <button
+          type="button"
+          className={cn(
+            'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+            'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+            'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+          )}
+          aria-label={`Open SQL preview for ${fullName}`}
+          title="Open SQL preview"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleOpenFloatingSql();
+          }}
+        >
+          <DatabaseSearch size={14} style={{ opacity: 0.75 }} />
+        </button>
         {data.comment && (
           <ClickableTooltip content={sanitizeIdentifier(data.comment)}>
             <StickyNote size={14} style={{ opacity: 0.7, margin: '2px' }} />
@@ -450,10 +486,7 @@ const SchemaTableNodeComponent = ({
                         id: `columnInfo-${fullName}.${col.name}`,
                         title: `${fullName}.${col.name}`,
                         content: (
-                          <ColumnInfoForm
-                            info={col.info}
-                            columnInfoSchemas={columnInfoSchema}
-                          />
+                          <ColumnInfoForm info={col.info} columnInfoSchemas={columnInfoSchema} />
                         ),
                       });
                     }}
@@ -493,6 +526,7 @@ const areNodePropsEqual = (
     prevData.label !== nextData.label ||
     prevData.comment !== nextData.comment ||
     prevData.origin !== nextData.origin ||
+    prevData.dialect !== nextData.dialect ||
     prevData.nodeType !== nextData.nodeType
   ) {
     return false;
@@ -896,7 +930,8 @@ export function buildSchemaFlowEdges(schema: (SchemaTable | ResolvedSchemaTable)
 }
 
 export function buildSchemaFlowNodes(
-  schema: (SchemaTable | ResolvedSchemaTable)[]
+  schema: (SchemaTable | ResolvedSchemaTable)[],
+  dialect: Dialect
 ): FlowNode<SchemaTableNodeData>[] {
   return schema.map((table) => {
     return {
@@ -912,6 +947,7 @@ export function buildSchemaFlowNodes(
         columns: getColumnsWithConstraintMetadata(table),
         origin: isResolvedSchemaTable(table) ? table.origin : undefined,
         nodeType: 'table',
+        dialect,
       } satisfies SchemaTableNodeData,
     };
   });
@@ -995,6 +1031,7 @@ function SchemaViewInner({
   schema,
   selectedTableName,
   onClearSelection,
+  dialect,
 }: SchemaViewProps): JSX.Element {
   const isDark = useIsDarkMode();
   const [direction, setDirection] = useState<LayoutDirection>('TB');
@@ -1006,7 +1043,7 @@ function SchemaViewInner({
   const { rawNodes, rawEdges } = useMemo(() => {
     if (schema.length === 0) return { rawNodes: [], rawEdges: [] };
     return {
-      rawNodes: buildSchemaFlowNodes(schema),
+      rawNodes: buildSchemaFlowNodes(schema, dialect),
       rawEdges: buildSchemaFlowEdges(schema),
     };
   }, [schema]);

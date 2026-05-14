@@ -494,6 +494,7 @@ export function AnalysisView({
                 schema={schema}
                 selectedTableName={schemaState.selectedTableName}
                 onClearSelection={schemaState.clearSelection}
+                dialect={currentProject?.dialect ?? 'generic'}
               />
             )}
           </TabsContent>

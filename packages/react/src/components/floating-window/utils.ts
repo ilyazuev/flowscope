@@ -75,6 +75,7 @@ export function createWindow(params: {
     title: params.windowDef.title,
     content: params.windowDef.content,
     className: params.windowDef.className,
+    contentClassName: params.windowDef.contentClassName,
     onOpen: params.windowDef.onOpen,
     onClose: params.windowDef.onClose,
     onActivate: params.windowDef.onActivate,

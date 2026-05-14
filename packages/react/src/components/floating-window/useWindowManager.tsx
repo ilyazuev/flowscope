@@ -126,6 +126,7 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
           minWidth: patch.minWidth ?? item.minWidth,
           minHeight: patch.minHeight ?? item.minHeight,
           className: patch.className ?? item.className,
+          contentClassName: patch.contentClassName ?? item.contentClassName,
         };
 
         return clampWindowToViewport(nextItem);
@@ -139,20 +140,15 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
       const nextZ = ++nextZRef.current;
 
       if (existingOpen) {
-        windowDef.onOpen?.(windowDef.id);
-        windowDef.onActivate?.(windowDef.id);
-        windowDef.onFocus?.(windowDef.id);
+        existingOpen.onActivate?.(existingOpen.id);
+        existingOpen.onFocus?.(existingOpen.id);
 
         return prev.map((item) =>
-          item.id === windowDef.id
+          item.id === existingOpen.id
             ? {
-                ...createWindow({
-                  windowDef,
-                  index: 0,
-                  zIndex: nextZ,
-                }),
-                open: true,
-              }
+              ...item,
+              zIndex: nextZ,
+            }
             : item
         );
       }

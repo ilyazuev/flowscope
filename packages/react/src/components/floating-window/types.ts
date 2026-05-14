@@ -18,6 +18,7 @@ export type WindowDefinition = WindowCallbacks & {
   minWidth?: number;
   minHeight?: number;
   className?: string;
+  contentClassName?: string;
 };
 
 export type WindowItem = WindowCallbacks & {
@@ -33,6 +34,7 @@ export type WindowItem = WindowCallbacks & {
   minHeight: number;
   zIndex: number;
   className?: string;
+  contentClassName?: string;
 };
 
 export type ResizeDirection =
@@ -84,7 +86,7 @@ export type UseWindowManagerOptions = {
 export type UpdateWindowPatch = Partial<
   Pick<
     WindowDefinition,
-    'title' | 'content' | 'width' | 'height' | 'minWidth' | 'minHeight' | 'className'
+    'title' | 'content' | 'width' | 'height' | 'minWidth' | 'minHeight' | 'className' | 'contentClassName'
   >
 >;
 

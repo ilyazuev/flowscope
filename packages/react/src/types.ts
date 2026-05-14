@@ -6,7 +6,6 @@ import {
   Issue,
   Span,
   StatementLineage,
-  SchemaTable,
   FilterPredicate,
   AggregationInfo,
   Dialect, ResolvedColumnSchema,
@@ -64,15 +63,6 @@ export interface TableFilter {
   /** Direction of lineage to show: upstream, downstream, or both */
   direction: TableFilterDirection;
 }
-
-/**
- * Props for the SchemaView component.
- */
-export interface SchemaViewProps {
-  /** Array of schema tables to display */
-  schema: SchemaTable[];
-}
-
 /**
  * Request to navigate to a specific file and location.
  */
@@ -279,6 +269,7 @@ export interface SqlViewProps {
   lineWrapping?: boolean;
   dialect?: Dialect | null;
   extraToolbarElements?: JSX.Element;
+  onRunSqlShortcut?: () => void;
 }
 
 /**

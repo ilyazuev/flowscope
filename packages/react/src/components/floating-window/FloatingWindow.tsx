@@ -140,7 +140,7 @@ export function FloatingWindow({
 
             <div
               className={[
-                'min-h-0 flex-1 overflow-auto p-4 text-sm leading-6',
+                item.contentClassName ?? 'min-h-0 flex-1 overflow-auto p-4 text-sm leading-6',
                 isDark ? 'text-neutral-200' : 'text-neutral-700',
               ].join(' ')}
             >

@@ -56,7 +56,7 @@
     "dagre": "^0.8.5",
     "elkjs": "^0.11.0",
     "html-to-image": "^1.11.13",
-    "lucide-react": "^0.562.0",
+    "lucide-react": "^1.16.0",
     "react-window": "^2.2.5",
     "sql-formatter": "^15.7.3",
     "tailwind-merge": "^3.4.0",

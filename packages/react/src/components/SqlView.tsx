@@ -142,6 +142,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       lineWrapping = false,
       dialect,
       extraToolbarElements,
+      onRunSqlShortcut,
     },
     ref
   ): JSX.Element => {
@@ -254,23 +255,26 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
     const bookmarkExtension = useBookmarkExtension();
 
-    const preventRunShortcutNewline = useMemo(
+    const runShortcutExtension = useMemo(
       () =>
         Prec.highest(
           keymap.of([
             {
               key: 'Mod-Enter',
               preventDefault: true,
-              run: () => true,
+              run: () => {
+                onRunSqlShortcut?.();
+                return true;
+              },
             },
           ])
         ),
-      []
+      [onRunSqlShortcut]
     );
 
     const extensions = useMemo(
       () => [
-        preventRunShortcutNewline,
+        runShortcutExtension,
         sql({
           upperCaseKeywords: true,
         }),
@@ -296,7 +300,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         bookmarkExtension,
         sqlCteFolding(),
       ],
-      [editable, bookmarkExtension, lineWrapping, updateStatusState]
+      [editable, bookmarkExtension, lineWrapping, updateStatusState, runShortcutExtension]
     );
 
     const theme = useMemo(() => (isDark ? oneDark : 'light'), [isDark]);
