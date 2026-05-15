@@ -8,12 +8,13 @@ import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
-import { StickyNote } from 'lucide-react';
+import { DatabaseSearch, StickyNote } from 'lucide-react';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { useFloatingWindows } from './floating-window';
 import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
 import { ColumnInfoForm } from './ColumnInfoForm';
+import { openFloatingSQLPreview } from './FloatingSQL';
 
 // Virtualization thresholds
 const COLUMN_VIRTUALIZATION_THRESHOLD = 200000;
@@ -328,6 +329,25 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
   // Get schema color for left border band
   const schemaColor = getNamespaceColor(nodeData.schema, isDark);
 
+  const fullTableName = nodeData.schemaTable
+    ? `${nodeData.schemaTable.catalog ? `${nodeData.schemaTable.catalog}.` : ''}${nodeData.schemaTable.schema ? `${nodeData.schemaTable.schema}.` : ''}${nodeData.schemaTable.name}`
+    : null;
+  const windowManager = useFloatingWindows();
+  const handleOpenFloatingSql = useCallback(() => {
+    if( nodeData.schemaTable ) {
+      openFloatingSQLPreview({
+        windowManager,
+        dialect: nodeData.dialect,
+        table: {
+          catalog: nodeData.schemaTable.catalog,
+          schema: nodeData.schemaTable.schema,
+          tableName: nodeData.schemaTable.name,
+          columns: nodeData.schemaTable.columns,
+        },
+      });
+    }
+  }, [windowManager, nodeData.schemaTable]); // , data.dialect
+
   return (
     <div
       onClick={() => {
@@ -484,6 +504,24 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             {sanitizeIdentifier(nodeData.label)}
           </div>
         </div>
+        {nodeData.schemaTable && (
+          <button
+            type="button"
+            className={cn(
+              'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+              'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+              'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+            )}
+            aria-label={`Open SQL preview for ${fullTableName}`}
+            title="Open SQL preview"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleOpenFloatingSql();
+            }}
+          >
+            <DatabaseSearch size={14} style={{ opacity: 0.75 }} />
+          </button>
+        )}
         {nodeData.comment && (
           <ClickableTooltip content={sanitizeIdentifier(nodeData.comment)}>
             <StickyNote size={14} style={{ opacity: 0.7, margin: '2px' }} />
@@ -728,6 +766,7 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
   if (prevData.isHighlighted !== nextData.isHighlighted) return false;
   if (prevData.label !== nextData.label) return false;
   if (prevData.comment !== nextData.comment) return false;
+  if (prevData.schemaTable !== nextData.schemaTable) return false;
   if (prevData.nodeType !== nextData.nodeType) return false;
   if (prevData.schema !== nextData.schema) return false;
   if (prevData.database !== nextData.database) return false;

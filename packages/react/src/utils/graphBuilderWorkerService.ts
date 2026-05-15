@@ -9,7 +9,7 @@ import type {
   StatementLineage,
   ResolvedSchemaMetadata,
   GlobalLineage,
-  Node as LineageNode,
+  Node as LineageNode, Dialect,
 } from '@pondpilot/flowscope-core';
 import type { Node as FlowNode, Edge as FlowEdge } from '@xyflow/react';
 import type {
@@ -117,6 +117,7 @@ export interface TableGraphBuildOptions {
   defaultCollapsed: boolean;
   globalLineage: GlobalLineage | null | undefined;
   showColumnEdges: boolean;
+  dialect?: Dialect;
 }
 
 /**
@@ -152,6 +153,7 @@ export async function buildTableGraphInWorker(
     defaultCollapsed: options.defaultCollapsed,
     globalLineage: options.globalLineage ?? null,
     showColumnEdges: options.showColumnEdges,
+    dialect: options.dialect,
   };
 
   return new Promise((resolve, reject) => {

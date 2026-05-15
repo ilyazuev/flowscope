@@ -8,7 +8,9 @@ import {
   StatementLineage,
   FilterPredicate,
   AggregationInfo,
-  Dialect, ResolvedColumnSchema,
+  Dialect,
+  ResolvedColumnSchema,
+  ResolvedSchemaTable,
 } from '@pondpilot/flowscope-core';
 
 /**
@@ -230,6 +232,7 @@ export interface GraphViewProps {
   fitViewTrigger?: number;
   /** Namespace filter - when provided, only shows nodes matching the filter */
   namespaceFilter?: NamespaceFilter;
+  dialect?: Dialect;
 }
 
 export interface GraphViewFocusNodeProps {
@@ -335,6 +338,8 @@ export interface TableNodeData extends Record<string, unknown> {
   /** Display name of the table, view, or CTE */
   label: string;
   comment?: string;
+  schemaTable?: ResolvedSchemaTable;
+  dialect?: Dialect;
   /** Type of node: regular table, view, CTE, or virtual output */
   nodeType: 'table' | 'view' | 'cte' | 'virtualOutput';
   /** Whether this CTE is recursive (self-referential) */

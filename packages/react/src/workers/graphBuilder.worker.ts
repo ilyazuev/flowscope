@@ -13,7 +13,7 @@ import {
   GlobalLineage,
   GlobalNode,
   FilterPredicate,
-  AggregationInfo, ResolvedColumnSchema,
+  AggregationInfo, ResolvedColumnSchema, ResolvedSchemaTable, Dialect,
 } from '@pondpilot/flowscope-core';
 import { isTableLikeType } from '@pondpilot/flowscope-core';
 import { GRAPH_CONFIG, JOIN_TYPE_LABELS } from '../constants';
@@ -45,6 +45,9 @@ export interface SerializedColumnInfo {
 export interface SerializedTableNodeData extends Record<string, unknown> {
   label: string;
   nodeType: 'table' | 'view' | 'cte' | 'virtualOutput';
+  comment?: string;
+  schemaTable?: ResolvedSchemaTable;
+  dialect?: Dialect;
   isRecursive?: boolean;
   columns: SerializedColumnInfo[];
   isSelected: boolean;
@@ -131,6 +134,7 @@ export interface GraphBuildRequest {
   defaultCollapsed: boolean;
   globalLineage: GlobalLineage | null;
   showColumnEdges: boolean;
+  dialect?: Dialect;
 }
 
 /**
@@ -210,14 +214,12 @@ function findSchemaTable(
  * Process table columns by injecting missing schema columns when expanded.
  */
 function processTableColumns(
-  tableLabel: string,
-  qualifiedName: string | undefined,
   nodeId: string,
   existingColumns: SerializedColumnInfo[],
   isExpanded: boolean,
-  resolvedSchema: ResolvedSchemaMetadata | null | undefined
+  schemaTable: ResolvedSchemaTable | null
 ): { columns: SerializedColumnInfo[]; hiddenColumnCount: number } {
-  const schemaTable = findSchemaTable(tableLabel, qualifiedName, resolvedSchema);
+
 
   if (!schemaTable) {
     return { columns: existingColumns, hiddenColumnCount: 0 };
@@ -348,8 +350,10 @@ interface TableNodeBuilderOptions extends NodeBuilderOptions {
 function buildTableNodeData(
   node: Node,
   columns: SerializedColumnInfo[],
+  schemaTable: ResolvedSchemaTable |null,
   options: TableNodeBuilderOptions,
-  globalNodeMap?: Map<string, GlobalNode>
+  globalNodeMap?: Map<string, GlobalNode>,
+  dialect?: Dialect,
 ): SerializedTableNodeData {
   let nodeType: 'table' | 'view' | 'cte' | 'virtualOutput' = 'table';
   if (node.type === 'cte') {
@@ -368,6 +372,8 @@ function buildTableNodeData(
   return {
     label: node.label,
     comment: node.comment,
+    schemaTable: schemaTable || undefined,
+    dialect: schemaTable ? dialect: undefined,
     nodeType,
     columns,
     isSelected: node.id === options.selectedNodeId,
@@ -411,7 +417,8 @@ function buildFlowNodes(
   expandedTableIds: Set<string>,
   resolvedSchema: ResolvedSchemaMetadata | null | undefined,
   defaultCollapsed: boolean,
-  globalLineage: GlobalLineage | null | undefined
+  globalLineage: GlobalLineage | null | undefined,
+  dialect?: Dialect
 ): SerializedFlowNode[] {
   const globalNodeMap = new Map<string, GlobalNode>();
   if (globalLineage?.nodes) {
@@ -478,13 +485,13 @@ function buildFlowNodes(
     const existingColumns = tableColumnMap.get(node.id) || [];
     const isExpanded = expandedTableIds.has(node.id);
 
+    const schemaTable = findSchemaTable(node.label, node.qualifiedName, resolvedSchema);
+
     const { columns, hiddenColumnCount } = processTableColumns(
-      node.label,
-      node.qualifiedName,
       node.id,
       existingColumns,
       isExpanded,
-      resolvedSchema
+      schemaTable
     );
 
     flowNodes.push({
@@ -494,6 +501,7 @@ function buildFlowNodes(
       data: buildTableNodeData(
         node,
         columns,
+        schemaTable,
         {
           selectedNodeId,
           searchTerm,
@@ -502,7 +510,8 @@ function buildFlowNodes(
           isRecursive: recursiveNodeIds.has(node.id),
           isBaseTable: baseTableIds.has(node.id),
         },
-        globalNodeMap
+        globalNodeMap,
+        dialect,
       ),
     });
   }
@@ -1220,7 +1229,8 @@ self.onmessage = (event: MessageEvent<GraphBuildRequest | ScriptGraphBuildReques
         expandedTableIds,
         request.resolvedSchema,
         request.defaultCollapsed,
-        request.globalLineage
+        request.globalLineage,
+        request.dialect
       );
 
       edges = buildFlowEdges(

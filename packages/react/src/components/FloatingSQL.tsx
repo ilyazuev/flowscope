@@ -179,7 +179,7 @@ export function openFloatingSQLPreview({
     height: 680,
     minWidth: 640,
     minHeight: 420,
-    contentClassName: 'min-h-0 flex-1 overflow-hidden p-0 text-sm leading-6',
+    contentClassName: 'min-h-0 flex-1 overflow-hidden p-1 text-sm leading-6',
     content: (
       <FloatingSQL
         title={title}

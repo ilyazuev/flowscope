@@ -450,6 +450,7 @@ export function AnalysisView({
                 onViewportChange={lineageState.onViewportChange}
                 fitViewTrigger={fitViewTrigger}
                 namespaceFilter={namespaceFilter}
+                dialect={currentProject?.dialect ?? 'generic'}
               />
             </GraphErrorBoundary>
           </TabsContent>
