@@ -27,7 +27,7 @@ type PerspectiveViewerElement = HTMLElement & {
 type PerspectiveWorker = Awaited<ReturnType<typeof perspective.worker>>;
 
 type PerspectiveTable = {
-  delete?: () => Promise<void>;
+  delete?: (options?: { lazy?: boolean }) => Promise<void>;
 };
 
 export function DataView() {
@@ -36,6 +36,7 @@ export function DataView() {
   const tableRef = useRef<PerspectiveTable | null>(null);
   const initializedRef = useRef(false);
   const lastAppliedRequestIdRef = useRef(0);
+  const loadTokenRef = useRef(0);
 
   const { isDataLoading, dataLoadingError, csv, title, requestId } = useSharedDataLoad();
 
@@ -62,19 +63,49 @@ export function DataView() {
     }
   }, [isDark]);
 
+  const safeDeleteTable = async (table: PerspectiveTable | null) => {
+    if (!table?.delete) return;
+
+    try {
+      await table.delete({ lazy: true });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (!message.includes('Cannot delete table with views')) {
+        throw e;
+      }
+    }
+  };
+
   const loadCsvToViewer = async (csv: string, title?: string | null) => {
+    const token = ++loadTokenRef.current;
+
     const viewer = viewerRef.current;
     if (!viewer) return;
     if (!workerRef.current) {
       workerRef.current = await perspective.worker();
     }
+
+    if (token !== loadTokenRef.current || viewerRef.current !== viewer) return;
+
     const prevTable = tableRef.current; // csv = 'abc,bca,drt\n123,dew,456';
 
     const table = await workerRef.current.table(csv, {
       format: 'csv',
     });
+
+    if (token !== loadTokenRef.current || viewerRef.current !== viewer) {
+      await safeDeleteTable(table as PerspectiveTable);
+      return;
+    }
+
     tableRef.current = table as PerspectiveTable;
     await viewer.load(table);
+
+    if (token !== loadTokenRef.current || viewerRef.current !== viewer) {
+      await safeDeleteTable(table as PerspectiveTable);
+      return;
+    }
+
     await viewer.restore({
       plugin: 'Datagrid',
       settings: true,
@@ -96,7 +127,7 @@ export function DataView() {
       
     }
 
-    await prevTable?.delete?.();
+    await safeDeleteTable(prevTable); // await prevTable?.delete?.();
   };
 
   useEffect(() => {
@@ -125,13 +156,22 @@ export function DataView() {
 
     return () => {
       cancelled = true; // if (initializedRef.current) {}
+
+      loadTokenRef.current += 1;
+
       const viewer = viewerRef.current;
       const table = tableRef.current;
       viewerRef.current = null;
       tableRef.current = null;
+      initializedRef.current = false;
+
       void (async () => {
-        await viewer?.delete?.();
-        await table?.delete?.();
+        try {
+          await viewer?.delete?.();
+          await safeDeleteTable(table);
+        } catch (e) {
+          console.warn('Perspective cleanup failed', e);
+        }
       })();
     };
   }, []);

@@ -337,7 +337,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
     if( nodeData.schemaTable ) {
       openFloatingSQLPreview({
         windowManager,
-        dialect: nodeData.dialect,
+        dialect: nodeData.dialect ?? 'generic',
         table: {
           catalog: nodeData.schemaTable.catalog,
           schema: nodeData.schemaTable.schema,
