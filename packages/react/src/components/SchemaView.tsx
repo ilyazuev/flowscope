@@ -29,7 +29,7 @@ import {
   ArrowDownUp,
   ArrowLeftRight,
   StickyNote,
-  DatabaseSearch,
+  DatabaseSearch, Database,
 } from 'lucide-react';
 
 import { useNodeFocus } from '../hooks/useNodeFocus';
@@ -52,6 +52,8 @@ import { ColumnInfoForm } from './ColumnInfoForm';
 import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
 import { openFloatingSQLPreview } from './FloatingSQL';
 import type { Dialect } from '@pondpilot/flowscope-core';
+import { openDescribeWindow } from './FloatingDescribe';
+import { backendParsed } from '@pondpilot/flowscope-app/src/lib/project-store';
 
 // ============================================================================
 // Types
@@ -280,7 +282,15 @@ const SchemaTableNodeComponent = ({
 
   const NodeIcon = isView ? Eye : Table2;
   const windowManager = useFloatingWindows();
-
+  const handleDescribeObject = useCallback(() => {
+      void openDescribeWindow(
+        windowManager,
+        isDark,
+        data.label,
+        data.catalog,
+        data.schema
+      );
+  }, [windowManager, data.catalog, data.schema, data.label]);
   const handleOpenFloatingSql = useCallback(() => {
     openFloatingSQLPreview({
       windowManager,
@@ -345,22 +355,42 @@ const SchemaTableNodeComponent = ({
         >
           {fullName}
         </span>
-        <button
-          type="button"
-          className={cn(
-            'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
-            'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-            'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
-          )}
-          aria-label={`Open SQL preview for ${fullName}`}
-          title="Open SQL preview"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleOpenFloatingSql();
-          }}
-        >
-          <DatabaseSearch size={14} style={{ opacity: 0.75 }} />
-        </button>
+        {backendParsed(data.dialect) && (
+          <div className={'flex'}>
+            <button
+              type="button"
+              className={cn(
+                'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+                'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+                'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+              )}
+              aria-label={`Describe ${fullName}`}
+              title="Describe database object"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDescribeObject();
+              }}
+            >
+              <Database size={14} style={{ opacity: 0.75 }} />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+                'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+                'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+              )}
+              aria-label={`Open SQL preview for ${fullName}`}
+              title="Open SQL preview"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOpenFloatingSql();
+              }}
+            >
+              <DatabaseSearch size={14} style={{ opacity: 0.75 }} />
+            </button>
+          </div>
+        )}
         {data.comment && (
           <ClickableTooltip content={sanitizeIdentifier(data.comment)}>
             <StickyNote size={14} style={{ opacity: 0.7, margin: '2px' }} />
@@ -495,6 +525,7 @@ const SchemaTableNodeComponent = ({
                       'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                     )}
                     aria-label={'Show column information'}
+                    title={'Show column information'}
                     type="button"
                   >
                     <StickyNote size={14} style={{ opacity: 0.7 }} />

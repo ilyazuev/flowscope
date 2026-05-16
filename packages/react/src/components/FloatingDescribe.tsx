@@ -176,9 +176,11 @@ export const openDescribeWindow = (
   columnName?: string
 ) => {
   const tableFullName = `${schema ? `${schema}.` : ''}${tableName}`;
+  const objectFullName = `${tableFullName}${columnName ? `.${columnName}` : ''}`;
+
   manager.openWindow({
-    id: `describeWindow-${database ?? ''}-${tableFullName}${columnName ? `.${columnName}` : ''}`,
-    title: `${database ? `${database}. ` : ''}Describe object ${tableFullName}`,
+    id: `describeWindow-${database ?? ''}-${objectFullName}`,
+    title: `${database ? `${database}. ` : ''}Describe object ${objectFullName}`,
     content: (
       <FloatingDescribe
         isDark={isDark}

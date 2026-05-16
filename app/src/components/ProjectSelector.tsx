@@ -5,7 +5,7 @@ import { clearAnalysisWorkerCache } from '@/lib/analysis-worker';
 import {
   useProject,
   isValidDialect,
-  DIALECT_OPTIONS,
+  DIALECT_OPTIONS, backendParsed,
 } from '@/lib/project-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -286,7 +286,7 @@ export function ProjectSelector({ open: controlledOpen, onOpenChange }: ProjectS
                     ))}
                   </SelectContent>
                 </Select>
-                {currentProject.dialect == 'oracleBackend' && (
+                {backendParsed(currentProject.dialect) && (
                   <DatabasesProvider>
                     <DbSelect />
                   </DatabasesProvider>

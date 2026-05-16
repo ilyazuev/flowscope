@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileSelector } from './FileSelector';
-import { Dialect, RunMode } from '@/lib/project-store';
+import { backendParsed, Dialect, RunMode } from '@/lib/project-store';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
 import { modKey, optionKey } from '@/lib/shortcuts.ts';
 import {
@@ -115,7 +115,7 @@ export function EditorToolbar({
 
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center rounded-full overflow-hidden shadow-xs">
-        {dialect == 'oracleBackend' && (
+        {backendParsed(dialect) && (
           <>
             <GraphTooltipProvider>
               <GraphTooltip delayDuration={300}>
@@ -234,14 +234,14 @@ export function EditorToolbar({
                 <DropdownMenuRadioItem
                   value="all"
                   className="text-xs"
-                  disabled={dialect == 'oracleBackend'}
+                  disabled={backendParsed(dialect)}
                 >
                   Run All Files ({allFileCount})
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem
                   value="custom"
                   className="text-xs"
-                  disabled={dialect == 'oracleBackend'}
+                  disabled={backendParsed(dialect)}
                 >
                   Run Selected ({selectedCount})
                 </DropdownMenuRadioItem>

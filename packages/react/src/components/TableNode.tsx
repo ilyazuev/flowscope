@@ -8,13 +8,15 @@ import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
-import { DatabaseSearch, StickyNote } from 'lucide-react';
+import { Database, DatabaseSearch, StickyNote } from 'lucide-react';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { useFloatingWindows } from './floating-window';
 import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
 import { ColumnInfoForm } from './ColumnInfoForm';
 import { openFloatingSQLPreview } from './FloatingSQL';
+import { openDescribeWindow } from './FloatingDescribe';
+import { backendParsed, useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
 
 // Virtualization thresholds
 const COLUMN_VIRTUALIZATION_THRESHOLD = 200000;
@@ -188,6 +190,7 @@ function ColumnRow({
               'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             )}
             aria-label={'Show column information'}
+            title={'Show column information'}
             type="button"
           >
             <StickyNote size={14} style={{ opacity: 0.7 }} />
@@ -333,6 +336,19 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
     ? `${nodeData.schemaTable.catalog ? `${nodeData.schemaTable.catalog}.` : ''}${nodeData.schemaTable.schema ? `${nodeData.schemaTable.schema}.` : ''}${nodeData.schemaTable.name}`
     : null;
   const windowManager = useFloatingWindows();
+  const {currentProject} = useProject();
+  const handleDescribeObject = useCallback(() => {
+    if( nodeData.schemaTable ) {
+      void openDescribeWindow(
+        windowManager,
+        isDark,
+        nodeData.schemaTable.name,
+        currentProject?.database,
+        nodeData.schemaTable.schema
+      );
+    }
+  }, [windowManager, nodeData.schemaTable]);
+
   const handleOpenFloatingSql = useCallback(() => {
     if( nodeData.schemaTable ) {
       openFloatingSQLPreview({
@@ -346,7 +362,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
         },
       });
     }
-  }, [windowManager, nodeData.schemaTable]); // , data.dialect
+  }, [windowManager, nodeData.schemaTable]);
 
   return (
     <div
@@ -504,23 +520,41 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             {sanitizeIdentifier(nodeData.label)}
           </div>
         </div>
-        {nodeData.schemaTable && (
-          <button
-            type="button"
-            className={cn(
-              'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
-              'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-              'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
-            )}
-            aria-label={`Open SQL preview for ${fullTableName}`}
-            title="Open SQL preview"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleOpenFloatingSql();
-            }}
-          >
-            <DatabaseSearch size={14} style={{ opacity: 0.75 }} />
-          </button>
+        {nodeData.schemaTable && backendParsed(nodeData?.dialect) && (
+          <div className={'flex'}>
+            <button
+              type="button"
+              className={cn(
+                'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+                'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+                'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+              )}
+              aria-label={`Describe ${fullTableName}`}
+              title="Describe database object"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDescribeObject();
+              }}
+            >
+              <Database size={14} style={{ opacity: 0.75 }} />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+                'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+                'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+              )}
+              aria-label={`Open SQL preview for ${fullTableName}`}
+              title="Open SQL preview"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOpenFloatingSql();
+              }}
+            >
+              <DatabaseSearch size={14} style={{ opacity: 0.75 }} />
+            </button>
+          </div>
         )}
         {nodeData.comment && (
           <ClickableTooltip content={sanitizeIdentifier(nodeData.comment)}>

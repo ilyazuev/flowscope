@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, startTransition } from 'react
 import { useLineage } from '@pondpilot/flowscope-react';
 import { analyzeWithWorker, getCachedAnalysis, syncAnalysisFiles } from '@/lib/analysis-worker';
 import { BackendAdapter, AnalysisPayload } from '@/lib/backend-adapter';
-import { useProject } from '@/lib/project-store';
+import { backendParsed, useProject } from '@/lib/project-store';
 import type { Project } from '@/lib/project-store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { FILE_LIMITS, ANALYSIS_SQL_PREVIEW_LIMITS } from '@/lib/constants';
@@ -111,7 +111,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
 
       let contextDescription = '';
       let filesToAnalyze: Array<{ name: string; content: string }> = [];
-      const runMode = project.dialect == 'oracleBackend' ? 'current' : project.runMode;
+      const runMode = backendParsed(project.dialect) ? 'current' : project.runMode;
 
       if (runMode === 'current' && activeFileContent && activeFilePath) {
         filesToAnalyze = [{ name: activeFilePath, content: activeFileContent }];
@@ -398,7 +398,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
 
         let analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>>;
         let fileSyncRetries = 0;
-        if (currentProject.dialect === 'oracleBackend') {
+        if (backendParsed(currentProject.dialect)) {
           if( !columnInfoSchema ) {
             const columnInfoSchemaResponse = await loadGenericForms();
             if( columnInfoSchemaResponse ) {

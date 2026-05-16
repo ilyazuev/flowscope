@@ -5,7 +5,7 @@ import type { SqlViewSelection } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, } from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
-import { ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
+import { backendParsed, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
 import { useBackend } from '@/lib/backend-context';
 import type { GlobalShortcut } from '@/hooks';
@@ -328,7 +328,7 @@ export function EditorArea({
     clearErrors();
     if (
       !currentProject ||
-      currentProject.dialect != 'oracleBackend' ||
+      !backendParsed(currentProject.dialect) ||
       !activeProjectId ||
       !activeFile ||
       !sqlViewRef.current ||
@@ -518,11 +518,11 @@ export function EditorArea({
         shift: true,
         handler: handleAnalyzeActiveOnly,
       },
-      {
-        key: 'Enter',
-        cmdOrCtrl: true,
-        handler: handleExecuteSql,
-      },
+      // {
+      //   key: 'Enter',
+      //   cmdOrCtrl: true,
+      //   handler: handleExecuteSql,
+      // },
       {
         key: 'Enter',
         cmdOrCtrl: true,
@@ -567,7 +567,7 @@ export function EditorArea({
   return (
     <div className={cn('flex flex-col h-full bg-background', className)}>
       <EditorToolbar
-        runMode={currentProject.dialect == 'oracleBackend' ? 'current' : currentProject.runMode}
+        runMode={backendParsed(currentProject.dialect) ? 'current' : currentProject.runMode}
         dialect={currentProject.dialect}
         onRunModeChange={(mode: RunMode) => setRunMode(currentProject.id, mode)}
         isAnalyzing={isAnalyzing}
@@ -606,6 +606,7 @@ export function EditorArea({
             editable={sqlViewMode === 'template' && !isReadOnly}
             isDark={isDark}
             highlightedSpan={sqlViewMode === 'template' ? highlightedSpan : null}
+            onRunSqlShortcut={handleExecuteSql}
           />
         </ErrorBoundary>
         {isReadOnly && (

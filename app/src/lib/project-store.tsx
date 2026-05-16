@@ -55,6 +55,14 @@ export type Dialect =
   | 'snowflake'
   | 'sqlite';
 
+const BACKEND_PARSED_DIALECTS = new Set([
+  'oracleBackend',
+]);
+
+export function backendParsed(dialect?: Dialect): boolean {
+  return dialect ? BACKEND_PARSED_DIALECTS.has(dialect) : false;
+}
+
 /** Human-readable labels for each dialect. */
 const DIALECT_LABELS: Record<Dialect, string> = {
   oracleBackend: 'Oracle Backend Parser',
