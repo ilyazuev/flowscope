@@ -101,7 +101,7 @@ export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProje
   return sqlPayloadResponse;
 }
 
-export async function devLineageDataDescribe(dataDescribePayload: DataDescribePayload, _currentProject: Project) {
+export async function devLineageDataDescribe(dataDescribePayload: DataDescribePayload) {
   const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_DATADESCRIBE, dataDescribePayload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
@@ -112,7 +112,6 @@ export async function devLineageDataDescribe(dataDescribePayload: DataDescribePa
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(dataDescribePayloadResponse.errorMessage as string);
   }
-  console.log('Data described from backend');
   return dataDescribePayloadResponse;
 }
 

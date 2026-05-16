@@ -1,11 +1,11 @@
-import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Check, CopyPlus, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
-import { SqlView, ToolbarButton, useLineageState, useFloatingWindows, type WindowManagerApi, } from '@pondpilot/flowscope-react';
+import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, } from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
-import { Project, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
+import { ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
 import { useBackend } from '@/lib/backend-context';
 import type { GlobalShortcut } from '@/hooks';
@@ -16,11 +16,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
-import { useDataDescribe } from '@/hooks/useDataDescribe.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
-import { Input } from '@/components/ui/input.tsx';
-
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -100,9 +97,6 @@ export function EditorArea({
     setNeedParameters,
   } = useSharedDataLoad();
 
-  const { dataDescribingError, runDataDescribe, setDataDescribingError, dataDescriptionScript } =
-    useDataDescribe();
-
   const { getResult } = useAnalysisStore();
 
   const sqlViewRef = useRef<{ getSelection: () => SqlViewSelection | undefined }>(null);
@@ -129,16 +123,6 @@ export function EditorArea({
   }, [dataLoadingError, setDataLoadingError]);
 
   // Show error toast when error occurs
-  useEffect(() => {
-    if (dataDescribingError) {
-      toast.error('Data Loading Error', {
-        description: dataDescribingError,
-        duration: 5000,
-      });
-      setDataDescribingError(null);
-    }
-  }, [dataDescribingError, setDataDescribingError]);
-
   useEffect(() => {
     if (revealInLineageError) {
       toast.error('Reveal in Lineage Error', {
@@ -249,9 +233,8 @@ export function EditorArea({
   const clearErrors = useCallback(() => {
     setError(null);
     setDataLoadingError(null);
-    setDataDescribingError(null);
     setRevealInLineageError(null);
-  }, [setError, setDataLoadingError, setDataDescribingError]);
+  }, [setError, setDataLoadingError]);
 
   const handleAnalyze = useCallback(() => {
     clearErrors();
@@ -272,102 +255,6 @@ export function EditorArea({
       });
     }
   }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors]);
-
-  function LoadingState({ tableFullName, isDark }: { tableFullName: string; isDark: boolean }) {
-    return (
-      <div className={isDark ? 'text-neutral-300' : 'text-neutral-600'}>
-        <div className="text-sm font-medium flex gap-2 center">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching description of {tableFullName}
-          ...
-        </div>
-      </div>
-    );
-  }
-
-  function CopyDescribedColumns({columnNames}: {columnNames: string[]}): JSX.Element {
-    const [columnsCopied, setColumnsCopied] = useState(false);
-    const inputDescribeCopyColumnsAliasRef = useRef<HTMLInputElement>(null);
-    return (
-      <>
-        <Input
-          ref={inputDescribeCopyColumnsAliasRef}
-          placeholder="Copy columns alias"
-          className="h-7 focus-visible:ring-0 text-sm w-45"
-        />
-        <ToolbarButton
-          title={columnsCopied ? 'Copied' : `Copy columns`}
-          aria-label={columnsCopied ? 'Copied' : 'Copy columns'}
-          onClick={async () => {
-            try {
-              const alias = inputDescribeCopyColumnsAliasRef.current?.value;
-              await navigator.clipboard.writeText(
-                columnNames.map(cn => `${alias ? `${alias}.` : ''}${cn}`)
-                  .join(', '));
-              setColumnsCopied(true);
-              window.setTimeout(() => setColumnsCopied(false), 1200);
-            } catch (error) {
-              setColumnsCopied(false);
-              console.error(`Clipboard copy failed`, error);
-              toast.error(`Failed to Copy columns`, {
-                description: 'Clipboard access is unavailable or blocked by the browser.',
-              });
-            }
-          }}>
-          {columnsCopied ? (
-            <Check className="size-3.5" />
-          ) : (
-            <CopyPlus className="size-3.5" />
-          )}
-        </ToolbarButton>
-      </>
-    );
-  }
-
-  const openDescribeWindow = async (
-    manager: Pick<WindowManagerApi, 'openWindow' | 'updateWindow' | 'closeWindow'>,
-    project: Project,
-    tableName: string,
-    schema?: string,
-    columnName?: string
-  ) => {
-    const tableFullName = `${schema ? schema + '.' : ''}${tableName}`;
-    const windowId = `describeWindow-${tableFullName}`; // Date.now()
-    manager.openWindow({
-      id: windowId,
-      title: `${project.database ? `${project.database}. ` : ''}Describe object ${tableFullName}`,
-      content: <LoadingState isDark={isDark} tableFullName={tableFullName} />,
-    });
-    let columnSpan = undefined;
-    const dataDescribePayloadResponse = await runDataDescribe(tableName, schema, columnName);
-    if (dataDescribePayloadResponse?.script && columnName) {
-      const start = dataDescribePayloadResponse.script.indexOf(`"${columnName}"`);
-      if (start != -1) {
-        columnSpan = {
-          start,
-          end: start + columnName.length + 2,
-        };
-      }
-    }
-    manager.updateWindow(windowId, {
-      content: dataDescribePayloadResponse?.script ? (
-        <div className="h-full w-full min-h-0">
-          <SqlView
-            className="h-full w-full"
-            isDark={isDark}
-            editable={true}
-            lineWrapping={false}
-            value={dataDescribePayloadResponse?.script}
-            highlightedSpan={columnSpan}
-            extraToolbarElements={dataDescribePayloadResponse?.columnNames && (
-              <CopyDescribedColumns columnNames={dataDescribePayloadResponse?.columnNames} />
-            )}
-          />
-        </div>
-      ) : (
-        <span>{'No description found'}</span>
-      ),
-    });
-  };
 
   const handleRevealInLineage = useCallback(async () => {
     clearErrors();
@@ -441,6 +328,7 @@ export function EditorArea({
     clearErrors();
     if (
       !currentProject ||
+      currentProject.dialect != 'oracleBackend' ||
       !activeProjectId ||
       !activeFile ||
       !sqlViewRef.current ||
@@ -454,7 +342,7 @@ export function EditorArea({
     }
     const result = getResult(activeProjectId, hideCTEs);
     if (!result) {
-      setDataDescribingError('No Lineage Data: need to parse SQL before describe database object.');
+      setError('No Lineage Data: need to parse SQL before describe database object.');
       return;
     }
     if (result.resolvedSchema) {
@@ -462,7 +350,8 @@ export function EditorArea({
         if (table.spans) {
           for (const span of table.spans) {
             if (span.start <= selection.head && selection.head <= span.end) {
-              void openDescribeWindow(windowManager, currentProject, table.name, table.schema); // await openDescribeWindow(windowManager, currentProject, 'IZ_TEST_1_ORDER', 'DWHKIT');
+              void openDescribeWindow(
+                windowManager, isDark, table.name, currentProject.database, table.schema);
               return;
             }
           }
@@ -473,12 +362,7 @@ export function EditorArea({
               for (const span of column.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
                   void openDescribeWindow(
-                    windowManager,
-                    currentProject,
-                    table.name,
-                    table.schema,
-                    column.name
-                  );
+                    windowManager, isDark, table.name, currentProject.database, table.schema, column.name);
                   return;
                 }
               }
@@ -493,9 +377,6 @@ export function EditorArea({
     activeFile,
     activeProjectId,
     clearErrors,
-    setDataDescribingError,
-    runDataDescribe,
-    dataDescriptionScript,
     windowManager,
   ]);
 
