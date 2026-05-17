@@ -615,12 +615,18 @@ export function EditorArea({
   const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
   const selectedCount = currentProject.selectedFileIds?.length || 0;
 
-
+  const currentSourceName = activeFile.path || activeFile.name;
   const isGraphOutOfSync =
     !!analysisSnapshot &&
-    sqlViewMode === 'template' &&
-    analysisSnapshot.fileId === activeFile.id &&
-    analysisSnapshot.text !== activeFile.content; // const currentSourceName = activeFile.path || activeFile.name; const isGraphOutOfSync = !!analysisSnapshot && sqlViewMode === 'template' && ( analysisSnapshot.fileId !== activeFile.id || analysisSnapshot.sourceName !== currentSourceName || analysisSnapshot.text !== activeFile.content || analysisSnapshot.schemaSQL !== (currentProject.schemaSQL ?? '') || analysisSnapshot.dialect !== currentProject.dialect || analysisSnapshot.hideCTEs !== hideCTEs );
+    result &&
+    sqlViewMode === 'template' && (
+      analysisSnapshot.fileId !== activeFile.id ||
+      analysisSnapshot.sourceName !== currentSourceName ||
+      analysisSnapshot.text !== activeFile.content ||
+      analysisSnapshot.schemaSQL !== (currentProject.schemaSQL ?? '') ||
+      analysisSnapshot.dialect !== currentProject.dialect ||
+      analysisSnapshot.hideCTEs !== hideCTEs
+    );
 
   const graphSyncWarning = isGraphOutOfSync ? (
     <div

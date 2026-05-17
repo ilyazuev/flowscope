@@ -29,7 +29,6 @@ export const DEFAULT_CUSTOMERS_PROJECT: Project = {
       path: 'Lineage_Test.sql',
       language: 'sql',
       content: `
--- noinspection SqlResolveForFile
 WITH
     params AS (
         select params_name, currency_cd, dt_from, dt_to from (
