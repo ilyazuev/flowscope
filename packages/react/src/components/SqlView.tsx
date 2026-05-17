@@ -127,7 +127,7 @@ export type SqlViewRef = {
 };
 
 function ToolbarDivider(): JSX.Element {
-  return <div className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />;
+  return <div className="mx-1 h-5 w-px shrink-0 bg-border" />;
 }
 
 export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(

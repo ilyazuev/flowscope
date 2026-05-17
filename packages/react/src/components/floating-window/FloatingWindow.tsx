@@ -65,7 +65,6 @@ function ResizeHandle({
     <div
       className={`absolute z-[1] touch-none ${classes[direction]}`}
       onPointerDown={(event) => onPointerDown(direction, event)}
-      aria-hidden="true"
     />
   );
 }

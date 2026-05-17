@@ -267,28 +267,6 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background">
-      <div className="flex h-11 shrink-0 items-center justify-end gap-2 border-b bg-muted/30 px-3">
-        <Button
-          type="button"
-          size="sm"
-          disabled={isRunning}
-          onClick={handleRunSql}
-          className="h-8 gap-1.5 rounded-full bg-brand-blue-500 px-3 font-medium text-white hover:bg-brand-blue-700"
-        >
-          {isRunning ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Play className="h-3.5 w-3.5 fill-current" />
-          )}
-
-          <span>Run Sql</span>
-
-          <kbd className="ml-2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-            <span className="text-xs">{modKey()}</span>↵
-          </kbd>
-        </Button>
-      </div>
-
       <ResizablePanelGroup direction="vertical" className="min-h-0 flex-1">
         <ResizablePanel defaultSize={50} minSize={20}>
           <SqlView
@@ -299,6 +277,27 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
             isDark={isDark}
             className="h-full text-sm"
             onRunSqlShortcut={handleRunSql}
+            extraToolbarElements={
+              <Button
+                type="button"
+                size="sm"
+                disabled={isRunning}
+                onClick={handleRunSql}
+                className="h-8 gap-1.5 rounded-full bg-brand-blue-500 px-3 font-medium text-white hover:bg-brand-blue-700"
+              >
+                {isRunning ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                )}
+
+                <span>Run Sql</span>
+
+                <kbd className="ml-2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">{modKey()}</span>↵
+                </kbd>
+              </Button>
+            }
           />
         </ResizablePanel>
 

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, } from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
-import { backendParsed, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
+import { backendParsed, Dialect, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
 import { useProject } from '@/lib/project-store';
 import { useBackend } from '@/lib/backend-context';
 import type { GlobalShortcut } from '@/hooks';
@@ -29,6 +29,15 @@ function SqlViewFallback() {
     </div>
   );
 }
+
+type AnalysisSnapshot = {
+  fileId: string;
+  sourceName: string;
+  text: string;
+  schemaSQL: string;
+  dialect?: Dialect;
+  hideCTEs: boolean;
+};
 
 interface EditorAreaProps {
   backendReady: boolean;
@@ -73,8 +82,21 @@ export function EditorArea({
   // SQL view mode toggle: 'template' shows original templated SQL, 'resolved' shows compiled SQL
   const [sqlViewMode, setSqlViewMode] = useState<SqlViewMode>('template');
 
-
   const [revealInLineageError, setRevealInLineageError] = useState<string | null>(null);
+
+  const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null);
+
+  const createAnalysisSnapshot = useCallback(
+    (file: ProjectFile): AnalysisSnapshot => ({
+      fileId: file.id,
+      sourceName: file.path || file.name,
+      text: file.content,
+      schemaSQL: currentProject?.schemaSQL ?? '',
+      dialect: currentProject?.dialect,
+      hideCTEs,
+    }),
+    [currentProject?.schemaSQL, currentProject?.dialect, hideCTEs]
+  );
 
 
   // Reset view mode to 'template' when active file changes
@@ -175,11 +197,16 @@ export function EditorArea({
     previousHideCTEs.current = hideCTEs;
 
     if (schemaChanged || hideCTEsChanged) {
-      runAnalysis(activeFile.content, activeFile.path).catch((err) => {
-        const reason = schemaChanged ? 'schema change' : 'CTE toggle';
-        console.error(`Auto-analysis after ${reason} failed:`, err);
-        setError(err instanceof Error ? err.message : `Failed to re-run analysis after ${reason}`);
-      });
+      const snapshot = createAnalysisSnapshot(activeFile);
+      runAnalysis(activeFile.content, activeFile.path)
+        .then(()=>{
+          setAnalysisSnapshot(snapshot);
+        })
+        .catch((err) => {
+          const reason = schemaChanged ? 'schema change' : 'CTE toggle';
+          console.error(`Auto-analysis after ${reason} failed:`, err);
+          setError(err instanceof Error ? err.message : `Failed to re-run analysis after ${reason}`);
+        });
     }
     // Note: currentProject is used in the guard but excluded from deps because activeFile
     // (derived from currentProject) already captures project changes via activeFile.id
@@ -191,6 +218,7 @@ export function EditorArea({
     activeFile?.name,
     runAnalysis,
     setError,
+    createAnalysisSnapshot,
   ]);
 
   // Compute resolved SQL from analysis result for the current file
@@ -238,23 +266,34 @@ export function EditorArea({
 
   const handleAnalyze = useCallback(() => {
     clearErrors();
-    if (activeFile) {
-      void runAnalysis(activeFile.content, activeFile.path);
+    if (!activeFile) {
+      return;
     }
-  }, [activeFile, runAnalysis, clearErrors]);
+    const snapshot = createAnalysisSnapshot(activeFile);
+    void runAnalysis(activeFile.content, activeFile.path).then(() => {
+      setAnalysisSnapshot(snapshot);
+    });
+  }, [activeFile, runAnalysis, clearErrors, createAnalysisSnapshot]);
 
   const handleAnalyzeActiveOnly = useCallback(() => {
     clearErrors();
-    if (activeFile && currentProject) {
-      // Temporarily switch to 'current' mode for this run
-      const originalMode = currentProject.runMode;
-      setRunMode(currentProject.id, 'current');
-      runAnalysis(activeFile.content, activeFile.path).finally(() => {
+    if (!activeFile || !currentProject) {
+      return;
+    }
+    // Temporarily switch to 'current' mode for this run
+    const originalMode = currentProject.runMode;
+    const snapshot = createAnalysisSnapshot(activeFile);
+    setRunMode(currentProject.id, 'current');
+    runAnalysis(activeFile.content, activeFile.path)
+      .then(()=>{
+        setAnalysisSnapshot(snapshot);
+      })
+      .finally(() => {
         // Restore original mode after analysis
         setRunMode(currentProject.id, originalMode);
       });
-    }
-  }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors]);
+
+  }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors, setAnalysisSnapshot]);
 
   const handleRevealInLineage = useCallback(async () => {
     clearErrors();
@@ -265,6 +304,10 @@ export function EditorArea({
       !sqlViewRef.current ||
       !activeFile.content
     ) {
+      return;
+    }
+    if (isGraphOutOfSync) {
+      setRevealInLineageError('Graph is stale. Re-run analysis before using navigation.');
       return;
     }
     const selection = sqlViewRef.current.getSelection();
@@ -334,6 +377,10 @@ export function EditorArea({
       !sqlViewRef.current ||
       !activeFile.content
     ) {
+      return;
+    }
+    if (isGraphOutOfSync) {
+      setError('Graph is stale. Re-run analysis before describing objects.');
       return;
     }
     const selection = sqlViewRef.current.getSelection();
@@ -428,6 +475,10 @@ export function EditorArea({
         }
       } else {
         if (!activeProjectId || !selection) {
+          return;
+        }
+        if (isGraphOutOfSync) {
+          setError('Graph is stale. Re-run analysis before run CTE.');
           return;
         }
         const result = getResult(activeProjectId, hideCTEs);
@@ -564,6 +615,23 @@ export function EditorArea({
   const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
   const selectedCount = currentProject.selectedFileIds?.length || 0;
 
+
+  const isGraphOutOfSync =
+    !!analysisSnapshot &&
+    sqlViewMode === 'template' &&
+    analysisSnapshot.fileId === activeFile.id &&
+    analysisSnapshot.text !== activeFile.content; // const currentSourceName = activeFile.path || activeFile.name; const isGraphOutOfSync = !!analysisSnapshot && sqlViewMode === 'template' && ( analysisSnapshot.fileId !== activeFile.id || analysisSnapshot.sourceName !== currentSourceName || analysisSnapshot.text !== activeFile.content || analysisSnapshot.schemaSQL !== (currentProject.schemaSQL ?? '') || analysisSnapshot.dialect !== currentProject.dialect || analysisSnapshot.hideCTEs !== hideCTEs );
+
+  const graphSyncWarning = isGraphOutOfSync ? (
+    <div
+      className="ml-1 flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+      title="Text changed after the last successful analysis. Re-run analysis to enable text ↔ graph navigation."
+    >
+      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+      <span>Graph out of sync — re-run analysis</span>
+    </div>
+  ) : undefined;
+
   return (
     <div className={cn('flex flex-col h-full bg-background', className)}>
       <EditorToolbar
@@ -607,6 +675,7 @@ export function EditorArea({
             isDark={isDark}
             highlightedSpan={sqlViewMode === 'template' ? highlightedSpan : null}
             onRunSqlShortcut={handleExecuteSql}
+            extraToolbarElements={graphSyncWarning}
           />
         </ErrorBoundary>
         {isReadOnly && (
