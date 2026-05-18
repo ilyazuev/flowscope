@@ -18,6 +18,7 @@ import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
 import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { AnalysisRunResult } from '@/hooks/useAnalysis.ts';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -31,12 +32,13 @@ function SqlViewFallback() {
 }
 
 type AnalysisSnapshot = {
-  fileId: string;
-  sourceName: string;
-  text: string;
+  projectId: string | null;
+  filesBySourceName: Record<string, string>;
   schemaSQL: string;
   dialect?: Dialect;
   hideCTEs: boolean;
+  templateMode: string;
+  runMode: RunMode;
 };
 
 interface EditorAreaProps {
@@ -87,15 +89,18 @@ export function EditorArea({
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null);
 
   const createAnalysisSnapshot = useCallback(
-    (file: ProjectFile): AnalysisSnapshot => ({
-      fileId: file.id,
-      sourceName: file.path || file.name,
-      text: file.content,
-      schemaSQL: currentProject?.schemaSQL ?? '',
-      dialect: currentProject?.dialect,
-      hideCTEs,
+    (run: AnalysisRunResult): AnalysisSnapshot => ({
+      projectId: activeProjectId,
+      filesBySourceName: Object.fromEntries(
+        run.files.map((file) => [file.name, file.content])
+      ),
+      schemaSQL: run.schemaSQL,
+      dialect: run.dialect,
+      hideCTEs: run.hideCTEs,
+      templateMode: run.templateMode,
+      runMode: run.runMode,
     }),
-    [currentProject?.schemaSQL, currentProject?.dialect, hideCTEs]
+    [activeProjectId]
   );
 
 
@@ -197,10 +202,11 @@ export function EditorArea({
     previousHideCTEs.current = hideCTEs;
 
     if (schemaChanged || hideCTEsChanged) {
-      const snapshot = createAnalysisSnapshot(activeFile);
       runAnalysis(activeFile.content, activeFile.path)
-        .then(()=>{
-          setAnalysisSnapshot(snapshot);
+        .then((run)=>{
+          if (run) {
+            setAnalysisSnapshot(createAnalysisSnapshot(run));
+          }
         })
         .catch((err) => {
           const reason = schemaChanged ? 'schema change' : 'CTE toggle';
@@ -258,6 +264,60 @@ export function EditorArea({
     return activeFile?.content ?? '';
   }, [sqlViewMode, resolvedSql, activeFile?.content]);
 
+
+  const currentSourceName = activeFile ? activeFile.path || activeFile.name : null;
+
+  const analyzedActiveFileText =
+    analysisSnapshot && currentSourceName
+      ? analysisSnapshot.filesBySourceName[currentSourceName]
+      : undefined;
+
+  const analyzedFilesChanged =
+    !!analysisSnapshot &&
+    !!currentProject &&
+    currentProject.files.some((file) => {
+      const sourceName = file.path || file.name;
+      const analyzedText = analysisSnapshot.filesBySourceName[sourceName];
+
+      // Файл не участвовал в прошлом analysis run.
+      // Сам по себе он не инвалидирует результат, пока не стал activeFile.
+      if (analyzedText === undefined) {
+        return false;
+      }
+
+      return analyzedText !== file.content;
+    });
+
+  const analyzedFileDeleted =
+    !!analysisSnapshot &&
+    !!currentProject &&
+    Object.keys(analysisSnapshot.filesBySourceName).some(
+      (sourceName) =>
+        !currentProject.files.some((file) => (file.path || file.name) === sourceName)
+    );
+
+  const activeFileWasNotAnalyzed =
+    !!analysisSnapshot &&
+    !!activeFile &&
+    analyzedActiveFileText === undefined;
+
+  const isGraphOutOfSync =
+    !!analysisSnapshot &&
+    !!result &&
+    !!currentProject &&
+    !!activeFile &&
+    sqlViewMode === 'template' &&
+    (
+      analysisSnapshot.projectId !== activeProjectId ||
+      analysisSnapshot.schemaSQL !== (currentProject.schemaSQL ?? '') ||
+      analysisSnapshot.dialect !== currentProject.dialect ||
+      analysisSnapshot.hideCTEs !== hideCTEs ||
+      analysisSnapshot.templateMode !== currentProject.templateMode ||
+      analyzedFilesChanged ||
+      analyzedFileDeleted ||
+      activeFileWasNotAnalyzed
+    );
+
   const clearErrors = useCallback(() => {
     setError(null);
     setDataLoadingError(null);
@@ -269,31 +329,25 @@ export function EditorArea({
     if (!activeFile) {
       return;
     }
-    const snapshot = createAnalysisSnapshot(activeFile);
-    void runAnalysis(activeFile.content, activeFile.path).then(() => {
-      setAnalysisSnapshot(snapshot);
+    void runAnalysis(activeFile.content, activeFile.path).then((run) => {
+      if(run) {
+        setAnalysisSnapshot(createAnalysisSnapshot(run));
+      }
     });
   }, [activeFile, runAnalysis, clearErrors, createAnalysisSnapshot]);
 
   const handleAnalyzeActiveOnly = useCallback(() => {
     clearErrors();
-    if (!activeFile || !currentProject) {
+    if (!activeFile) {
       return;
     }
-    // Temporarily switch to 'current' mode for this run
-    const originalMode = currentProject.runMode;
-    const snapshot = createAnalysisSnapshot(activeFile);
-    setRunMode(currentProject.id, 'current');
-    runAnalysis(activeFile.content, activeFile.path)
-      .then(()=>{
-        setAnalysisSnapshot(snapshot);
-      })
-      .finally(() => {
-        // Restore original mode after analysis
-        setRunMode(currentProject.id, originalMode);
+    runAnalysis(activeFile.content, activeFile.path, {runModeOverride: 'current'})
+      .then((run)=>{
+        if(run) {
+          setAnalysisSnapshot(createAnalysisSnapshot(run));
+        }
       });
-
-  }, [activeFile, currentProject, runAnalysis, setRunMode, clearErrors, setAnalysisSnapshot]);
+  }, [activeFile, runAnalysis, clearErrors, createAnalysisSnapshot]);
 
   const handleRevealInLineage = useCallback(async () => {
     clearErrors();
@@ -365,7 +419,7 @@ export function EditorArea({
       }
     }
     setRevealInLineageError('Object not found');
-  }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage]);
+  }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage, isGraphOutOfSync, getResult, hideCTEs,]);
 
   const handleRunDescribe = useCallback(async () => {
     clearErrors();
@@ -425,6 +479,11 @@ export function EditorArea({
     activeProjectId,
     clearErrors,
     windowManager,
+    isDark,
+    isGraphOutOfSync,
+    getResult,
+    hideCTEs,
+    setError,
   ]);
 
   const needParametersForSql = (
@@ -487,7 +546,8 @@ export function EditorArea({
           return;
         }
         for (const statement of result.statements) {
-          if (activeFile.name === statement.sourceName) {
+          const activeSourceName = activeFile.path || activeFile.name;
+          if (statement.sourceName === activeSourceName || statement.sourceName === activeFile.name) {
             for (const node of statement.nodes) {
               if (
                 node.type == 'cte' &&
@@ -527,6 +587,8 @@ export function EditorArea({
       hideCTEs,
       setDataLoadingError,
       clearErrors,
+      isGraphOutOfSync,
+      setError,
     ]
   );
 
@@ -615,23 +677,10 @@ export function EditorArea({
   const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
   const selectedCount = currentProject.selectedFileIds?.length || 0;
 
-  const currentSourceName = activeFile.path || activeFile.name;
-  const isGraphOutOfSync =
-    !!analysisSnapshot &&
-    result &&
-    sqlViewMode === 'template' && (
-      analysisSnapshot.fileId !== activeFile.id ||
-      analysisSnapshot.sourceName !== currentSourceName ||
-      analysisSnapshot.text !== activeFile.content ||
-      analysisSnapshot.schemaSQL !== (currentProject.schemaSQL ?? '') ||
-      analysisSnapshot.dialect !== currentProject.dialect ||
-      analysisSnapshot.hideCTEs !== hideCTEs
-    );
-
   const graphSyncWarning = isGraphOutOfSync ? (
     <div
       className="ml-1 flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
-      title="Text changed after the last successful analysis. Re-run analysis to enable text ↔ graph navigation."
+      title="SQL files changed after the last successful analysis. Re-run analysis to enable text ↔ graph navigation."
     >
       <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
       <span>Graph out of sync — re-run analysis</span>

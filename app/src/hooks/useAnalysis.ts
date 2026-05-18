@@ -33,6 +33,19 @@ export interface UseAnalysisOptions {
   adapter?: BackendAdapter | null;
 }
 
+export interface AnalysisRunResult {
+  files: Array<{ name: string; content: string }>;
+  dialect: Project['dialect'];
+  schemaSQL: string;
+  hideCTEs: boolean;
+  templateMode: Project['templateMode'];
+  runMode: Project['runMode'];
+}
+
+export interface RunAnalysisOptions {
+  runModeOverride?: Project['runMode'];
+}
+
 /**
  * Hook for running lineage analysis.
  *
@@ -105,13 +118,16 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
       activeFileContent?: string,
       // Use path (not just basename) for consistency with custom/all modes.
       // This ensures sourceName matches across all run modes.
-      activeFilePath?: string
+      activeFilePath?: string,
+      runModeOverride?: Project['runMode']
     ): AnalysisContext | null => {
       if (!project) return null;
 
-      let contextDescription = '';
-      let filesToAnalyze: Array<{ name: string; content: string }> = [];
-      const runMode = backendParsed(project.dialect) ? 'current' : project.runMode;
+      let contextDescription: string;
+      let filesToAnalyze: Array<{ name: string; content: string }>;
+      const runMode = backendParsed(project.dialect)
+        ? 'current'
+        : (runModeOverride ?? project.runMode);
 
       if (runMode === 'current' && activeFileContent && activeFilePath) {
         filesToAnalyze = [{ name: activeFilePath, content: activeFileContent }];
@@ -324,8 +340,12 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
   ]);
 
   const runAnalysis = useCallback(
-    async (activeFileContent?: string, activeFilePath?: string) => {
-      if (!backendReady || !currentProject) return;
+    async (
+      activeFileContent?: string,
+      activeFilePath?: string,
+      options?: RunAnalysisOptions
+    ) : Promise<AnalysisRunResult | null> => {
+      if (!backendReady || !currentProject) return null;
 
       const requestId = analysisRequestRef.current + 1;
       analysisRequestRef.current = requestId;
@@ -337,29 +357,29 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
       try {
-        const context = buildAnalysisContext(currentProject, activeFileContent, activeFilePath);
+        const context = buildAnalysisContext(currentProject, activeFileContent, activeFilePath, options?.runModeOverride);
 
         if (!context) {
           setError('No project context available');
-          return;
+          return null;
         }
 
         if (context.files.length === 0) {
           if (currentProject.runMode === 'custom') {
             setError('No files selected for analysis.');
-            return;
+            return null;
           }
           if (currentProject.files.length > 0) {
             setError('No .sql files found in project.');
-            return;
+            return null;
           }
-          return;
+          return null;
         }
 
         const validation = validateFiles(context.files);
         if (!validation.valid) {
           setError(validation.error || 'Validation failed');
-          return;
+          return null;
         }
 
         console.log(context.description);
@@ -420,6 +440,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
                 await adapter.syncFiles(context.files);
                 continue;
               }
+              // noinspection ExceptionCaughtLocallyJS
               throw error;
             }
           }
@@ -450,13 +471,14 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
                 await syncAnalysisFiles(context.files);
                 continue;
               }
+              // noinspection ExceptionCaughtLocallyJS
               throw error;
             }
           }
         }
 
         if (analysisRequestRef.current !== requestId) {
-          return;
+          return null;
         }
 
         const durationMs = performance.now() - analysisStart;
@@ -482,12 +504,23 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
           });
         }
         setState((prev) => ({ ...prev, lastAnalyzedAt: Date.now() }));
+        return {
+          files: context.files,
+          dialect: currentProject.dialect,
+          schemaSQL: currentProject.schemaSQL ?? '',
+          hideCTEs,
+          templateMode: currentProject.templateMode,
+          runMode: backendParsed(currentProject.dialect)
+            ? 'current'
+            : (options?.runModeOverride ?? currentProject.runMode),
+        };
       } catch (error) {
         if (analysisRequestRef.current !== requestId) {
-          return;
+          return null;
         }
         setError(error instanceof Error ? error.message : 'Analysis failed');
         console.error(error);
+        return null;
       } finally {
         if (analysisRequestRef.current === requestId) {
           setAnalyzing(false);
