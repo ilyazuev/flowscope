@@ -248,7 +248,7 @@ export interface GraphViewFocusNodeProps {
   closeRequestKey?: number;
   showColumnEdges: boolean;
   focusSelectMode: FocusSelectMode;
-  onFocusSelectModeChange: (enabled: FocusSelectMode) => void;
+  onFocusSelectModeChange: (mode: FocusSelectMode, focusNodeId: string, selectedNodeId: string) => void;
 }
 
 export type FocusSelectMode = 'none' | 'column' | 'table';

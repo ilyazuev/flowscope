@@ -447,6 +447,8 @@ export function GraphView({
   // Focus mode - when enabled, only show nodes in the search lineage path
   const [focusMode, setFocusMode] = useState(false);
   const [focusSelectMode, setFocusSelectMode] = useState<FocusSelectMode>('none');
+  const lastFocusNodeIdRef = useRef<string|null>(null);
+  const lastSelectedNodeIdRef = useRef<string|null>(null);
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(lineageFocusNodeId);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
   const [internalFocusNodeRequestKey, setInternalFocusNodeRequestKey] = useState(0);
@@ -479,8 +481,14 @@ export function GraphView({
     setFocusMode(enabled);
   }, []);
 
-  const handleFocusSelectModeChange = useCallback((enabled: FocusSelectMode) => {
-    setFocusSelectMode(enabled);
+  const handleFocusSelectModeChange = useCallback((
+    mode: FocusSelectMode, focusNodeId: string, selectedNodeId: string
+  ) => {
+    setFocusSelectMode(mode);
+    if(mode != 'none') {
+      lastFocusNodeIdRef.current = focusNodeId;
+      lastSelectedNodeIdRef.current = selectedNodeId;
+    }
   }, []);
 
   const lineageNodeMapRef = useRef<Map<string, LineageNode>>(new Map());
@@ -657,6 +665,8 @@ export function GraphView({
     setIsBuilding,
   ]);
 
+  const lastSelectedNodeId = lastSelectedNodeIdRef.current;
+
   // Apply filtering (focus mode, table filter, namespace filter) and compute highlights
   const { filteredGraph, highlightIds } = useGraphFiltering({
     graph: builtGraph,
@@ -666,6 +676,7 @@ export function GraphView({
     showColumnEdges,
     focusMode,
     focusSelectMode,
+    lastSelectedNodeId,
     tableFilter,
     namespaceFilter,
   });
@@ -734,6 +745,8 @@ export function GraphView({
 
   useEffect(() => {
     if (focusSelectMode == 'none') {
+      lastFocusNodeIdRef.current = null;
+      lastSelectedNodeIdRef.current = null;
       return;
     }
 
@@ -1307,8 +1320,8 @@ export function GraphView({
           {viewMode !== 'script' && analysisResult && (
             <GraphViewFocusNode
               analysisResult={analysisResult}
-              focusNodeId={effectiveFocusNodeId}
-              selectedNodeId={selectedNodeId}
+              focusNodeId={lastFocusNodeIdRef.current ?? effectiveFocusNodeId}
+              selectedNodeId={lastSelectedNodeIdRef.current ?? selectedNodeId}
               onSelectNode={handleFocusNodeSelect}
               closeRequestKey={focusNodeCloseRequestKey}
               showColumnEdges={showColumnEdges}

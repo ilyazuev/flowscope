@@ -30,6 +30,7 @@ export interface UseGraphFilteringOptions {
   /** Whether focus mode is enabled */
   focusMode: boolean;
   focusSelectMode: FocusSelectMode;
+  lastSelectedNodeId: string | null;
   /** Table filter configuration */
   tableFilter: TableFilter;
   /** Namespace filter configuration - filter by schema/database */
@@ -59,6 +60,7 @@ export function useGraphFiltering(options: UseGraphFilteringOptions): UseGraphFi
     showColumnEdges = false,
     focusMode,
     focusSelectMode,
+    lastSelectedNodeId,
     tableFilter,
     namespaceFilter,
   } = options;
@@ -83,8 +85,13 @@ export function useGraphFiltering(options: UseGraphFilteringOptions): UseGraphFi
 
     // Collect highlight IDs from selection and search matches
     let highlightIds = new Set<string>();
-
-    if (selectedNodeId) {
+    
+    if (
+      focusSelectMode != 'none' &&
+      lastSelectedNodeId
+    ) {
+      highlightIds = findConnectedElementsIndexed(lastSelectedNodeId, graphIndex);
+    } else if (selectedNodeId) {
       highlightIds = findConnectedElementsIndexed(selectedNodeId, graphIndex);
     }
 

@@ -186,11 +186,18 @@ export function GraphViewFocusNode({
       <ToolbarDivider />
       <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
         <DropdownMenu open={openFocusNodes} onOpenChange={setOpenFocusNodes}>
-          <DropdownMenuTrigger asChild className="max-w-[34 0px]">
+          <DropdownMenuTrigger
+            asChild
+            className="max-w-[34 0px]"
+            disabled={focusSelectMode != 'none'}
+          >
             <button
               className={cn(
                 'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
-                'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                (focusSelectMode != 'none'
+                  ? 'text-gray-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                )
               )}
             >
               <span className="truncate">
@@ -250,11 +257,18 @@ export function GraphViewFocusNode({
       {showColumnEdges && (
         <div className={`${PANEL_STYLES.container} px-1.5 transition-all duration-200`}>
           <DropdownMenu open={openSelectNodes} onOpenChange={setOpenSelectNodes}>
-            <DropdownMenuTrigger asChild className="max-w-[300px]">
+            <DropdownMenuTrigger
+              asChild
+              className="max-w-[300px]"
+              disabled={focusSelectMode != 'none'}
+            >
               <button
                 className={cn(
                   'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
-                  'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  (focusSelectMode != 'none'
+                    ? 'text-gray-400'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  )
                 )}
               >
                 <span className="truncate">
@@ -346,19 +360,21 @@ export function GraphViewFocusNode({
           <GraphTooltipTrigger asChild>
             <button
               onClick={() => {
-                if (internalFocusNodeId) {
+                if (internalFocusNodeId && selectedNodeId) {
                   onFocusSelectModeChange?.(
                     focusSelectMode == 'none'
                       ? 'column'
                       : focusSelectMode == 'column'
                         ? 'table'
-                        : 'none'
+                        : 'none',
+                    internalFocusNodeId,
+                    selectedNodeId
                   );
                 }
               }}
               className={cn(
                 'self-center flex size-6 items-center justify-center rounded-full transition-colors duration-200',
-                internalFocusNodeId
+                internalFocusNodeId && selectedNodeId
                   ? `bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 ${focusSelectMode == 'none' 
                     ? 'text-slate-700' : focusSelectMode == 'column' ? 'text-red-600' : 'text-orange-500'}`
                   : 'text-slate-400'
