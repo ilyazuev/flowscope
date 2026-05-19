@@ -492,22 +492,25 @@ export function EditorArea({
     sql?: string,
     sqlName?: string
   ): boolean => {
-    if (!editedParameters && activeFile.parameters?.valid) {
-      const sqlParameters = sql
-        ? extractKnownSqlParamsInSqlOrder(sql, activeFile.parameters.parameters)
-        : activeFile.parameters.parameters;
-      if (sqlParameters) {
-        const keys = Object.keys(sqlParameters);
-        if (keys.length === 0) {
-          return false;
-        }
-        setNeedParameters(true);
-        setParameters(sqlParameters);
-        runSqlName.current = sqlName ?? 'SQL';
-        return true;
-      }
+    if (editedParameters) {
+      return false;
     }
-    return false;
+
+    const sqlParameters = extractKnownSqlParamsInSqlOrder(
+      sql ?? activeFile.content,
+      activeFile.parameters?.parameters,
+      currentProject?.dialect
+    );
+
+    const keys = Object.keys(sqlParameters);
+    if (keys.length === 0) {
+      return false;
+    }
+
+    setNeedParameters(true);
+    setParameters(sqlParameters);
+    runSqlName.current = sqlName ?? 'SQL';
+    return true;
   };
 
   const lastExecuteSql = useRef(true);
@@ -557,6 +560,7 @@ export function EditorArea({
     },
     [
       activeFile,
+      currentProject?.dialect,
       runExecuteSql,
       setDataLoadingError,
       clearErrors,

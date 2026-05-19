@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { byteOffsetToCharOffset } from '@pondpilot/flowscope-core';
-import type { SqlParameters } from '@/lib/project-store.tsx';
+import type { Dialect, SqlParameters } from '@/lib/project-store.tsx';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -140,32 +140,79 @@ export function stripSqlComments(sql: string): string {
   return result;
 }
 
-export function extractSqlParams(sql: string): Set<string> {
+function isMysqlDialect(dialect?: Dialect): boolean {
+  return (dialect ?? '').toLowerCase() === 'mysql';
+}
+
+export function extractSqlParams(sql: string, dialect?: Dialect): Set<string> {
   const params = new Set<string>();
 
   let i = 0;
   const len = sql.length;
 
-  let state: 'code' | 'line' | 'block' | 'string' = 'code';
+  let state: 'code' | 'line' | 'block' | 'single' | 'double' | 'backtick' | 'bracket' | 'dollar' = 'code';
   let blockDepth = 0;
+  let dollarTag = '';
 
-  const isIdentStart = (c: string | undefined) => !!c && /[A-Za-z_]/.test(c);
+  const mysql = isMysqlDialect(dialect);
 
-  const isIdentPart = (c: string | undefined) => !!c && /[A-Za-z0-9_]/.test(c);
+  const isIdentPart = (c?: string) => !!c && /[A-Za-z0-9_]/.test(c);
+
+  const readIdent = (start: number): { value: string; end: number } | null => {
+    if (!isIdentPart(sql[start])) return null;
+
+    let end = start + 1;
+    while (end < len && isIdentPart(sql[end])) end++;
+
+    return { value: sql.slice(start, end), end };
+  };
+
+  const readDottedIdent = (start: number): { value: string; end: number } | null => {
+    const first = readIdent(start);
+    if (!first) return null;
+
+    let value = first.value;
+    let end = first.end;
+
+    while (sql[end] === '.') {
+      const next = readIdent(end + 1);
+      if (!next) break;
+
+      value += `.${next.value}`;
+      end = next.end;
+    }
+
+    return { value, end };
+  };
+
+  const readDollarTag = (start: number): string | null => {
+    if (sql[start] !== '$') return null;
+
+    let end = start + 1;
+    while (end < len && /[A-Za-z0-9_]/.test(sql[end])) end++;
+
+    if (sql[end] !== '$') return null;
+
+    return sql.slice(start, end + 1);
+  };
 
   while (i < len) {
     const char = sql[i];
     const next = sql[i + 1];
 
     if (state === 'code') {
-      // line comment
       if (char === '-' && next === '-') {
         state = 'line';
         i += 2;
         continue;
       }
 
-      // block comment, supports nesting
+      if (mysql && char === '#') {
+        state = 'line';
+        i++;
+        continue;
+      }
+
       if (char === '/' && next === '*') {
         state = 'block';
         blockDepth = 1;
@@ -173,24 +220,76 @@ export function extractSqlParams(sql: string): Set<string> {
         continue;
       }
 
-      // string literal
       if (char === "'") {
-        state = 'string';
+        state = 'single';
         i++;
         continue;
       }
 
-      // named bind param :param
-      // ignore :: cast/operator forms
-      if (char === ':' && next !== ':' && isIdentStart(next)) {
-        const prev = i > 0 ? sql[i - 1] : '';
+      if (char === '"') {
+        state = 'double';
+        i++;
+        continue;
+      }
 
-        // extra safety: do not match second colon in ::
-        if (prev !== ':') {
-          let j = i + 1;
-          while (j < len && isIdentPart(sql[j])) j++;
-          params.add(sql.slice(i + 1, j));
-          i = j;
+      if (char === '`') {
+        state = 'backtick';
+        i++;
+        continue;
+      }
+
+      if (char === '[') {
+        state = 'bracket';
+        i++;
+        continue;
+      }
+
+      if (char === '$') {
+        const tag = readDollarTag(i);
+        if (tag) {
+          state = 'dollar';
+          dollarTag = tag;
+          i += tag.length;
+          continue;
+        }
+      }
+
+      // :PARAM_1 and :PARAM_1:
+      // Avoid PostgreSQL casts/operators: ::, :=, and the second ':' in '::'.
+      if (char === ':' && next !== ':' && next !== '=' && sql[i - 1] !== ':') {
+        const ident = readIdent(i + 1);
+
+        if (ident) {
+          const baseKey = `:${ident.value}`;
+          const hasTrailingColon = sql[ident.end] === ':' && sql[ident.end + 1] !== ':';
+          const key = hasTrailingColon ? `${baseKey}:` : baseKey;
+
+          params.add(key);
+          i = ident.end + (hasTrailingColon ? 1 : 0);
+          continue;
+        }
+      }
+
+      // &PARAM_1 and &&PARAM_1
+      if (char === '&') {
+        const prefix = next === '&' ? '&&' : '&';
+        const ident = readIdent(i + prefix.length);
+
+        if (ident) {
+          params.add(`${prefix}${ident.value}`);
+          i = ident.end;
+          continue;
+        }
+      }
+
+      // #PARAM_1# and #GROUP_1.PARAM_1# are intentionally disabled for MySQL,
+      // because '#' is a MySQL line-comment introducer.
+      if (!mysql && char === '#') {
+        const ident = readDottedIdent(i + 1);
+
+        if (ident && sql[ident.end] === '#') {
+          params.add(`#${ident.value}#`);
+          i = ident.end + 1;
           continue;
         }
       }
@@ -227,8 +326,7 @@ export function extractSqlParams(sql: string): Set<string> {
       continue;
     }
 
-    if (state === 'string') {
-      // escaped quote in SQL: ''
+    if (state === 'single') {
       if (char === "'" && next === "'") {
         i += 2;
         continue;
@@ -236,6 +334,60 @@ export function extractSqlParams(sql: string): Set<string> {
 
       if (char === "'") {
         state = 'code';
+      }
+
+      i++;
+      continue;
+    }
+
+    if (state === 'double') {
+      if (char === '"' && next === '"') {
+        i += 2;
+        continue;
+      }
+
+      if (char === '"') {
+        state = 'code';
+      }
+
+      i++;
+      continue;
+    }
+
+    if (state === 'backtick') {
+      if (char === '`' && next === '`') {
+        i += 2;
+        continue;
+      }
+
+      if (char === '`') {
+        state = 'code';
+      }
+
+      i++;
+      continue;
+    }
+
+    if (state === 'bracket') {
+      if (char === ']' && next === ']') {
+        i += 2;
+        continue;
+      }
+
+      if (char === ']') {
+        state = 'code';
+      }
+
+      i++;
+      continue;
+    }
+
+    if (state === 'dollar') {
+      if (dollarTag && sql.startsWith(dollarTag, i)) {
+        i += dollarTag.length;
+        dollarTag = '';
+        state = 'code';
+        continue;
       }
 
       i++;
@@ -245,132 +397,14 @@ export function extractSqlParams(sql: string): Set<string> {
   return params;
 }
 
-// noinspection JSUnusedGlobalSymbols
-export function filterParamsUsedInSql(sql: string, editedParameters: SqlParameters): SqlParameters {
-  const usedParams = extractSqlParams(sql);
-
-  return Object.fromEntries(
-    Object.entries(editedParameters).filter(([key]) => usedParams.has(key))
-  );
-}
-
 export function extractKnownSqlParamsInSqlOrder(
   sql: string,
-  editedParameters: SqlParameters
+  cachedValues?: SqlParameters,
+  dialect?: Dialect
 ): SqlParameters {
-  const keys = Object.keys(editedParameters);
-  if (keys.length === 0) return {};
-
-  const allowed = new Set(keys as string[]);
-  const foundKeys: Array<keyof SqlParameters> = [];
-
-  let i = 0;
-  const len = sql.length;
-
-  let state: 'code' | 'line' | 'block' | 'string' = 'code';
-  let blockDepth = 0;
-
-  const isIdentStart = (c: string | undefined) => !!c && /[A-Za-z_]/.test(c);
-
-  const isIdentPart = (c: string | undefined) => !!c && /[A-Za-z0-9_]/.test(c);
-
-  while (i < len) {
-    const char = sql[i];
-    const next = sql[i + 1];
-
-    if (state === 'code') {
-      // -- line comment
-      if (char === '-' && next === '-') {
-        state = 'line';
-        i += 2;
-        continue;
-      }
-
-      // /* block comment */ (nested)
-      if (char === '/' && next === '*') {
-        state = 'block';
-        blockDepth = 1;
-        i += 2;
-        continue;
-      }
-
-      // 'string literal'
-      if (char === "'") {
-        state = 'string';
-        i++;
-        continue;
-      }
-
-      // :param detection (only from allowed set)
-      if (char === ':' && next !== ':' && isIdentStart(next)) {
-        const prev = i > 0 ? sql[i - 1] : '';
-
-        if (prev !== ':') {
-          let j = i + 1;
-          while (j < len && isIdentPart(sql[j])) j++;
-
-          const paramWithColon = sql.slice(i, j);
-
-          if (allowed.has(paramWithColon as string)) {
-            foundKeys.push(paramWithColon);
-            allowed.delete(paramWithColon as string);
-          }
-
-          i = j;
-          continue;
-        }
-      }
-
-      i++;
-      continue;
-    }
-
-    if (state === 'line') {
-      if (char === '\n') {
-        state = 'code';
-      }
-      i++;
-      continue;
-    }
-
-    if (state === 'block') {
-      if (char === '/' && next === '*') {
-        blockDepth++;
-        i += 2;
-        continue;
-      }
-
-      if (char === '*' && next === '/') {
-        blockDepth--;
-        i += 2;
-        if (blockDepth === 0) {
-          state = 'code';
-        }
-        continue;
-      }
-
-      i++;
-      continue;
-    }
-
-    if (state === 'string') {
-      if (char === "'" && next === "'") {
-        i += 2;
-        continue;
-      }
-
-      if (char === "'") {
-        state = 'code';
-      }
-
-      i++;
-    }
-  }
-
   const result = {} as SqlParameters;
-  for (const key of foundKeys) {
-    result[key] = editedParameters[key];
+  for (const key of extractSqlParams(sql, dialect)) {
+    result[key] = cachedValues?.[key] ?? '';
   }
-
   return result;
 }
