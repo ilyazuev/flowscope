@@ -349,6 +349,7 @@ function nextLineStart(text: string, pos: number): number | null {
  */
 export function findCteAtPosition(text: string, pos: number): CteAtPosition | null {
   if (pos < 0 || pos > text.length) return null;
+  const processedCtes: Set<string> = new Set()
 
   for (let lineFrom = lineStartAt(text, pos); lineFrom >= 0; ) {
     const lineTo = text.indexOf("\n", lineFrom);
@@ -358,14 +359,17 @@ export function findCteAtPosition(text: string, pos: number): CteAtPosition | nu
     if (!/^\s*--/.test(lineText)) {
       const parsed = parseCteAt(text, lineFrom);
       if (parsed) {
-        if (parsed.bodyOpen <= pos && pos <= parsed.bodyClose) {
+        if (parsed.nameFrom <= pos && pos <= parsed.bodyClose) {
           return {
             ...parsed,
             from: lineFrom,
             to: parsed.bodyClose + 1,
           };
+        } else if( processedCtes.has(parsed.name) ) {
+          return null;
+        } else {
+          processedCtes.add(parsed.name);
         }
-
         // Keep scanning upward if a nested expression looked like `alias AS (...)`.
         // The containing CTE header may be earlier in the document.
       }

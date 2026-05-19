@@ -83,9 +83,8 @@ export function EditorArea({
 
   // SQL view mode toggle: 'template' shows original templated SQL, 'resolved' shows compiled SQL
   const [sqlViewMode, setSqlViewMode] = useState<SqlViewMode>('template');
-
   const [revealInLineageError, setRevealInLineageError] = useState<string | null>(null);
-
+  const [sqlExecutionError, setSqlExecutionError] = useState<string | null>(null);
   const [analysisSnapshot, setAnalysisSnapshot] = useState<AnalysisSnapshot | null>(null);
 
   const createAnalysisSnapshot = useCallback(
@@ -115,8 +114,6 @@ export function EditorArea({
   const {
     isDataLoading,
     setDataLoading,
-    dataLoadingError,
-    setDataLoadingError,
     runExecuteSql,
     parameters,
     setParameters,
@@ -141,13 +138,14 @@ export function EditorArea({
 
   // Show error toast when error occurs
   useEffect(() => {
-    if (dataLoadingError) {
-      toast.error('Data Loading Error', {
-        description: dataLoadingError,
+    if (sqlExecutionError) {
+      toast.error('SQL Execution Error', {
+        description: sqlExecutionError,
         duration: 5000,
       });
+      setSqlExecutionError(null);
     }
-  }, [dataLoadingError, setDataLoadingError]);
+  }, [sqlExecutionError, setSqlExecutionError]);
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -320,9 +318,9 @@ export function EditorArea({
 
   const clearErrors = useCallback(() => {
     setError(null);
-    setDataLoadingError(null);
+    setSqlExecutionError(null);
     setRevealInLineageError(null);
-  }, [setError, setDataLoadingError]);
+  }, [setError, setRevealInLineageError, setSqlExecutionError]);
 
   const handleAnalyze = useCallback(() => {
     clearErrors();
@@ -542,7 +540,7 @@ export function EditorArea({
 
         const cte = findCteAtPosition(activeFile.content, selection.head);
         if (!cte) {
-          setDataLoadingError('No CTE found under cursor.');
+          setSqlExecutionError('No CTE found under cursor.');
           return;
         }
 
@@ -562,7 +560,7 @@ export function EditorArea({
       activeFile,
       currentProject?.dialect,
       runExecuteSql,
-      setDataLoadingError,
+      setSqlExecutionError,
       clearErrors,
     ]
   );
