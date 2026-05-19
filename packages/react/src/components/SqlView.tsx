@@ -124,6 +124,7 @@ export interface SqlViewSelection {
 
 export type SqlViewRef = {
   getSelection: () => SqlViewSelection | undefined;
+  focus: () => void;
 };
 
 function ToolbarDivider(): JSX.Element {
@@ -251,6 +252,9 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             }
           : undefined;
       },
+      focus: () => {
+        editorRef.current?.view?.focus();
+      }
     }));
 
     const bookmarkExtension = useBookmarkExtension();

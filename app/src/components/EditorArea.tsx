@@ -123,7 +123,16 @@ export function EditorArea({
 
   const { getResult } = useAnalysisStore();
 
-  const sqlViewRef = useRef<{ getSelection: () => SqlViewSelection | undefined }>(null);
+  const sqlViewRef = useRef<{
+    getSelection: () => SqlViewSelection | undefined;
+    focus: () => void;
+  }>(null);
+
+  const focusSqlView = useCallback(() => {
+    requestAnimationFrame(() => {
+      sqlViewRef.current?.focus();
+    });
+  }, []);
 
   // Show error toast when error occurs
   useEffect(() => {
@@ -585,7 +594,7 @@ export function EditorArea({
         doExecuteSql(lastExecuteSql.current, editedParameters);
       }
     },
-    [activeFile, doExecuteSql]
+    [activeFile, doExecuteSql, updateFileParameters]
   );
 
   // Keyboard shortcuts for running analysis
@@ -713,6 +722,11 @@ export function EditorArea({
           open={needParameters}
           onOpenChange={(open: boolean, ok?: boolean) => {
             setNeedParameters(open);
+
+            if (!open) {
+              focusSqlView();
+            }
+
             if (!ok) {
               setDataLoading(SqlPartType.none);
             }
