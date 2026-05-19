@@ -266,13 +266,37 @@ function readBalancedParenGroup(
  *
  * Returns the body paren range if it is a CTE header.
  */
-function parseCteAt(text: string, pos: number): { bodyOpen: number; bodyClose: number } | null {
+export type ParsedCte = {
+  /** CTE identifier as it appears in SQL; keep quotes for executable SQL. */
+  name: string;
+  nameFrom: number;
+  nameTo: number;
+  bodyOpen: number;
+  bodyClose: number;
+};
+
+export function parseCteAt(text: string, pos: number): ParsedCte | null {
   let i = skipWhitespaceAndComments(text, pos);
+
+  // Allow parsing from the beginning of a WITH clause and from comma-prefixed
+  // continuation lines: WITH cte AS (...), , cte AS (...)
+  const afterWith = readKeyword(text, i, "WITH");
+  if (afterWith != null) {
+    i = skipWhitespaceAndComments(text, afterWith);
+
+    const afterRecursive = readKeyword(text, i, "RECURSIVE");
+    if (afterRecursive != null) {
+      i = skipWhitespaceAndComments(text, afterRecursive);
+    }
+  } else if (text[i] === ",") {
+    i = skipWhitespaceAndComments(text, i + 1);
+  }
 
   // CTE name
   const name = readIdentifier(text, i);
   if (!name) return null;
   i = name.to;
+  const cteName = text.slice(name.from, name.to);
 
   i = skipWhitespaceAndComments(text, i);
 
@@ -296,9 +320,90 @@ function parseCteAt(text: string, pos: number): { bodyOpen: number; bodyClose: n
   if (!body) return null;
 
   return {
+    name: cteName,
+    nameFrom: name.from,
+    nameTo: name.to,
     bodyOpen: body.from,
     bodyClose: body.to - 1,
   };
+}
+
+export type CteAtPosition = ParsedCte & {
+  from: number;
+  to: number;
+};
+
+function lineStartAt(text: string, pos: number): number {
+  const prevNewline = text.lastIndexOf("\n", Math.max(0, pos - 1));
+  return prevNewline + 1;
+}
+
+function nextLineStart(text: string, pos: number): number | null {
+  const nextNewline = text.indexOf("\n", pos);
+  return nextNewline === -1 ? null : nextNewline + 1;
+}
+
+/**
+ * Finds a CTE whose body contains `pos`, using the same text parser as folding.
+ * Does not depend on lineage/backend AST, so it also works when the graph is stale.
+ */
+export function findCteAtPosition(text: string, pos: number): CteAtPosition | null {
+  if (pos < 0 || pos > text.length) return null;
+
+  for (let lineFrom = lineStartAt(text, pos); lineFrom >= 0; ) {
+    const lineTo = text.indexOf("\n", lineFrom);
+    const currentLineTo = lineTo === -1 ? text.length : lineTo;
+    const lineText = text.slice(lineFrom, currentLineTo);
+
+    if (!/^\s*--/.test(lineText)) {
+      const parsed = parseCteAt(text, lineFrom);
+      if (parsed) {
+        if (parsed.bodyOpen <= pos && pos <= parsed.bodyClose) {
+          return {
+            ...parsed,
+            from: lineFrom,
+            to: parsed.bodyClose + 1,
+          };
+        }
+
+        // Keep scanning upward if a nested expression looked like `alias AS (...)`.
+        // The containing CTE header may be earlier in the document.
+      }
+    }
+
+    if (lineFrom === 0) break;
+    lineFrom = lineStartAt(text, lineFrom - 1);
+  }
+
+  // Fallback for one-line CTE headers after cursor movement edge-cases.
+  for (let lineFrom = 0; lineFrom < text.length; ) {
+    const lineTo = text.indexOf("\n", lineFrom);
+    const currentLineTo = lineTo === -1 ? text.length : lineTo;
+    const lineText = text.slice(lineFrom, currentLineTo);
+
+    if (!/^\s*--/.test(lineText)) {
+      const parsed = parseCteAt(text, lineFrom);
+      if (parsed) {
+        if (parsed.bodyOpen <= pos && pos <= parsed.bodyClose) {
+          return {
+            ...parsed,
+            from: lineFrom,
+            to: parsed.bodyClose + 1,
+          };
+        }
+      }
+    }
+
+    const next = nextLineStart(text, lineFrom);
+    if (next == null) break;
+    lineFrom = next;
+  }
+
+  return null;
+}
+
+export function buildExecutableSqlForCte(text: string, cte: CteAtPosition): string {
+  return `${text.slice(0, cte.bodyClose)}\n)\nSELECT * FROM ${cte.name}`;
 }
 
 /**

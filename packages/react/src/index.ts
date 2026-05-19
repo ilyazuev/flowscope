@@ -5,6 +5,7 @@ export { ToolbarButton } from './components/ToolbarButton';
 export type { SqlViewSelection } from './components/SqlView';
 export { ColumnPanel } from './components/ColumnPanel';
 export { openDescribeWindow } from './components/FloatingDescribe';
+export { buildExecutableSqlForCte, findCteAtPosition } from './components/SqlView.SqlCteFolding';
 export { IssuesPanel } from './components/IssuesPanel';
 export { LineageExplorer } from './components/LineageExplorer';
 export { SchemaView } from './components/SchemaView';

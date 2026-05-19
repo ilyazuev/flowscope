@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
-import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, } from '@pondpilot/flowscope-react';
+import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, buildExecutableSqlForCte, findCteAtPosition, } from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
 import { backendParsed, Dialect, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
@@ -533,62 +533,33 @@ export function EditorArea({
           void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
         }
       } else {
-        if (!activeProjectId || !selection) {
+        if (!selection) {
           return;
         }
-        if (isGraphOutOfSync) {
-          setError('Graph is stale. Re-run analysis before run CTE.');
+
+        const cte = findCteAtPosition(activeFile.content, selection.head);
+        if (!cte) {
+          setDataLoadingError('No CTE found under cursor.');
           return;
         }
-        const result = getResult(activeProjectId, hideCTEs);
-        if (!result) {
-          setDataLoadingError('No Lineage Data: need to parse SQL before execution.');
-          return;
+
+        const sql = buildExecutableSqlForCte(activeFile.content, cte);
+        if (!needParametersForSql(activeFile, editedParameters, sql, `CTE: ${cte.name}`)) {
+          void runExecuteSql(
+            sql,
+            activeFile.path,
+            editedParameters,
+            SqlPartType.cte,
+            cte.name
+          );
         }
-        for (const statement of result.statements) {
-          const activeSourceName = activeFile.path || activeFile.name;
-          if (statement.sourceName === activeSourceName || statement.sourceName === activeFile.name) {
-            for (const node of statement.nodes) {
-              if (
-                node.type == 'cte' &&
-                node.label &&
-                node.bodySpan &&
-                node.bodySpan.start <= selection.head &&
-                selection.head <= node.bodySpan.end
-              ) {
-                const sql =
-                  activeFile.content.substring(0, node.bodySpan.end + 1) +
-                  `\n)\nSELECT * FROM ${node.label}`;
-                if (
-                  !needParametersForSql(activeFile, editedParameters, sql, `CTE: ${node.label}`)
-                ) {
-                  void runExecuteSql(
-                    sql,
-                    activeFile.path,
-                    editedParameters,
-                    SqlPartType.cte,
-                    node.label
-                  );
-                }
-                return;
-              }
-            }
-            break;
-          }
-        }
-        setDataLoadingError('No CTE found under cursor.');
       }
     },
     [
       activeFile,
-      activeProjectId,
       runExecuteSql,
-      getResult,
-      hideCTEs,
       setDataLoadingError,
       clearErrors,
-      isGraphOutOfSync,
-      setError,
     ]
   );
 
@@ -631,11 +602,6 @@ export function EditorArea({
         shift: true,
         handler: handleAnalyzeActiveOnly,
       },
-      // {
-      //   key: 'Enter',
-      //   cmdOrCtrl: true,
-      //   handler: handleExecuteSql,
-      // },
       {
         key: 'Enter',
         cmdOrCtrl: true,
