@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Loader2, Play } from 'lucide-react';
 import { SqlView } from './SqlView';
 import type { Dialect } from '@pondpilot/flowscope-core';
@@ -14,11 +14,12 @@ import {
   ResizablePanelGroup,
 } from '@pondpilot/flowscope-app/src/components/ui/resizable';
 import { resolveTheme, useThemeStore } from '@pondpilot/flowscope-app/src/lib/theme-store';
-import type { SqlParameters } from '@pondpilot/flowscope-app/src/lib/project-store';
+import { SqlParameters } from '@pondpilot/flowscope-app/src/lib/project-store';
 import { SqlPartType } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import type { WindowManagerApi } from './floating-window';
 import { Button } from './ui/button';
 import { modKey } from '@pondpilot/flowscope-app/src/lib/shortcuts';
+import { extractKnownSqlParamsInSqlOrder } from '@pondpilot/flowscope-app/src/lib/utils';
 
 export type SchemaPreviewTableData = {
   catalog?: string;
@@ -27,11 +28,6 @@ export type SchemaPreviewTableData = {
   columns?: Array<{
     name: string;
   }>;
-};
-
-type CachedFloatingParameters = {
-  sql: string;
-  parameters: SqlParameters;
 };
 
 interface FloatingSQLProps {
@@ -200,8 +196,7 @@ export function FloatingSQL(props: FloatingSQLProps) {
 
 function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
   const [sql, setSql] = useState(initialSql);
-  const [cachedParameters, setCachedParameters] =
-    useState<CachedFloatingParameters | null>(null);
+  const cachedParameters = useRef<SqlParameters | null>(null);
 
   const theme = useThemeStore((state) => state.theme);
   const isDark = resolveTheme(theme) === 'dark';
@@ -210,60 +205,56 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
     runExecuteSql,
     isDataLoading,
     needParameters,
-    parameters,
     setNeedParameters,
     setDataLoading,
   } = useSharedDataLoad();
 
   const isRunning = isDataLoading !== SqlPartType.none;
 
-  const parametersForCurrentSql = useMemo(() => {
-    if (!cachedParameters || cachedParameters.sql !== sql) {
-      return undefined;
+  const needParametersForSql = (
+    sql: string,
+    editedParameters?: SqlParameters,
+  ): boolean => {
+    if (editedParameters) {
+      return false;
     }
-
-    return cachedParameters.parameters;
-  }, [cachedParameters, sql]);
+    const sqlParameters = extractKnownSqlParamsInSqlOrder(sql, cachedParameters.current, dialect);
+    const keys = Object.keys(sqlParameters);
+    if (keys.length === 0) {
+      return false;
+    }
+    if( !cachedParameters.current ) {
+      cachedParameters.current = {};
+    }
+    for (const key of keys) {
+      if( !cachedParameters.current[key] ) {
+        cachedParameters.current[key] = '';
+      }
+    }
+    setNeedParameters(true);
+    return true;
+  };
 
   const runSql = useCallback(
-    (params?: SqlParameters) => {
-      void runExecuteSql(sql, title, params, SqlPartType.sql);
+    (editedParameters?: SqlParameters) => {
+      if ( !needParametersForSql(sql, editedParameters ) ) {
+        void runExecuteSql(sql, title, editedParameters, SqlPartType.sql);
+      }
     },
     [runExecuteSql, sql, title]
   );
 
   const handleRunSql = useCallback(() => {
-    runSql(parametersForCurrentSql);
-  }, [runSql, parametersForCurrentSql]);
+    runSql();
+  }, [runSql]);
 
   const handleUseParameters = useCallback(
     (editedParameters: SqlParameters) => {
-      setCachedParameters({
-        sql,
-        parameters: editedParameters,
-      });
-
+      cachedParameters.current = editedParameters;
       runSql(editedParameters);
     },
     [runSql, sql]
   );
-
-  const inputParameters = useMemo(() => {
-    if (!parameters) {
-      return undefined;
-    }
-
-    if (!parametersForCurrentSql) {
-      return parameters;
-    }
-
-    return Object.fromEntries(
-      Object.entries(parameters).map(([key, value]) => [
-        key,
-        parametersForCurrentSql[key] ?? value,
-      ])
-    );
-  }, [parameters, parametersForCurrentSql]);
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background">
@@ -308,7 +299,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {inputParameters && (
+      {cachedParameters.current && Object.keys(cachedParameters.current).length && (
         <SqlParametersEditor
           open={needParameters}
           onOpenChange={(open: boolean, ok?: boolean) => {
@@ -320,7 +311,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
           }}
           onRunSql={handleUseParameters}
           runSqlName={title}
-          inputParameters={inputParameters}
+          inputParameters={cachedParameters.current}
         />
       )}
     </div>

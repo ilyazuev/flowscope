@@ -81,7 +81,7 @@ export function SqlParametersEditor({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col z-10000000">
         <DialogHeader>
           <DialogTitle>Variables</DialogTitle>
           <DialogDescription>

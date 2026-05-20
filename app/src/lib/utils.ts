@@ -399,7 +399,7 @@ export function extractSqlParams(sql: string, dialect?: Dialect): Set<string> {
 
 export function extractKnownSqlParamsInSqlOrder(
   sql: string,
-  cachedValues?: SqlParameters,
+  cachedValues?: SqlParameters | null,
   dialect?: Dialect
 ): SqlParameters {
   const result = {} as SqlParameters;
