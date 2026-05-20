@@ -1,9 +1,8 @@
-
-
 Flowscope Enterprise Edition ?
 Flowscope Lineage Platform ?
 
-lineage frontend 
+-----------------------------------------------------------------------------------------
+Flowscope Enterprise Edition - наш Frontend для Вашего backend
 
 Flowscope Enterprise Edition представляет собой платформу для построения графовых структур.
 
@@ -62,6 +61,10 @@ Road map
 - возможность подгрузки узлов lineage, например, для углубления во Views
 - множественный поиск
 - загрузка и визуализация пользовательских форм и графов для анализа
+- анализ и работа с DBT проектами
+- AI-powered chat
+- Lint
+- Intellisence
 
 
 
