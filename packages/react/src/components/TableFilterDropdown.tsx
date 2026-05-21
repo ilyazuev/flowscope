@@ -11,7 +11,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowLeftRight,
-  Check,
+  Check, Table,
 } from 'lucide-react';
 import { cn } from './ui/button';
 import { useLineageStore } from '../store';
@@ -189,7 +189,8 @@ export function TableFilterDropdown(): JSX.Element | null {
           aria-expanded={isOpen}
         >
           <Filter className="size-4" strokeWidth={hasActiveFilter ? 2.5 : 1.5} />
-          <span>Tables</span>
+          <Table className="size-4" strokeWidth={1.5} />
+          {/*<span>Tables</span>*/}
           {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
         </button>
       </div>

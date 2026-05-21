@@ -2,7 +2,7 @@ Flowscope Enterprise Edition ?
 Flowscope Lineage Platform ?
 
 -----------------------------------------------------------------------------------------
-Flowscope Enterprise Edition - наш Frontend для Вашего backend
+Flowscope Enterprise Edition - наш Frontend для Вашего Backend
 
 Flowscope Enterprise Edition представляет собой платформу для построения графовых структур.
 
@@ -61,6 +61,9 @@ Road map
 - возможность подгрузки узлов lineage, например, для углубления во Views
 - множественный поиск
 - загрузка и визуализация пользовательских форм и графов для анализа
+	- ING-Diba: Interactive BCBS Lineage (reports & business terms hierarchy)
+	- ING-Diba: iDAF Lineage ( modern design in Flowscope Enterprise Edition )
+	- ING-Diba: IGC Lineage
 - анализ и работа с DBT проектами
 - AI-powered chat
 - Lint

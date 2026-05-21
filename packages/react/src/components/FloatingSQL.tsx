@@ -220,7 +220,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
       return false;
     }
     foundInSqlParameters.current = extractKnownSqlParamsInSqlOrder(sql, cachedParameters.current, dialect);
-    if (Object.keys(foundInSqlParameters.current).length === 0) {
+    if ( !foundInSqlParameters.current || Object.keys(foundInSqlParameters.current).length === 0) {
       return false;
     }
     setNeedParameters(true);

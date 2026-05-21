@@ -1268,7 +1268,7 @@ export function GraphView({
         <FitViewHandler trigger={fitViewTrigger} />
         <Background />
         <Controls />
-        <Panel position="top-left" className="flex gap-3 items-start">
+        <Panel position="top-left" className="flex gap-1 items-start flex-wrap">
           <ViewModeSelector />
           {viewMode === 'script' && (
             <ToolbarToggleButton
@@ -1330,7 +1330,7 @@ export function GraphView({
             />
           )}
         </Panel>
-        <Panel position="top-right" className="flex gap-3 items-start">
+        <Panel position="top-right" className="flex gap-1 items-start">
           <Legend viewMode={viewMode} />
           <LayoutSelector />
         </Panel>

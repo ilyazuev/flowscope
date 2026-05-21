@@ -654,6 +654,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
               setEditorView(view);
               updateToolbarState(view);
               updateStatusState(view);
+              view?.focus();
             }}
             extensions={extensions}
             editable={editable}

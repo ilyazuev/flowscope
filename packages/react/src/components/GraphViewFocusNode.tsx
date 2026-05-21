@@ -406,7 +406,7 @@ export function GraphViewFocusNode({
                 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               )}
             >
-              <span className="truncate">Last focused</span>
+              <span className="truncate">Last</span>
               <ChevronDown className="size-4 opacity-50 shrink-0" />
             </button>
           </DropdownMenuTrigger>
@@ -414,8 +414,8 @@ export function GraphViewFocusNode({
           <DropdownMenuContent className="max-w-[450px] p-0 flex flex-col gap-1" align="start">
             <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
               <ul className="pl-4 list-disc text-sm font-medium text-slate-900 dark:text-slate-100">
-                <li>Focus on the last selected table or CTE</li>
-                <li>Select the last selected column (without focusing).</li>
+                <li>Focus last table/CTE</li>
+                <li>Select last column (without focusing).</li>
               </ul>
             </div>
 
