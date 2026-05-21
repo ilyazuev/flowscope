@@ -406,7 +406,7 @@ export function GraphViewFocusNode({
                 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               )}
             >
-              <span className="truncate">Last</span>
+              <span className="truncate">Recent</span>
               <ChevronDown className="size-4 opacity-50 shrink-0" />
             </button>
           </DropdownMenuTrigger>

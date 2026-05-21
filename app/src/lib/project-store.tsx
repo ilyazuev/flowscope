@@ -698,10 +698,43 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       setProjects((prev) =>
         prev.map((p) => {
           if (p.id !== activeProjectId) return p;
+
+          const updatedFiles = [...p.files];
+          let firstImportedFileId: string | null = null;
+
+          for (const newFile of newFiles) {
+            const existingIndex = updatedFiles.findIndex(
+              (file) => file.path === newFile.path || file.name === newFile.name
+            );
+
+            if (existingIndex === -1) {
+              updatedFiles.push(newFile);
+              firstImportedFileId ??= newFile.id;
+            } else {
+              const existingFile = updatedFiles[existingIndex];
+
+              updatedFiles[existingIndex] = {
+                ...existingFile,
+                name: newFile.name,
+                path: newFile.path,
+                content: newFile.content,
+                language: newFile.language,
+                parameters: existingFile.parameters
+                  ? {
+                    parameters: existingFile.parameters.parameters,
+                    valid: false,
+                  }
+                  : undefined,
+              };
+
+              firstImportedFileId ??= existingFile.id;
+            }
+          }
+
           return {
             ...p,
-            files: [...p.files, ...newFiles],
-            activeFileId: newFiles[0]?.id || p.activeFileId,
+            files: updatedFiles,
+            activeFileId: firstImportedFileId || p.activeFileId,
           };
         })
       );
