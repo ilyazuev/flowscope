@@ -20,6 +20,8 @@ const WINDOW_SHADOWS = {
   },
 } as const;
 
+export const windowShadows = (isDark: boolean, isTopmost: boolean = true) =>
+  WINDOW_SHADOWS[isDark ? 'dark' : 'light'][isTopmost ? 'active' : 'inactive'];
 
 function getScaleAnchor(
   item: FloatingWindowProps['item'],
@@ -104,7 +106,7 @@ export function FloatingWindow({
             transform: `translate3d(${item.x}px, ${item.y}px, 0)`,
             willChange: 'transform',
             contain: 'layout style',
-            boxShadow: WINDOW_SHADOWS[isDark ? 'dark' : 'light'][isTopmost ? 'active' : 'inactive'],
+            boxShadow: windowShadows(isDark, isTopmost),
             borderTopRightRadius: '5%',
             borderTopLeftRadius: '5%',
             borderBottomLeftRadius: '5%',

@@ -720,13 +720,12 @@ export function EditorArea({
       {currentProject && parameters && (
         <SqlParametersEditor
           open={needParameters}
+          isDark={isDark}
           onOpenChange={(open: boolean, ok?: boolean) => {
             setNeedParameters(open);
-
             if (!open) {
               focusSqlView();
             }
-
             if (!ok) {
               setDataLoading(SqlPartType.none);
             }

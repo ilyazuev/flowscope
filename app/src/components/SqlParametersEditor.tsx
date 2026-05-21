@@ -10,6 +10,7 @@ import {
 import { Button } from './ui/button';
 import { SqlParameters } from '@/lib/project-store.tsx';
 import { GlobalShortcut, useGlobalShortcuts } from '@/hooks';
+import { windowShadows } from '@pondpilot/flowscope-react';
 
 interface SqlParametersEditorProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface SqlParametersEditorProps {
   inputParameters: SqlParameters;
   onRunSql: (editedParameters: SqlParameters) => void;
   runSqlName?: string | null;
+  isDark: boolean;
 }
 
 export function SqlParametersEditor({
@@ -25,6 +27,7 @@ export function SqlParametersEditor({
   inputParameters,
   onRunSql,
   runSqlName,
+  isDark,
 }: SqlParametersEditorProps) {
   const [editedParameters, setEditedParameters] = useState<SqlParameters>(inputParameters);
 
@@ -67,12 +70,12 @@ export function SqlParametersEditor({
     () =>
       open
         ? [
-          {
-            key: 'Enter',
-            handler: handleSave,
-            allowInInput: true,
-          },
-        ]
+            {
+              key: 'Enter',
+              handler: handleSave,
+              allowInInput: true,
+            },
+          ]
         : [],
     [open, handleSave]
   );
@@ -81,7 +84,7 @@ export function SqlParametersEditor({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col z-10000000">
+      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col z-10000000" style={{boxShadow: windowShadows(isDark)}}>
         <DialogHeader>
           <DialogTitle>Variables</DialogTitle>
           <DialogDescription>

@@ -12,6 +12,7 @@ export { SchemaView } from './components/SchemaView';
 export { ViewModeSelector } from './components/ViewModeSelector';
 export { LayoutSelector } from './components/LayoutSelector';
 export { FloatingWindowsProvider, useFloatingWindows, getFloatingWindowManager } from './components/floating-window/FloatingWindowsProvider';
+export { windowShadows } from './components/floating-window/FloatingWindow';
 export { useWindowManager } from './components/floating-window/useWindowManager';
 export type { WindowManagerApi } from './components/floating-window/types';
 export type { WindowId } from './components/floating-window/index';

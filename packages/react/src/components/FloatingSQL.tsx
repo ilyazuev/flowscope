@@ -197,6 +197,7 @@ export function FloatingSQL(props: FloatingSQLProps) {
 function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
   const [sql, setSql] = useState(initialSql);
   const cachedParameters = useRef<SqlParameters | null>(null);
+  const foundInSqlParameters = useRef<SqlParameters | null>(null);
 
   const theme = useThemeStore((state) => state.theme);
   const isDark = resolveTheme(theme) === 'dark';
@@ -218,18 +219,9 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
     if (editedParameters) {
       return false;
     }
-    const sqlParameters = extractKnownSqlParamsInSqlOrder(sql, cachedParameters.current, dialect);
-    const keys = Object.keys(sqlParameters);
-    if (keys.length === 0) {
+    foundInSqlParameters.current = extractKnownSqlParamsInSqlOrder(sql, cachedParameters.current, dialect);
+    if (Object.keys(foundInSqlParameters.current).length === 0) {
       return false;
-    }
-    if( !cachedParameters.current ) {
-      cachedParameters.current = {};
-    }
-    for (const key of keys) {
-      if( !cachedParameters.current[key] ) {
-        cachedParameters.current[key] = '';
-      }
     }
     setNeedParameters(true);
     return true;
@@ -250,7 +242,14 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
 
   const handleUseParameters = useCallback(
     (editedParameters: SqlParameters) => {
-      cachedParameters.current = editedParameters;
+      if( !cachedParameters.current ) {
+        cachedParameters.current = {};
+      }
+      for (const key of Object.keys(editedParameters)) {
+        if( !cachedParameters.current[key] ) {
+          cachedParameters.current[key] = editedParameters[key];
+        }
+      }
       runSql(editedParameters);
     },
     [runSql, sql]
@@ -299,9 +298,10 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {cachedParameters.current && Object.keys(cachedParameters.current).length && (
+      {foundInSqlParameters.current && Object.keys(foundInSqlParameters.current).length && (
         <SqlParametersEditor
           open={needParameters}
+          isDark={isDark}
           onOpenChange={(open: boolean, ok?: boolean) => {
             setNeedParameters(open);
 
@@ -311,7 +311,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
           }}
           onRunSql={handleUseParameters}
           runSqlName={title}
-          inputParameters={cachedParameters.current}
+          inputParameters={foundInSqlParameters.current}
         />
       )}
     </div>
