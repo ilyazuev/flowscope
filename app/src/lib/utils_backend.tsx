@@ -12,8 +12,26 @@ import type { ColumnInfoSchema } from '@pondpilot/flowscope-core';
 
 const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
 
+function base64UrlEncodeUtf8Json(payload: unknown): string {
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
 function encodePayloadContent<T>(payload?: T) {
-  return payload ? encodeURIComponent(btoa(JSON.stringify(payload))) : '';
+  return payload ? base64UrlEncodeUtf8Json(payload) : '';
 }
 
 function backendUsecasePath<T>(backendEndpoint: string, payload?: T) {
