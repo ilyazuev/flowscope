@@ -278,7 +278,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
     const extensions = useMemo(
       () => [
-        runShortcutExtension,
+        runShortcutExtension, // EditorState.lineSeparator.of('\n'),
         sql({
           upperCaseKeywords: true,
         }),
@@ -411,10 +411,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       }
       const sql = view.state.sliceDoc();
       view.dispatch({
-        selection: EditorSelection.create([
-          EditorSelection.range(0, sql.length - 1),
-          EditorSelection.cursor(sql.length - 1)
-        ], 1)
+        selection: EditorSelection.single(0, sql.replace(/\r\n?/g, '\n').length), // selection: EditorSelection.create([EditorSelection.range(0, sql.length - 1), EditorSelection.cursor(sql.length - 1) ], 1)
       });
 
     }, [editorView]);

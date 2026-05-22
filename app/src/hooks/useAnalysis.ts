@@ -401,8 +401,11 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
           actionsRef.current.setSql(activeFileContent);
         }
 
+        const backendParsedDialect = backendParsed(currentProject.dialect);
         const adapterPayload: AnalysisPayload = {
-          files: context.files,
+          files: backendParsedDialect
+            ? context.files.map((f) => ({...f, content: f.content.replace(/\r\n?/g, '\n')}))
+            : context.files,
           dialect: currentProject.dialect,
           schemaSQL: currentProject.schemaSQL ?? '',
           hideCTEs,
@@ -418,7 +421,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
 
         let analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>>;
         let fileSyncRetries = 0;
-        if (backendParsed(currentProject.dialect)) {
+        if (backendParsedDialect) {
           if( !columnInfoSchema ) {
             const columnInfoSchemaResponse = await loadGenericForms();
             if( columnInfoSchemaResponse ) {
@@ -510,7 +513,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
           schemaSQL: currentProject.schemaSQL ?? '',
           hideCTEs,
           templateMode: currentProject.templateMode,
-          runMode: backendParsed(currentProject.dialect)
+          runMode: backendParsedDialect
             ? 'current'
             : (options?.runModeOverride ?? currentProject.runMode),
         };
