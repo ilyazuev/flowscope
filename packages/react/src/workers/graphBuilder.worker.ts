@@ -13,7 +13,7 @@ import {
   GlobalLineage,
   GlobalNode,
   FilterPredicate,
-  AggregationInfo, ResolvedColumnSchema, ResolvedSchemaTable, Dialect,
+  AggregationInfo, ResolvedColumnSchema, ResolvedSchemaTable, Dialect, Span,
 } from '@pondpilot/flowscope-core';
 import { isTableLikeType } from '@pondpilot/flowscope-core';
 import { GRAPH_CONFIG, JOIN_TYPE_LABELS } from '../constants';
@@ -48,6 +48,8 @@ export interface SerializedTableNodeData extends Record<string, unknown> {
   comment?: string;
   schemaTable?: ResolvedSchemaTable;
   dialect?: Dialect;
+  spans?: Span[];
+  bodySpan?: Span;
   isRecursive?: boolean;
   columns: SerializedColumnInfo[];
   isSelected: boolean;
@@ -374,6 +376,8 @@ function buildTableNodeData(
     comment: node.comment,
     schemaTable: schemaTable || undefined,
     dialect: schemaTable ? dialect: undefined,
+    spans: node.spans,
+    bodySpan: node.bodySpan,
     nodeType,
     columns,
     isSelected: node.id === options.selectedNodeId,

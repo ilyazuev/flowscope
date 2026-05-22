@@ -340,6 +340,8 @@ export interface TableNodeData extends Record<string, unknown> {
   comment?: string;
   schemaTable?: ResolvedSchemaTable;
   dialect?: Dialect;
+  spans?: Span[];
+  bodySpan?: Span;
   /** Type of node: regular table, view, CTE, or virtual output */
   nodeType: 'table' | 'view' | 'cte' | 'virtualOutput';
   /** Whether this CTE is recursive (self-referential) */

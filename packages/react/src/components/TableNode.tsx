@@ -1,4 +1,4 @@
-import { memo, type JSX, type CSSProperties, useCallback, type ReactElement } from 'react';
+import { memo, type JSX, type CSSProperties, useCallback, type ReactElement, useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { List } from 'react-window';
@@ -8,7 +8,7 @@ import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
-import { Database, DatabaseSearch, StickyNote } from 'lucide-react';
+import { Database, DatabaseSearch, SearchCode, StickyNote } from 'lucide-react';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { useFloatingWindows } from './floating-window';
@@ -364,6 +364,21 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
     }
   }, [windowManager, nodeData.schemaTable]);
 
+  const spans = [];
+  if( nodeData.bodySpan ) {
+    spans.push(nodeData.bodySpan);
+  }
+  if( nodeData.spans ) {
+    spans.push(...nodeData.spans);
+  }
+  const [currentSpanIndex, setCurrentSpanIndex] = useState(1);
+  const handleSearchInText = useCallback(() => {
+    if( !spans.length ) {
+      return;
+    }
+    setCurrentSpanIndex((prev) => prev < spans.length ? prev + 1 : 1 );
+  }, [spans]);
+  
   return (
     <div
       onClick={() => {
@@ -520,6 +535,29 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             {sanitizeIdentifier(nodeData.label)}
           </div>
         </div>
+        {spans.length && (
+          <div className={'flex rounded-full items-center bg-slate-200 dark:bg-slate-900'}>
+            <button
+              type="button"
+              className={cn(
+                'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+                'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+                'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+              )}
+              aria-label="Search in text"
+              title="Search in text"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleSearchInText();
+              }}
+            >
+              <SearchCode size={14} style={{ opacity: 0.75 }} />
+            </button>
+            <span className={'pr-3'}>
+              {currentSpanIndex}/{spans.length}
+            </span>
+          </div>
+        )}
         {nodeData.schemaTable && backendParsed(nodeData?.dialect) && (
           <div className={'flex'}>
             <button
