@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { List } from 'react-window';
 import { useLineageActions, useLineageStore } from '../store';
-import type { TableNodeData, ColumnNodeInfo } from '../types';
+import { TableNodeData, ColumnNodeInfo, Span } from '../types';
 import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
@@ -288,7 +288,7 @@ function getNodeHeaderLabel(nodeData: TableNodeData, isVirtualOutput: boolean): 
 }
 
 function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
-  const { toggleNodeCollapse, toggleTableExpansion, selectNode } = useLineageActions();
+  const { toggleNodeCollapse, toggleTableExpansion, selectNode, highlightSpan, requestNavigation } = useLineageActions();
   // Use derived selector to avoid new Set reference on each render
   const isExpanded = useLineageStore((state) => state.expandedTableIds.has(id));
   const showColumnEdges = useLineageStore((state) => state.showColumnEdges);
@@ -364,12 +364,9 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
     }
   }, [windowManager, nodeData.schemaTable]);
 
-  const spans = [];
-  if( nodeData.bodySpan ) {
-    spans.push(nodeData.bodySpan);
-  }
+  const spans: Span[] = []; // if( nodeData.bodySpan ) { spans.push(nodeData.bodySpan); }
   if( nodeData.spans ) {
-    spans.push(...nodeData.spans);
+    spans.push(...nodeData.spans); // .sort((n1,n2) => n1.start - n2.start)
   }
   const [currentSpanIndex, setCurrentSpanIndex] = useState(1);
   const handleSearchInText = useCallback(() => {
@@ -377,7 +374,17 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
       return;
     }
     setCurrentSpanIndex((prev) => prev < spans.length ? prev + 1 : 1 );
-  }, [spans]);
+    const span = spans[currentSpanIndex - 1];
+    highlightSpan(span);
+    if( nodeData.sourceName ) {
+      requestNavigation({
+        sourceName: nodeData.sourceName,
+        span: span,
+        targetName: sanitizeIdentifier(nodeData.label),
+        targetType: nodeData.nodeType,
+      });
+    }
+  }, [spans, currentSpanIndex, highlightSpan, requestNavigation]);
   
   return (
     <div
@@ -535,7 +542,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             {sanitizeIdentifier(nodeData.label)}
           </div>
         </div>
-        {spans.length && (
+        {spans.length > 0 && (
           <div className={'flex rounded-full items-center bg-slate-200 dark:bg-slate-900'}>
             <button
               type="button"

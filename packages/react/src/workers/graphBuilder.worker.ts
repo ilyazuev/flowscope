@@ -356,6 +356,7 @@ function buildTableNodeData(
   options: TableNodeBuilderOptions,
   globalNodeMap?: Map<string, GlobalNode>,
   dialect?: Dialect,
+  sourceName?: string,
 ): SerializedTableNodeData {
   let nodeType: 'table' | 'view' | 'cte' | 'virtualOutput' = 'table';
   if (node.type === 'cte') {
@@ -388,6 +389,7 @@ function buildTableNodeData(
     isBaseTable: options.isBaseTable,
     filters: node.filters,
     qualifiedName,
+    sourceName,
     schema: canonical?.schema,
     database: canonical?.catalog,
   };
@@ -516,6 +518,7 @@ function buildFlowNodes(
         },
         globalNodeMap,
         dialect,
+        statement.sourceName
       ),
     });
   }

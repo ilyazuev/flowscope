@@ -2,6 +2,7 @@ import { useState, type ReactNode, type JSX } from 'react';
 import { ChevronDown, ChevronUp, Table2, Database, FileCode, Columns3, Eye, BookOpenText } from 'lucide-react';
 import { COLORS, EDGE_STYLES, PANEL_STYLES } from '../constants';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { cn } from './ui/button';
 
 interface LegendProps {
   viewMode?: 'script' | 'table';
@@ -25,11 +26,13 @@ export function Legend({ viewMode = 'table' }: LegendProps): JSX.Element {
             <TooltipTrigger asChild>
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className={`
-						flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium
-						${isExpanded ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}
-					  `}
-                tooltip={'Legend'}
+                className={
+                  cn(`flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium`,
+                    isExpanded
+                      ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  )
+                }
               >
                 {/*<span>Legend</span>*/}
                 <BookOpenText className="size-4" strokeWidth={1.5} />

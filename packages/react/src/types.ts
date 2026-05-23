@@ -72,7 +72,7 @@ export interface NavigationRequest {
   sourceName: string;
   span?: Span;
   targetName?: string;
-  targetType?: 'table' | 'view' | 'cte' | 'column' | 'script';
+  targetType?: 'table' | 'view' | 'cte' | 'column' | 'script' | 'virtualOutput';
 }
 
 /**
