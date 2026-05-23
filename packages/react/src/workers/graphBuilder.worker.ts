@@ -378,7 +378,6 @@ function buildTableNodeData(
     schemaTable: schemaTable || undefined,
     dialect: schemaTable ? dialect: undefined,
     spans: node.spans,
-    bodySpan: node.bodySpan,
     nodeType,
     columns,
     isSelected: node.id === options.selectedNodeId,

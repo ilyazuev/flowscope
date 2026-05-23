@@ -364,17 +364,17 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
     }
   }, [windowManager, nodeData.schemaTable]);
 
-  const spans: Span[] = []; // if( nodeData.bodySpan ) { spans.push(nodeData.bodySpan); }
+  const spans: Span[] = [];
   if( nodeData.spans ) {
-    spans.push(...nodeData.spans); // .sort((n1,n2) => n1.start - n2.start)
+    spans.push(...nodeData.spans);
   }
   const [currentSpanIndex, setCurrentSpanIndex] = useState(1);
   const handleSearchInText = useCallback(() => {
     if( !spans.length ) {
       return;
     }
-    setCurrentSpanIndex((prev) => prev < spans.length ? prev + 1 : 1 );
     const span = spans[currentSpanIndex - 1];
+    setCurrentSpanIndex((prev) => prev < spans.length ? prev + 1 : 1 );
     highlightSpan(span);
     if( nodeData.sourceName ) {
       requestNavigation({
