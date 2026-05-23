@@ -1,4 +1,4 @@
-import { memo, type JSX, type CSSProperties, useCallback, type ReactElement, useState } from 'react';
+import { memo, type JSX, type CSSProperties, useCallback, type ReactElement, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { List } from 'react-window';
@@ -368,13 +368,13 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
   if( nodeData.spans ) {
     spans.push(...nodeData.spans);
   }
-  const [currentSpanIndex, setCurrentSpanIndex] = useState(1);
+  const currentSpanIndex = useRef(0);
   const handleSearchInText = useCallback(() => {
     if( !spans.length ) {
       return;
     }
-    const span = spans[currentSpanIndex - 1];
-    setCurrentSpanIndex((prev) => prev < spans.length ? prev + 1 : 1 );
+    const span = spans[currentSpanIndex.current];
+    currentSpanIndex.current = currentSpanIndex.current < spans.length - 1 ? currentSpanIndex.current + 1 : 0;
     highlightSpan(span);
     if( nodeData.sourceName ) {
       requestNavigation({
@@ -561,7 +561,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
               <SearchCode size={14} style={{ opacity: 0.75 }} />
             </button>
             <span className={'pr-3'}>
-              {currentSpanIndex}/{spans.length}
+              {spans.length}
             </span>
           </div>
         )}
