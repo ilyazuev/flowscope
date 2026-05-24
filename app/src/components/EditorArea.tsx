@@ -382,11 +382,16 @@ export function EditorArea({
       );
       return;
     }
+    const buffer: {
+      start: number;
+      end: number;
+      focusNodeId: string;
+      selectedNodeId?: string;
+    }[] = [];
     if (result.statements) {
       for (const statement of result.statements) {
         const activeSourceName = activeFile.path || activeFile.name;
         if (statement.sourceName === activeSourceName || statement.sourceName === activeFile.name) {
-          let nodeWithBodySpan = null;
           for (const node of statement.nodes) {
             if (node.spans) {
               for (const span of node.spans) {
@@ -394,32 +399,42 @@ export function EditorArea({
                   if (node.type == 'column') {
                     for (const edge of statement.edges) {
                       if (edge.to == node.id && edge.type == 'ownership') {
-                        onRevealInLineage(edge.from, node.id);
-                        return;
+                        buffer.push({
+                          start: span.start,
+                          end: span.end,
+                          focusNodeId: edge.from,
+                          selectedNodeId: node.id,
+                        });
                       }
                     }
-                    setRevealInLineageError('Column not found');
-                    return;
-                  } else if (node.type == 'output') {
-                    nodeWithBodySpan = node;
                   } else {
-                    onRevealInLineage(node.id);
-                    return;
+                    buffer.push({
+                      start: span.start,
+                      end: span.end,
+                      focusNodeId: node.id,
+                    });
                   }
                 }
               }
             }
             if (
-              !nodeWithBodySpan &&
               node.bodySpan &&
               node.bodySpan.start <= selection.head &&
               selection.head <= node.bodySpan.end
             ) {
-              nodeWithBodySpan = node;
+              buffer.push({
+                start: node.bodySpan.start,
+                end: node.bodySpan.end,
+                focusNodeId: node.id,
+              });
             }
           }
-          if (nodeWithBodySpan) {
-            onRevealInLineage(nodeWithBodySpan.id);
+          if( buffer.length > 0 ) {
+            const sorted = buffer.map(b=>({
+              ...b,
+              diff: b.end - b.start,
+            })).sort((a, b) => a.diff - b.diff);
+            onRevealInLineage(sorted[0].focusNodeId, sorted[0].selectedNodeId);
             return;
           }
         }

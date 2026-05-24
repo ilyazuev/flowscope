@@ -75,7 +75,6 @@ export function GraphViewFocusNode({
       const edge = analysisResult.globalLineage?.edges.find(
         (edge) => edge.to === selectedNodeId && edge.type == 'ownership'
       );
-      console.log(edge?.from);
       return edge?.from;
     } else if (focusNodeId) {
       return focusNodeId;
