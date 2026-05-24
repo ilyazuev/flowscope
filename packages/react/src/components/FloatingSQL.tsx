@@ -160,7 +160,7 @@ export function openFloatingSQLPreview({
                                          table,
                                          dialect,
                                        }: {
-  windowManager: WindowManagerApi;
+  windowManager: Pick<WindowManagerApi, 'openWindow'>;
   table: SchemaPreviewTableData;
   dialect: Dialect;
 }) {

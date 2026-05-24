@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SqlViewSelection } from '@pondpilot/flowscope-react';
+import type { SqlViewSelection, WindowManagerApi } from '@pondpilot/flowscope-react';
 import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, buildExecutableSqlForCte, findCteAtPosition, openFloatingSQLPreview } from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
@@ -428,7 +428,7 @@ export function EditorArea({
     setRevealInLineageError('Object not found');
   }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage, isGraphOutOfSync, getResult, hideCTEs,]);
 
-  const handleRunSqlPreview = useCallback(async () => {
+  const handleRunAction = useCallback((action: 'RunDescribe' | 'RunSqlPreview') => {
     clearErrors();
     if (
       !currentProject ||
@@ -440,42 +440,11 @@ export function EditorArea({
     ) {
       return;
     }
-    openFloatingSQLPreview({
-      windowManager,
-      dialect: currentProject.dialect,
-      table: {
-        catalog: 'SPTE',
-        schema: 'DWHKIT',
-        tableName: 'LINEAGE_TEST_ORDER_ITEM',
-      },
-    });
-  }, [
-    currentProject,
-    activeFile,
-    activeProjectId,
-    clearErrors,
-    windowManager,
-    isDark,
-    isGraphOutOfSync,
-    getResult,
-    hideCTEs,
-    setError,
-  ])
-
-  const handleRunDescribe = useCallback(async () => {
-    clearErrors();
-    if (
-      !currentProject ||
-      !backendParsed(currentProject.dialect) ||
-      !activeProjectId ||
-      !activeFile ||
-      !sqlViewRef.current ||
-      !activeFile.content
-    ) {
-      return;
-    }
+    const actionMessage = action == 'RunDescribe'
+      ? 'describing objects'
+      : 'preview sql';
     if (isGraphOutOfSync) {
-      setError('Graph is stale. Re-run analysis before describing objects.');
+      setError(`Graph is stale. Re-run analysis before ${actionMessage}.`);
       return;
     }
     const selection = sqlViewRef.current.getSelection();
@@ -484,16 +453,46 @@ export function EditorArea({
     }
     const result = getResult(activeProjectId, hideCTEs);
     if (!result) {
-      setError('No Lineage Data: need to parse SQL before describe database object.');
+      setError(`No Lineage Data: need to parse SQL before ${actionMessage}.`);
       return;
     }
     if (result.resolvedSchema) {
+      const openActionWindow = (
+        windowManager: Pick<WindowManagerApi, 'openWindow'>,
+        isDark: boolean,
+        dialect: Dialect,
+        tableName: string,
+        database?: string,
+        schema?: string,
+        columns?: Array<{
+          name: string;
+        }>,
+        columnName?: string,
+      ) => {
+        if( action == 'RunDescribe' ) {
+          void openDescribeWindow(
+            windowManager, isDark, tableName, database, schema, columnName);
+        } else if( action == 'RunSqlPreview' ) {
+          openFloatingSQLPreview({
+            windowManager,
+            dialect,
+            table: {
+              catalog: database,
+              schema,
+              tableName,
+              columns
+            }
+          });
+        }
+      }
       for (const table of result.resolvedSchema.tables) {
         if (table.spans) {
           for (const span of table.spans) {
             if (span.start <= selection.head && selection.head <= span.end) {
-              void openDescribeWindow(
-                windowManager, isDark, table.name, currentProject.database, table.schema);
+              void openActionWindow(windowManager, isDark,
+                currentProject.dialect, table.name, currentProject.database, table.schema,
+                action == 'RunSqlPreview' ? table.columns : undefined
+              );
               return;
             }
           }
@@ -503,8 +502,10 @@ export function EditorArea({
             if (column.spans) {
               for (const span of column.spans) {
                 if (span.start <= selection.head && selection.head <= span.end) {
-                  void openDescribeWindow(
-                    windowManager, isDark, table.name, currentProject.database, table.schema, column.name);
+                  void openActionWindow(windowManager, isDark,
+                    currentProject.dialect, table.name, currentProject.database, table.schema,
+                    action == 'RunSqlPreview' ? table.columns : undefined,
+                    column.name);
                   return;
                 }
               }
@@ -656,14 +657,14 @@ export function EditorArea({
       {
         key: 'F4',
         allowInInput: true,
-        handler: handleRunDescribe,
+        handler: () => handleRunAction('RunDescribe'),
       },
       {
         key: 'q',
         shift: true,
         cmdOrCtrl: true,
         allowInInput: true,
-        handler: handleRunSqlPreview,
+        handler: () => handleRunAction('RunSqlPreview'),
       },
       {
         key: 'q',
@@ -677,8 +678,6 @@ export function EditorArea({
       handleAnalyzeActiveOnly,
       handleExecuteSql,
       handleExecuteCte,
-      handleRunDescribe,
-      handleRunSqlPreview,
       handleRevealInLineage,
     ]
   );
@@ -718,8 +717,8 @@ export function EditorArea({
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}
         onExecuteCte={handleExecuteCte}
-        onRunDescribe={handleRunDescribe}
-        onRunSqlPreview={handleRunSqlPreview}
+        onRunDescribe={() => handleRunAction('RunDescribe')}
+        onRunSqlPreview={() => handleRunAction('RunSqlPreview')}
         onRevealInLineage={handleRevealInLineage}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
