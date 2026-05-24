@@ -327,6 +327,7 @@ export function buildFlowNodes(
           id: childNode.id,
           name: childNode.label,
           dataType: childNode.dataType,
+          spans: childNode.spans,
           comment: childNode.comment,
           info: childNode.info,
           expression: childNode.expression,

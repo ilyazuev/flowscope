@@ -390,6 +390,7 @@ export interface ColumnNodeInfo {
   sourceName?: string;
   /** Aggregation information if this column is aggregated or a grouping key */
   aggregation?: AggregationInfo;
+  spans?: Span[];
 }
 
 /**

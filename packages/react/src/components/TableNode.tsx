@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { List } from 'react-window';
 import { useLineageActions, useLineageStore } from '../store';
-import { TableNodeData, ColumnNodeInfo, Span } from '../types';
+import { TableNodeData, ColumnNodeInfo, Span, NavigationRequest } from '../types';
 import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
@@ -92,6 +92,7 @@ interface AriaAttributes {
 }
 
 interface ColumnRowProps {
+  sourceName?: string;
   col: ColumnNodeInfo;
   style?: CSSProperties;
   ariaAttributes?: AriaAttributes;
@@ -101,10 +102,69 @@ interface ColumnRowProps {
   textSecondary: string;
 }
 
+interface SpansProps {
+  spans?: Span[];
+  sourceName?: string;
+  name: string;
+  type: NavigationRequest['targetType'];
+}
+
+function Spans({
+  spans,
+  sourceName,
+  name,
+  type,
+}: SpansProps): JSX.Element | null {
+  if( !spans || spans.length == 0 ) {
+    return null;
+  }
+  const { highlightSpan, requestNavigation } = useLineageActions();
+  const currentSpanIndex = useRef(0);
+  const handleSearchInText = useCallback(() => {
+    if (!spans.length) {
+      return;
+    }
+    const span = spans[currentSpanIndex.current];
+    currentSpanIndex.current =
+      currentSpanIndex.current < spans.length - 1 ? currentSpanIndex.current + 1 : 0;
+    highlightSpan(span);
+    if (sourceName) {
+      requestNavigation({
+        sourceName: sourceName,
+        span: span,
+        targetName: sanitizeIdentifier(name),
+        targetType: type,
+      });
+    }
+  }, [spans, currentSpanIndex, highlightSpan, requestNavigation]);
+  return (
+    <div className={'flex rounded-full items-center bg-slate-200 dark:bg-slate-900'}>
+      <button
+        type="button"
+        className={cn(
+          'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
+          'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+          'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
+        )}
+        aria-label="Search in text"
+        title="Search in text"
+        onClick={(event) => {
+          event.stopPropagation();
+          handleSearchInText();
+        }}
+      >
+        <SearchCode size={14} style={{ opacity: 0.75 }} />
+      </button>
+      <span className={'pr-3'}>{spans.length}</span>
+    </div>
+  );
+}
+
 /**
  * Single column row component, extracted for virtualization support.
  */
 function ColumnRow({
+  sourceName,
   col,
   style,
   ariaAttributes,
@@ -163,6 +223,12 @@ function ColumnRow({
           {sanitizeIdentifier(col.name)}
         </span>
         <span style={{ flex: 1 }}></span>
+        <Spans
+          spans={col.spans}
+          sourceName={sourceName}
+          name={col.name}
+          type={'column'}
+        ></Spans>
         <AggregationIndicator aggregation={col.aggregation} colors={colors} />
         {col.dataType && (<span className={'pr-1 pl-1'}>{col.dataType}</span>)}
         {col.comment && (
@@ -288,7 +354,7 @@ function getNodeHeaderLabel(nodeData: TableNodeData, isVirtualOutput: boolean): 
 }
 
 function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
-  const { toggleNodeCollapse, toggleTableExpansion, selectNode, highlightSpan, requestNavigation } = useLineageActions();
+  const { toggleNodeCollapse, toggleTableExpansion, selectNode } = useLineageActions();
   // Use derived selector to avoid new Set reference on each render
   const isExpanded = useLineageStore((state) => state.expandedTableIds.has(id));
   const showColumnEdges = useLineageStore((state) => state.showColumnEdges);
@@ -363,28 +429,6 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
       });
     }
   }, [windowManager, nodeData.schemaTable]);
-
-  const spans: Span[] = [];
-  if( nodeData.spans ) {
-    spans.push(...nodeData.spans);
-  }
-  const currentSpanIndex = useRef(0);
-  const handleSearchInText = useCallback(() => {
-    if( !spans.length ) {
-      return;
-    }
-    const span = spans[currentSpanIndex.current];
-    currentSpanIndex.current = currentSpanIndex.current < spans.length - 1 ? currentSpanIndex.current + 1 : 0;
-    highlightSpan(span);
-    if( nodeData.sourceName ) {
-      requestNavigation({
-        sourceName: nodeData.sourceName,
-        span: span,
-        targetName: sanitizeIdentifier(nodeData.label),
-        targetType: nodeData.nodeType,
-      });
-    }
-  }, [spans, currentSpanIndex, highlightSpan, requestNavigation]);
   
   return (
     <div
@@ -542,29 +586,12 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             {sanitizeIdentifier(nodeData.label)}
           </div>
         </div>
-        {spans.length > 0 && (
-          <div className={'flex rounded-full items-center bg-slate-200 dark:bg-slate-900'}>
-            <button
-              type="button"
-              className={cn(
-                'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
-                'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-                'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
-              )}
-              aria-label="Search in text"
-              title="Search in text"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleSearchInText();
-              }}
-            >
-              <SearchCode size={14} style={{ opacity: 0.75 }} />
-            </button>
-            <span className={'pr-3'}>
-              {spans.length}
-            </span>
-          </div>
-        )}
+        <Spans
+          spans={nodeData.spans}
+          sourceName={nodeData.sourceName}
+          name={nodeData.label}
+          type={nodeData.nodeType}
+        ></Spans>
         {nodeData.schemaTable && backendParsed(nodeData?.dialect) && (
           <div className={'flex'}>
             <button
@@ -735,6 +762,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
             >
               {nodeData.columns.map((col: ColumnNodeInfo) => (
                 <ColumnRow
+                  sourceName={nodeData.sourceName}
                   key={col.id}
                   col={col}
                   showColumnEdges={showColumnEdges}

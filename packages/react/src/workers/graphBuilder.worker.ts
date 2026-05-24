@@ -36,6 +36,7 @@ export interface SerializedColumnInfo {
   isHighlighted?: boolean;
   sourceName?: string;
   aggregation?: AggregationInfo;
+  spans?: Span[];
 }
 
 /**
@@ -254,6 +255,7 @@ function processTableColumns(
       comment: col.comment,
       schemaColumn: col,
       expression: col.dataType,
+      spans: col.spans,
     }));
     return {
       columns: [...existingColumns, ...injectedColumns],
@@ -470,6 +472,7 @@ function buildFlowNodes(
           info: childNode.info,
           expression: childNode.expression,
           aggregation: childNode.aggregation,
+          spans: childNode.spans,
         });
         tableColumnMap.set(parentNode.id, cols);
         ownedColumnIds.add(childNode.id);
@@ -544,6 +547,7 @@ function buildFlowNodes(
       info: col.info,
       expression: col.expression,
       aggregation: col.aggregation,
+      spans: col.spans,
     }));
 
   if (isSelect && (outputNode || outputColumns.length > 0)) {

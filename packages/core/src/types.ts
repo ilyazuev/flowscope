@@ -182,6 +182,7 @@ export interface ColumnSchema {
   isPrimaryKey?: boolean;
   /** Foreign key reference if this column references another table */
   foreignKey?: ForeignKeyRef;
+  spans?: Span[];
 }
 
 /** A foreign key reference to another table's column. */

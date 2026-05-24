@@ -85,6 +85,7 @@ export async function parseSchemaSQL(
             dataType: col.dataType,
             foreignKey: col.foreignKey,
             isPrimaryKey: col.isPrimaryKey,
+            spans: col.spans,
           })),
         });
       }
