@@ -844,7 +844,7 @@ export const TableNode = memo(TableNodeComponent, (prev, next) => {
   if (prevData.isSelected !== nextData.isSelected) return false;
   if (prevData.isHighlighted !== nextData.isHighlighted) return false;
   if (prevData.label !== nextData.label) return false;
-  if (prevData.comment !== nextData.comment) return false;
+  if (prevData.comment !== nextData.comment) return false; // if ((prevData.spans??[]).map(s=>s.start).join('.') !== (nextData.spans??[]).map(s=>s.start).join('.')) return false;
   if (prevData.schemaTable !== nextData.schemaTable) return false;
   if (prevData.nodeType !== nextData.nodeType) return false;
   if (prevData.schema !== nextData.schema) return false;

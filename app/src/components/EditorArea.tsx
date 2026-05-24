@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection } from '@pondpilot/flowscope-react';
-import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, buildExecutableSqlForCte, findCteAtPosition, } from '@pondpilot/flowscope-react';
+import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, buildExecutableSqlForCte, findCteAtPosition, openFloatingSQLPreview } from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
 import { backendParsed, Dialect, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
@@ -428,6 +428,40 @@ export function EditorArea({
     setRevealInLineageError('Object not found');
   }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage, isGraphOutOfSync, getResult, hideCTEs,]);
 
+  const handleRunSqlPreview = useCallback(async () => {
+    clearErrors();
+    if (
+      !currentProject ||
+      !backendParsed(currentProject.dialect) ||
+      !activeProjectId ||
+      !activeFile ||
+      !sqlViewRef.current ||
+      !activeFile.content
+    ) {
+      return;
+    }
+    openFloatingSQLPreview({
+      windowManager,
+      dialect: currentProject.dialect,
+      table: {
+        catalog: 'SPTE',
+        schema: 'DWHKIT',
+        tableName: 'LINEAGE_TEST_ORDER_ITEM',
+      },
+    });
+  }, [
+    currentProject,
+    activeFile,
+    activeProjectId,
+    clearErrors,
+    windowManager,
+    isDark,
+    isGraphOutOfSync,
+    getResult,
+    hideCTEs,
+    setError,
+  ])
+
   const handleRunDescribe = useCallback(async () => {
     clearErrors();
     if (
@@ -626,6 +660,13 @@ export function EditorArea({
       },
       {
         key: 'q',
+        shift: true,
+        cmdOrCtrl: true,
+        allowInInput: true,
+        handler: handleRunSqlPreview,
+      },
+      {
+        key: 'q',
         cmdOrCtrl: true,
         allowInInput: true,
         handler: handleRevealInLineage,
@@ -637,6 +678,7 @@ export function EditorArea({
       handleExecuteSql,
       handleExecuteCte,
       handleRunDescribe,
+      handleRunSqlPreview,
       handleRevealInLineage,
     ]
   );
@@ -677,6 +719,7 @@ export function EditorArea({
         onExecuteSql={handleExecuteSql}
         onExecuteCte={handleExecuteCte}
         onRunDescribe={handleRunDescribe}
+        onRunSqlPreview={handleRunSqlPreview}
         onRevealInLineage={handleRevealInLineage}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
