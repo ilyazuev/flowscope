@@ -171,6 +171,7 @@ export interface SchemaTable {
   name: string;
   comment?: string;
   columns?: ColumnSchema[];
+  spans?: Span[]
 }
 
 export interface ColumnSchema {

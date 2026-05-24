@@ -1,14 +1,14 @@
-import { memo, type JSX, type CSSProperties, useCallback, type ReactElement, useRef } from 'react';
+import { memo, type JSX, type CSSProperties, useCallback, type ReactElement } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { List } from 'react-window';
 import { useLineageActions, useLineageStore } from '../store';
-import { TableNodeData, ColumnNodeInfo, Span, NavigationRequest } from '../types';
+import { TableNodeData, ColumnNodeInfo } from '../types';
 import { sanitizeIdentifier } from '../utils/sanitize';
 import { GRAPH_CONFIG, MAX_FILTER_DISPLAY_LENGTH, getNamespaceColor } from '../constants';
 import { useColors, useIsDarkMode } from '../hooks/useColors';
 import type { AggregationInfo } from '@pondpilot/flowscope-core';
-import { Database, DatabaseSearch, SearchCode, StickyNote } from 'lucide-react';
+import { Database, DatabaseSearch, StickyNote } from 'lucide-react';
 import { ClickableTooltip } from '@pondpilot/flowscope-app/src/components/ui/popover';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import { useFloatingWindows } from './floating-window';
@@ -17,6 +17,7 @@ import { ColumnInfoForm } from './ColumnInfoForm';
 import { openFloatingSQLPreview } from './FloatingSQL';
 import { openDescribeWindow } from './FloatingDescribe';
 import { backendParsed, useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
+import { Spans } from './Spans';
 
 // Virtualization thresholds
 const COLUMN_VIRTUALIZATION_THRESHOLD = 200000;
@@ -100,64 +101,6 @@ interface ColumnRowProps {
   onSelectColumn: (id: string) => void;
   colors: ReturnType<typeof useColors>;
   textSecondary: string;
-}
-
-interface SpansProps {
-  spans?: Span[];
-  sourceName?: string;
-  name: string;
-  type: NavigationRequest['targetType'];
-}
-
-function Spans({
-  spans,
-  sourceName,
-  name,
-  type,
-}: SpansProps): JSX.Element | null {
-  if( !spans || spans.length == 0 ) {
-    return null;
-  }
-  const { highlightSpan, requestNavigation } = useLineageActions();
-  const currentSpanIndex = useRef(0);
-  const handleSearchInText = useCallback(() => {
-    if (!spans.length) {
-      return;
-    }
-    const span = spans[currentSpanIndex.current];
-    currentSpanIndex.current =
-      currentSpanIndex.current < spans.length - 1 ? currentSpanIndex.current + 1 : 0;
-    highlightSpan(span);
-    if (sourceName) {
-      requestNavigation({
-        sourceName: sourceName,
-        span: span,
-        targetName: sanitizeIdentifier(name),
-        targetType: type,
-      });
-    }
-  }, [spans, currentSpanIndex, highlightSpan, requestNavigation]);
-  return (
-    <div className={'flex rounded-full items-center bg-slate-200 dark:bg-slate-900'}>
-      <button
-        type="button"
-        className={cn(
-          'nodrag self-center flex size-6 shrink-0 items-center justify-center rounded-full border-transparent outline-none transition-colors duration-200',
-          'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-          'dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
-        )}
-        aria-label="Search in text"
-        title="Search in text"
-        onClick={(event) => {
-          event.stopPropagation();
-          handleSearchInText();
-        }}
-      >
-        <SearchCode size={14} style={{ opacity: 0.75 }} />
-      </button>
-      <span className={'pr-3'}>{spans.length}</span>
-    </div>
-  );
 }
 
 /**

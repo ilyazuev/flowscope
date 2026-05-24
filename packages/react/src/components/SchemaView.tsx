@@ -53,7 +53,8 @@ import { useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-co
 import { openFloatingSQLPreview } from './FloatingSQL';
 import type { Dialect } from '@pondpilot/flowscope-core';
 import { openDescribeWindow } from './FloatingDescribe';
-import { backendParsed } from '@pondpilot/flowscope-app/src/lib/project-store';
+import { backendParsed, useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
+import { Spans } from './Spans';
 
 // ============================================================================
 // Types
@@ -82,6 +83,7 @@ interface SchemaTableNodeData extends Record<string, unknown> {
   isHighlighted?: boolean;
   highlightedColumns?: string[];
   dialect: Dialect;
+  spans?: Span[];
 }
 
 type LayoutDirection = 'TB' | 'LR';
@@ -268,6 +270,8 @@ function getSchemaLayoutedElements(
 const SchemaTableNodeComponent = ({
   data,
 }: NodeProps<FlowNode<SchemaTableNodeData>>): JSX.Element => {
+  const {currentProject} = useProject();
+  const activeFile = currentProject?.files.find((f) => f.id === currentProject.activeFileId);
   const {columnInfoSchema} = useGenericForm();
   const isDark = useIsDarkMode();
   const paletteKey = data.origin === 'imported' ? 'imported' : 'cte';
@@ -355,6 +359,12 @@ const SchemaTableNodeComponent = ({
         >
           {fullName}
         </span>
+        <Spans
+          spans={data.spans}
+          sourceName={activeFile.path || activeFile.name}
+          name={fullName}
+          type={data.nodeType}
+        ></Spans>
         {backendParsed(data.dialect) && (
           <div className={'flex'}>
             <button
@@ -452,7 +462,12 @@ const SchemaTableNodeComponent = ({
                 >
                   {col.name}
                 </span>
-
+                <Spans
+                  spans={col.spans}
+                  sourceName={activeFile.path || activeFile.name}
+                  name={col.name}
+                  type={'column'}
+                ></Spans>
                 {/* Data type with icon */}
                 {col.dataType && (
                   <span
@@ -975,6 +990,7 @@ export function buildSchemaFlowNodes(
         schema: table.schema,
         label: table.name,
         comment: table.comment,
+        spans: table.spans,
         columns: getColumnsWithConstraintMetadata(table),
         origin: isResolvedSchemaTable(table) ? table.origin : undefined,
         nodeType: 'table',
