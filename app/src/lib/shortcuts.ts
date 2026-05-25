@@ -330,6 +330,16 @@ export const SHORTCUTS: ShortcutDefinition[] = [
     context: 'global',
   },
   {
+    id: 'previewSql',
+    key: 'q',
+    cmdOrCtrl: true,
+    shift: true,
+    label: 'Preview Sql Object',
+    description: 'Preview Sql Object under cursor',
+    category: 'actions',
+    context: 'global',
+  },
+  {
     id: 'reveal',
     key: 'q',
     cmdOrCtrl: true,

@@ -188,7 +188,9 @@ export function EditorToolbar({
                   >
                     <span>Preview Sql Object under cursor</span>
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                      <span className="text-xs">Shift + F4</span>
+                      <span className="text-xs">{modKey()}</span>
+                      <span className="text-xs">Shift</span>
+                      <span className="text-xs">Q</span>
                     </kbd>
                   </div>
                   <div
