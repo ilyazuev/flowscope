@@ -1,7 +1,8 @@
 import { Loader2 } from 'lucide-react';
-import type { JSX } from 'react';
+import { JSX, useEffect } from 'react';
 import { useLineageStore } from '../store';
 import { PANEL_STYLES } from '../constants';
+import { acquireBodyWaitCursor } from '../utils/body-cursor';
 
 /**
  * Loading indicator shown during graph building and layout computation.
@@ -14,6 +15,12 @@ export function LayoutProgressIndicator(): JSX.Element | null {
   const isBuilding = useLineageStore((state) => state.isBuilding);
 
   const isLoading = isBuilding || isLayouting;
+
+  useEffect(() => {
+    if (!isLoading) return;
+
+    return acquireBodyWaitCursor();
+  }, [isLoading]);
 
   if (!isLoading) return null;
 

@@ -2,7 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SqlViewSelection, WindowManagerApi } from '@pondpilot/flowscope-react';
-import { SqlView, useLineageState, useFloatingWindows, openDescribeWindow, buildExecutableSqlForCte, findCteAtPosition, openFloatingSQLPreview } from '@pondpilot/flowscope-react';
+import {
+  SqlView,
+  useLineageState,
+  useFloatingWindows,
+  openDescribeWindow,
+  buildExecutableSqlForCte,
+  findCteAtPosition,
+  openFloatingSQLPreview,
+  acquireBodyWaitCursor
+} from '@pondpilot/flowscope-react';
 import { useThemeStore, resolveTheme } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
 import { backendParsed, Dialect, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
@@ -286,8 +295,8 @@ export function EditorArea({
       const sourceName = file.path || file.name;
       const analyzedText = analysisSnapshot.filesBySourceName[sourceName];
 
-      // Файл не участвовал в прошлом analysis run.
-      // Сам по себе он не инвалидирует результат, пока не стал activeFile.
+      // The file was not included in the previous analysis run.
+      // On its own, it does not invalidate the result until it becomes the active file.
       if (analyzedText === undefined) {
         return false;
       }
@@ -434,7 +443,11 @@ export function EditorArea({
               ...b,
               diff: b.end - b.start,
             })).sort((a, b) => a.diff - b.diff);
-            onRevealInLineage(sorted[0].focusNodeId, sorted[0].selectedNodeId);
+            const target = sorted[0];
+            if (target.selectedNodeId) {
+              acquireBodyWaitCursor(2000);
+            }
+            onRevealInLineage(target.focusNodeId, target.selectedNodeId);
             return;
           }
         }

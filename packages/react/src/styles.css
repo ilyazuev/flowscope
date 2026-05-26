@@ -549,3 +549,10 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #64748b;
 }
+
+html.app-wait-cursor,
+html.app-wait-cursor *,
+body.app-wait-cursor,
+body.app-wait-cursor * {
+  cursor: wait !important;
+}

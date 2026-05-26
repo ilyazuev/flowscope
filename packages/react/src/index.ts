@@ -6,6 +6,7 @@ export type { SqlViewSelection } from './components/SqlView';
 export { ColumnPanel } from './components/ColumnPanel';
 export { openDescribeWindow } from './components/FloatingDescribe';
 export { openFloatingSQLPreview } from './components/FloatingSQL';
+export { acquireBodyWaitCursor } from './utils/body-cursor';
 export { buildExecutableSqlForCte, findCteAtPosition } from './components/SqlView.SqlCteFolding';
 export { IssuesPanel } from './components/IssuesPanel';
 export { LineageExplorer } from './components/LineageExplorer';
