@@ -166,14 +166,16 @@ function spreadNodesHorizontally(nodes: FlowNode[], gap = HORIZONTAL_NODE_GAP): 
  */
 function NodeFocusHandler({
   focusNodeId,
+  selectedNodeId,
   onFocusApplied,
   focusNodeRequestKey,
 }: {
   focusNodeId?: string;
+  selectedNodeId?: string;
   onFocusApplied?: () => void;
   focusNodeRequestKey: number;
 }): null {
-  useNodeFocus({ focusNodeId, onFocusApplied, focusNodeRequestKey });
+  useNodeFocus({ focusNodeId, selectedNodeId, onFocusApplied, focusNodeRequestKey });
   return null;
 }
 
@@ -450,6 +452,7 @@ export function GraphView({
   const lastFocusNodeIdRef = useRef<string|null>(null);
   const lastSelectedNodeIdRef = useRef<string|null>(null);
   const [internalFocusNodeId, setInternalFocusNodeId] = useState<string | undefined>(lineageFocusNodeId);
+  const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<string | undefined>(lineageSelectedNodeId);
   const [focusNodeCloseRequestKey, setFocusNodeCloseRequestKey] = useState(0);
   const [internalFocusNodeRequestKey, setInternalFocusNodeRequestKey] = useState(0);
 
@@ -458,6 +461,7 @@ export function GraphView({
       return;
     }
     setInternalFocusNodeId(lineageFocusNodeId);
+    setInternalSelectedNodeId(lineageSelectedNodeId);
     setInternalFocusNodeRequestKey((key) => key + 1);
     if( lineageSelectedNodeId ) {
       actions.selectNode(lineageSelectedNodeId);
@@ -494,6 +498,7 @@ export function GraphView({
   const lineageNodeMapRef = useRef<Map<string, LineageNode>>(new Map());
 
   const effectiveFocusNodeId = internalFocusNodeId ?? lineageFocusNodeId;
+  const effectiveSelectedNodeId = internalSelectedNodeId ?? lineageSelectedNodeId;
 
   const handleFocusAppliedInternal = useCallback(() => {
     onFocusApplied?.();
@@ -1261,6 +1266,7 @@ export function GraphView({
       >
         <NodeFocusHandler
           focusNodeId={effectiveFocusNodeId}
+          selectedNodeId={effectiveSelectedNodeId}
           onFocusApplied={handleFocusAppliedInternal}
           focusNodeRequestKey={internalFocusNodeRequestKey}
         />

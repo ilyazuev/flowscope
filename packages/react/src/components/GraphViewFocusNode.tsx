@@ -195,7 +195,7 @@ export function GraphViewFocusNode({
                 'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
                 (focusSelectMode != 'none'
                   ? 'text-gray-400'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  : 'text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-100'
                 )
               )}
             >

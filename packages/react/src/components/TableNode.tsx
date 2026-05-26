@@ -131,6 +131,7 @@ function ColumnRow({
 
   return (
     <div
+      data-column-id={col.id}
       style={{
         ...style,
         fontSize: 12,

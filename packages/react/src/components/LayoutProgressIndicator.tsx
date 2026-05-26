@@ -2,7 +2,7 @@ import { Loader2 } from 'lucide-react';
 import { JSX, useEffect } from 'react';
 import { useLineageStore } from '../store';
 import { PANEL_STYLES } from '../constants';
-import { acquireBodyWaitCursor } from '../utils/body-cursor';
+import { acquireBodyWaitCursor } from '../utils/waitCursor';
 
 /**
  * Loading indicator shown during graph building and layout computation.

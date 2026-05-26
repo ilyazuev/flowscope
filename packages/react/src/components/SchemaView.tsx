@@ -55,6 +55,7 @@ import type { Dialect } from '@pondpilot/flowscope-core';
 import { openDescribeWindow } from './FloatingDescribe';
 import { backendParsed, useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
 import { Spans } from './Spans';
+import { Span } from '@pondpilot/flowscope-core';
 
 // ============================================================================
 // Types
@@ -361,7 +362,7 @@ const SchemaTableNodeComponent = ({
         </span>
         <Spans
           spans={data.spans}
-          sourceName={activeFile.path || activeFile.name}
+          sourceName={activeFile?.path || activeFile?.name}
           name={fullName}
           type={data.nodeType}
         ></Spans>
@@ -464,7 +465,7 @@ const SchemaTableNodeComponent = ({
                 </span>
                 <Spans
                   spans={col.spans}
-                  sourceName={activeFile.path || activeFile.name}
+                  sourceName={activeFile?.path || activeFile?.name}
                   name={col.name}
                   type={'column'}
                 ></Spans>
