@@ -375,12 +375,7 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
   }, [windowManager, nodeData.schemaTable]);
   
   return (
-    <div
-      onClick={() => {
-        // Allow clicking anywhere in the table to select it
-        // Columns handle their own selection and stop propagation
-        selectNode(id);
-      }}
+    <div // removed: duplicate onNodeClick & handleFocusNodeSelect // onClick={() => { selectNode(id); }} // Allow clicking anywhere in the table to select it // Columns handle their own selection and stop propagation
       style={{
         minWidth: 180,
         borderRadius: 8,

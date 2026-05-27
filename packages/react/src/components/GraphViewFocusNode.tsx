@@ -194,8 +194,10 @@ export function GraphViewFocusNode({
               className={cn(
                 'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
                 (focusSelectMode != 'none'
-                  ? 'text-gray-400'
-                  : 'text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-100'
+                  ? 'text-gray-400' :
+                  focusedNode
+                  ? 'text-brand-blue-600 dark:text-brand-blue-400 hover:text-brand-blue-900 dark:hover:text-brand-blue-100'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 )
               )}
             >
@@ -266,6 +268,8 @@ export function GraphViewFocusNode({
                   'flex items-center gap-2 h-7 px-3 rounded-full transition-all duration-200 text-sm font-medium',
                   (focusSelectMode != 'none'
                     ? 'text-gray-400'
+                    : selectedNode
+                    ? 'text-brand-blue-600 dark:text-brand-blue-400 hover:text-brand-blue-900 dark:hover:text-brand-blue-100'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                   )
                 )}

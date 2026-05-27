@@ -485,15 +485,17 @@ export function GraphView({
     setFocusMode(enabled);
   }, []);
 
-  const handleFocusSelectModeChange = useCallback((
-    mode: FocusSelectMode, focusNodeId: string, selectedNodeId: string
-  ) => {
-    setFocusSelectMode(mode);
-    if(mode != 'none') {
-      lastFocusNodeIdRef.current = focusNodeId;
-      lastSelectedNodeIdRef.current = selectedNodeId;
-    }
-  }, []);
+  const handleFocusSelectModeChange = useCallback(
+    (mode: FocusSelectMode, focusNodeId: string, selectedNodeId: string) => {
+      if (mode === 'none') {
+        lastFocusNodeIdRef.current = null;
+        lastSelectedNodeIdRef.current = null;
+      } else {
+        lastFocusNodeIdRef.current = focusNodeId;
+        lastSelectedNodeIdRef.current = selectedNodeId;
+      }
+      setFocusSelectMode(mode);
+    }, []);
 
   const lineageNodeMapRef = useRef<Map<string, LineageNode>>(new Map());
 
@@ -592,14 +594,14 @@ export function GraphView({
         viewMode === 'script'
           ? buildScriptGraphInWorker({
               statements: analysisResult.statements,
-              selectedNodeId,
-              searchTerm: effectiveSearchTerm,
+              selectedNodeId: null, // selectedNodeId
+              searchTerm: '', // effectiveSearchTerm
               showTables: showScriptTables,
             })
           : buildTableGraphInWorker({
               statements: analysisResult.statements,
-              selectedNodeId,
-              searchTerm: effectiveSearchTerm,
+              selectedNodeId: null, // selectedNodeId
+              searchTerm: '', // effectiveSearchTerm,
               collapsedNodeIds,
               expandedTableIds,
               resolvedSchema: analysisResult.resolvedSchema,
@@ -659,8 +661,8 @@ export function GraphView({
     };
   }, [
     analysisResult,
-    selectedNodeId,
-    effectiveSearchTerm,
+    // selectedNodeId, // removed: no impact on build...GraphInWorker
+    // effectiveSearchTerm, // removed: no impact on build...GraphInWorker
     viewMode,
     collapsedNodeIds,
     defaultCollapsed,
@@ -742,6 +744,68 @@ export function GraphView({
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
 
+  useEffect(() => {
+    if (renderNodeDataById.size === 0 && renderEdgeById.size === 0) {
+      return;
+    }
+
+    setNodes((currentNodes) => {
+      let changed = false;
+
+      const nextNodes = currentNodes.map((node) => {
+        const renderData = renderNodeDataById.get(node.id);
+
+        if (!renderData || node.data === renderData) {
+          return node;
+        }
+
+        changed = true;
+        return {
+          ...node,
+          data: renderData,
+        };
+      });
+
+      return changed ? nextNodes : currentNodes;
+    });
+
+    setEdges((currentEdges) => {
+      let changed = false;
+
+      const nextEdges = currentEdges.map((edge) => {
+        const renderEdge = renderEdgeById.get(edge.id);
+
+        if (!renderEdge) {
+          return edge;
+        }
+
+        if (
+          edge.type === renderEdge.type &&
+          edge.label === renderEdge.label &&
+          edge.animated === renderEdge.animated &&
+          edge.zIndex === renderEdge.zIndex &&
+          edge.data === renderEdge.data &&
+          edge.style === renderEdge.style
+        ) {
+          return edge;
+        }
+
+        changed = true;
+        return {
+          ...edge,
+          type: renderEdge.type,
+          label: renderEdge.label,
+          animated: renderEdge.animated,
+          zIndex: renderEdge.zIndex,
+          data: renderEdge.data,
+          style: renderEdge.style,
+        };
+      });
+
+      return changed ? nextEdges : currentEdges;
+    });
+  }, [renderNodeDataById, renderEdgeById, setNodes, setEdges]);
+
   // Last known coordinates for the complete, un-focused graph.
   // Focus Select is a visibility filter, not a layout event, so toggling it should
   // reuse these coordinates instead of recomputing dagre/elk for the subgraph.
@@ -750,8 +814,6 @@ export function GraphView({
 
   useEffect(() => {
     if (focusSelectMode == 'none') {
-      lastFocusNodeIdRef.current = null;
-      lastSelectedNodeIdRef.current = null;
       return;
     }
 
@@ -1247,6 +1309,14 @@ export function GraphView({
     );
   }
 
+  const focusPanelFocusNodeId = focusSelectMode !== 'none'
+      ? lastFocusNodeIdRef.current ?? effectiveFocusNodeId
+      : effectiveFocusNodeId;
+
+  const focusPanelSelectedNodeId = focusSelectMode !== 'none'
+      ? lastSelectedNodeIdRef.current ?? selectedNodeId
+      : selectedNodeId;
+
   return (
     <div className={className} style={{ height: '100%' }} ref={finalRef}>
       <ReactFlow
@@ -1326,8 +1396,8 @@ export function GraphView({
           {viewMode !== 'script' && analysisResult && (
             <GraphViewFocusNode
               analysisResult={analysisResult}
-              focusNodeId={lastFocusNodeIdRef.current ?? effectiveFocusNodeId}
-              selectedNodeId={lastSelectedNodeIdRef.current ?? selectedNodeId}
+              focusNodeId={focusPanelFocusNodeId}
+              selectedNodeId={focusPanelSelectedNodeId}
               onSelectNode={handleFocusNodeSelect}
               closeRequestKey={focusNodeCloseRequestKey}
               showColumnEdges={showColumnEdges}

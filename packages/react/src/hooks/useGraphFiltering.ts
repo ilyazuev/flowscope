@@ -140,6 +140,7 @@ export function useGraphFiltering(options: UseGraphFilteringOptions): UseGraphFi
     showColumnEdges,
     focusMode,
     focusSelectMode,
+    lastSelectedNodeId,
     tableFilter,
     namespaceFilter,
   ]);

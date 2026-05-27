@@ -281,9 +281,17 @@ export function createLineageStore(
     setSql: (sql) => set({ sql }),
 
     selectNode: (nodeId) =>
-      set({
-        selectedNodeId: nodeId,
-        highlightedSpan: nodeId === null ? null : undefined,
+      set((state) => {
+        if (state.selectedNodeId === nodeId) {
+          if (nodeId === null && state.highlightedSpan !== null) {
+            return { highlightedSpan: null };
+          }
+          return state;
+        }
+        return {
+          selectedNodeId: nodeId,
+          highlightedSpan: nodeId === null ? null : undefined,
+        }
       }),
 
     toggleNodeCollapse: (nodeId) =>

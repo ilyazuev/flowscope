@@ -7,7 +7,7 @@ import type { Node as FlowNode } from '@xyflow/react';
  * Required because ReactFlow needs time to render nodes before we can
  * query their positions for viewport calculations.
  */
-const NODE_FOCUS_DELAY_MS = 100;
+const NODE_FOCUS_DELAY_MS = 50; //100;
 
 /**
  * Delay between moving the parent node into the viewport and querying
@@ -173,7 +173,7 @@ export function useNodeFocus({
   focusNodeId,
   selectedNodeId,
   onFocusApplied,
-  duration = 500,
+  duration = 150, // 500
   focusNodeRequestKey,
 }: UseNodeFocusOptions): void {
   const { getNode, getViewport, setViewport } = useReactFlow();
