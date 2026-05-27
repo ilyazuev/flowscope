@@ -16,7 +16,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
 import { CommandPalette } from './CommandPalette';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { useProject } from '@/lib/project-store';
+import { backendParsed, useProject } from '@/lib/project-store';
 import { NavigationProvider } from '@/lib/navigation-context';
 import { FocusRegistryProvider } from '@/lib/focus-registry';
 import { useGlobalShortcuts } from '@/hooks';
@@ -86,6 +86,12 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
   const currentProjectRef = useRef(currentProject);
   useEffect(() => {
     currentProjectRef.current = currentProject;
+    if( !currentProject ) {
+      return;
+    }
+    if(backendParsed(currentProject.dialect) && (!currentProject.database || !currentProject.userName)) {
+      setProjectSelectorOpen(true);
+    }
   }, [currentProject]);
 
   const handleRevealInLineage = useCallback((focusNodeId: string, selectedNodeId?: string) => {

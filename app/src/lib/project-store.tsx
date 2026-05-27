@@ -393,7 +393,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         name: validatedName,
         files: [],
         activeFileId: null,
-        dialect: 'generic',
+        dialect: import.meta.env.VITE_DEFAULT_SQL_DIALECT ?? 'generic',
         runMode: 'all',
         selectedFileIds: [],
         schemaSQL: '',

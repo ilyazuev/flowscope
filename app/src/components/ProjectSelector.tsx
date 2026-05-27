@@ -82,7 +82,10 @@ function DbSelect() {
         }}
       >
         <SelectTrigger className="h-7 flex-1 text-xs">
-          <SelectValue placeholder="Database" />
+          {currentProject.database
+            ? <SelectValue placeholder="Database" />
+            : <span className="text-red-500">DB?</span>
+          }
         </SelectTrigger>
         <SelectContent>
           {dbNames.sort().map((db) => (
@@ -97,7 +100,10 @@ function DbSelect() {
         onValueChange={(u) => setUserName(currentProject.id, u)}
       >
         <SelectTrigger className="h-7 flex-1 text-xs">
-          <SelectValue placeholder="User" />
+          {currentProject.userName
+            ? <SelectValue placeholder="User" />
+            : <span className="text-red-500">User?</span>
+          }
         </SelectTrigger>
         <SelectContent>
           {users.sort().map((u) => (
