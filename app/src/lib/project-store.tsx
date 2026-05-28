@@ -5,17 +5,40 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
 } from 'react';
 import type { FileSource, SchemaMetadata } from '@pondpilot/flowscope-core';
 import { STORAGE_KEYS, FILE_EXTENSIONS, SHARE_LIMITS, DEFAULT_FILE_LANGUAGE } from './constants';
 import type { SharePayload } from './share';
 import { parseTemplateMode } from '@/types';
 import type { TemplateMode } from '@/types';
+import type { FileSystemFileHandleLike, ProjectFileImport } from './file-system-access';
+import {
+  createFileHandleId,
+  deleteFileSystemHandle,
+  deleteFileSystemHandles,
+  loadFileSystemHandle,
+  storeFileSystemHandle,
+} from './file-system-access';
 import { DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
 import { useBackend } from './backend-context';
 import { useBackendFiles } from '@/hooks/useBackendFiles';
 
 const uuidv4 = () => crypto.randomUUID();
+
+export function getContentHash(content: string): string {
+  // 32-bit FNV-1a. This is not cryptographic; it is only a cheap dirty-state marker.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < content.length; i += 1) {
+    hash ^= content.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+export function isProjectFileDirty(file: Pick<ProjectFile, 'content' | 'savedContentHash'>): boolean {
+  return file.savedContentHash !== getContentHash(file.content);
+}
 
 const MAX_PROJECT_NAME_LENGTH = 50;
 
@@ -138,6 +161,25 @@ export interface ProjectFile {
   content: string;
   parameters?: SqlParametersValid;
   language: 'sql' | 'json' | 'text';
+  /**
+   * Non-serializable handle to the real file on disk.
+   * Restored from IndexedDB when possible and stripped before localStorage persistence.
+   */
+  fileHandle?: FileSystemFileHandleLike;
+  /** Stable IndexedDB key for restoring fileHandle after reload. */
+  fileHandleId?: string;
+  /** Content hash at the last successful open/save/refresh. Used for dirty-state checks. */
+  savedContentHash?: string;
+  /** Last known disk mtime for external-change detection. */
+  lastKnownDiskModified?: number;
+}
+
+export type ProjectFileInput = File | ProjectFileImport;
+
+function getFileLanguageFromName(fileName: string): ProjectFile['language'] {
+  if (fileName.endsWith(FILE_EXTENSIONS.JSON)) return 'json';
+  if (fileName.endsWith(FILE_EXTENSIONS.SQL)) return 'sql';
+  return 'text';
 }
 
 export interface Project {
@@ -170,18 +212,31 @@ interface ProjectContextType {
   toggleFileSelection: (projectId: string, fileId: string) => void;
 
   // File actions for active project
-  createFile: (name: string, content?: string, path?: string) => void;
+  createFile: (
+    name: string,
+    content?: string,
+    path?: string,
+    fileHandle?: FileSystemFileHandleLike
+  ) => string | undefined;
   updateFile: (fileId: string, content: string) => void;
   updateFileParameters: (fileId: string, parameters?: SqlParametersValid) => void;
   deleteFile: (fileId: string) => void;
   renameFile: (fileId: string, newName: string) => void;
   selectFile: (fileId: string) => void;
+  setFileHandle: (
+    fileId: string,
+    fileHandle: FileSystemFileHandleLike | undefined,
+    path?: string,
+    lastKnownDiskModified?: number
+  ) => void;
+  markFileSaved: (fileId: string, lastKnownDiskModified?: number) => void;
+  replaceFileFromDisk: (fileId: string, content: string, lastKnownDiskModified?: number) => void;
 
   // Schema SQL management
   updateSchemaSQL: (projectId: string, schemaSQL: string) => void;
 
   // Import/Export
-  importFiles: (files: FileList | File[]) => Promise<void>;
+  importFiles: (files: FileList | ProjectFileInput[]) => Promise<void>;
 
   // Import from shared URL
   importProject: (payload: SharePayload) => string;
@@ -201,34 +256,68 @@ interface ProjectContextType {
 
 const ProjectContext = createContext<ProjectContextType | null>(null);
 
+function normalizeProjectFile(file: Partial<ProjectFile>): ProjectFile {
+  const name = file.name || file.path?.split('/').pop() || 'untitled.sql';
+  const content = file.content || '';
+
+  return {
+    id: file.id || uuidv4(),
+    name,
+    path: file.path || name,
+    content,
+    parameters: file.parameters,
+    language: file.language || getFileLanguageFromName(name),
+    fileHandleId: file.fileHandleId,
+    savedContentHash: file.savedContentHash || getContentHash(content),
+    lastKnownDiskModified: file.lastKnownDiskModified,
+  };
+}
+
+function normalizeProject(project: Partial<Project>): Project {
+  const files = (project.files || []).map(normalizeProjectFile);
+  const activeFileId = files.some((file) => file.id === project.activeFileId)
+    ? project.activeFileId!
+    : files[0]?.id || null;
+
+  return {
+    id: project.id || uuidv4(),
+    name: project.name || 'Untitled project',
+    files,
+    activeFileId,
+    dialect: project.dialect || 'generic',
+    database: project.database,
+    userName: project.userName,
+    runMode: project.runMode || 'all',
+    selectedFileIds: project.selectedFileIds || [],
+    schemaSQL: project.schemaSQL || '',
+    templateMode: parseTemplateMode(project.templateMode),
+  };
+}
+
 const loadProjectsFromStorage = (): Project[] => {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.PROJECTS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.map((p: Partial<Project>) => ({
-        ...p,
-        dialect: p.dialect || 'generic',
-        runMode: p.runMode || 'all',
-        selectedFileIds: p.selectedFileIds || [],
-        schemaSQL: p.schemaSQL || '', // Default to empty string for older projects
-        templateMode: parseTemplateMode(p.templateMode), // Validate and default to 'raw' for older/corrupted projects
-        // Migrate files to include path if missing
-        files: (p.files || []).map((f: Partial<ProjectFile>) => ({
-          ...f,
-          path: f.path || f.name || '', // Default path to filename for older files
-        })),
-      }));
+      return parsed.map((p: Partial<Project>) => normalizeProject(p));
     }
   } catch (error) {
     console.error('Failed to load projects from storage:', error);
   }
-  return [DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT];
+  return [DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT].map((p) =>
+    normalizeProject(p)
+  );
 };
+
+const stripRuntimeFileHandles = (projects: Project[]): Project[] =>
+  projects.map((project) => ({
+    ...project,
+    files: project.files.map(({ fileHandle: _fileHandle, ...file }) => file),
+  }));
 
 const saveProjectsToStorage = (projects: Project[]) => {
   try {
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(stripRuntimeFileHandles(projects)));
   } catch (error) {
     console.error('Failed to save projects to storage:', error);
   }
@@ -277,6 +366,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(() =>
     loadActiveProjectIdFromStorage(projects)
   );
+  const restoredFileHandleIdsRef = useRef<Set<string>>(new Set());
 
   // Get backend state
   const { backendType } = useBackend();
@@ -379,6 +469,53 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const currentProject = effectiveProjects.find((p) => p.id === effectiveActiveProjectId) || null;
   const isReadOnly = isBackendMode && currentProject?.id === BACKEND_PROJECT_ID;
 
+  useEffect(() => {
+    if (isBackendMode) return;
+
+    let cancelled = false;
+    const restoreHandles = async () => {
+      const filesToRestore = projects.flatMap((project) =>
+        project.files
+          .filter((file) => file.fileHandleId && !file.fileHandle)
+          .map((file) => ({ projectId: project.id, fileId: file.id, handleId: file.fileHandleId! }))
+      );
+
+      for (const file of filesToRestore) {
+        if (restoredFileHandleIdsRef.current.has(file.handleId)) {
+          continue;
+        }
+        restoredFileHandleIdsRef.current.add(file.handleId);
+
+        try {
+          const fileHandle = await loadFileSystemHandle(file.handleId);
+          if (!fileHandle || cancelled) {
+            continue;
+          }
+
+          setProjects((prev) =>
+            prev.map((project) => {
+              if (project.id !== file.projectId) return project;
+              return {
+                ...project,
+                files: project.files.map((projectFile) =>
+                  projectFile.id === file.fileId ? { ...projectFile, fileHandle } : projectFile
+                ),
+              };
+            })
+          );
+        } catch (error) {
+          console.warn('Failed to restore persisted file handle:', error);
+        }
+      }
+    };
+
+    void restoreHandles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isBackendMode, projects]);
+
   const createProject = useCallback(
     (name: string) => {
       const existingNames = projects.map((p) => p.name);
@@ -407,12 +544,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const deleteProject = useCallback(
     (id: string) => {
+      const handleIds = projects
+        .find((project) => project.id === id)
+        ?.files.map((file) => file.fileHandleId)
+        .filter((handleId): handleId is string => Boolean(handleId));
+
+      if (handleIds?.length) {
+        void deleteFileSystemHandles(handleIds).catch((error) => {
+          console.warn('Failed to delete persisted file handles for project:', error);
+        });
+      }
+
       setProjects((prev) => prev.filter((p) => p.id !== id));
       if (activeProjectId === id) {
         setActiveProjectId(null);
       }
     },
-    [activeProjectId]
+    [activeProjectId, projects]
   );
 
   const renameProject = useCallback(
@@ -520,22 +668,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  const getFileLanguage = (fileName: string): ProjectFile['language'] => {
-    if (fileName.endsWith(FILE_EXTENSIONS.JSON)) return 'json';
-    if (fileName.endsWith(FILE_EXTENSIONS.SQL)) return 'sql';
-    return 'text';
-  };
+  const getFileLanguage = getFileLanguageFromName;
 
   const createFile = useCallback(
-    (name: string, content: string = '', path?: string) => {
-      if (!activeProjectId) return;
+    (name: string, content: string = '', path?: string, fileHandle?: FileSystemFileHandleLike) => {
+      if (!activeProjectId) return undefined;
+
+      const fileId = uuidv4();
+      const fileHandleId = fileHandle ? createFileHandleId(activeProjectId, fileId) : undefined;
+
+      if (fileHandle && fileHandleId) {
+        void storeFileSystemHandle(fileHandleId, fileHandle).catch((error) => {
+          console.warn('Failed to persist file handle:', error);
+        });
+      }
 
       const newFile: ProjectFile = {
-        id: uuidv4(),
+        id: fileId,
         name,
         path: path || name, // Default path to filename if not provided
         content,
         language: getFileLanguage(name),
+        fileHandle,
+        fileHandleId,
+        savedContentHash: getContentHash(content),
       };
 
       setProjects((prev) =>
@@ -548,6 +704,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           };
         })
       );
+
+      return newFile.id;
     },
     [activeProjectId]
   );
@@ -599,6 +757,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     (fileId: string) => {
       if (!activeProjectId) return;
 
+      const handleId = projects
+        .find((project) => project.id === activeProjectId)
+        ?.files.find((file) => file.id === fileId)?.fileHandleId;
+
+      if (handleId) {
+        void deleteFileSystemHandle(handleId).catch((error) => {
+          console.warn('Failed to delete persisted file handle:', error);
+        });
+      }
+
       setProjects((prev) =>
         prev.map((p) => {
           if (p.id !== activeProjectId) return p;
@@ -613,7 +781,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         })
       );
     },
-    [activeProjectId]
+    [activeProjectId, projects]
   );
 
   const renameFile = useCallback(
@@ -665,6 +833,109 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     [activeProjectId, isBackendMode]
   );
 
+  const setFileHandle = useCallback(
+    (
+      fileId: string,
+      fileHandle: FileSystemFileHandleLike | undefined,
+      path?: string,
+      lastKnownDiskModified?: number
+    ) => {
+      if (!activeProjectId || isBackendMode) return;
+
+      const nextFileHandleId = fileHandle ? createFileHandleId(activeProjectId, fileId) : undefined;
+
+      if (fileHandle && nextFileHandleId) {
+        void storeFileSystemHandle(nextFileHandleId, fileHandle).catch((error) => {
+          console.warn('Failed to persist file handle:', error);
+        });
+      }
+
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.id !== activeProjectId) return p;
+          return {
+            ...p,
+            files: p.files.map((f) => {
+              if (f.id !== fileId) return f;
+              if (!fileHandle && f.fileHandleId) {
+                void deleteFileSystemHandle(f.fileHandleId).catch((error) => {
+                  console.warn('Failed to delete persisted file handle:', error);
+                });
+              }
+              const nextPath = path ?? f.path;
+              const nextName = nextPath.split('/').pop() || f.name;
+              return {
+                ...f,
+                name: nextName,
+                path: nextPath,
+                language: getFileLanguage(nextName),
+                fileHandle,
+                fileHandleId: nextFileHandleId,
+                lastKnownDiskModified: lastKnownDiskModified ?? f.lastKnownDiskModified,
+                savedContentHash: getContentHash(f.content),
+              };
+            }),
+          };
+        })
+      );
+    },
+    [activeProjectId, isBackendMode]
+  );
+
+  const markFileSaved = useCallback(
+    (fileId: string, lastKnownDiskModified?: number) => {
+      if (!activeProjectId || isBackendMode) return;
+
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.id !== activeProjectId) return p;
+          return {
+            ...p,
+            files: p.files.map((f) =>
+              f.id === fileId
+                ? {
+                    ...f,
+                    savedContentHash: getContentHash(f.content),
+                    lastKnownDiskModified: lastKnownDiskModified ?? f.lastKnownDiskModified,
+                  }
+                : f
+            ),
+          };
+        })
+      );
+    },
+    [activeProjectId, isBackendMode]
+  );
+
+  const replaceFileFromDisk = useCallback(
+    (fileId: string, content: string, lastKnownDiskModified?: number) => {
+      if (!activeProjectId || isBackendMode) return;
+
+      setProjects((prev) =>
+        prev.map((p) => {
+          if (p.id !== activeProjectId) return p;
+          return {
+            ...p,
+            files: p.files.map((f) =>
+              f.id === fileId
+                ? {
+                    ...f,
+                    content,
+                    parameters: f.parameters
+                      ? { parameters: f.parameters.parameters, valid: false }
+                      : undefined,
+                    savedContentHash: getContentHash(content),
+                    lastKnownDiskModified: lastKnownDiskModified ?? f.lastKnownDiskModified,
+                  }
+                : f
+            ),
+          };
+        })
+      );
+    },
+    [activeProjectId, isBackendMode]
+  );
+
   const updateSchemaSQL = useCallback((projectId: string, schemaSQL: string) => {
     setProjects((prev) =>
       prev.map((p) => {
@@ -675,23 +946,35 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const importFiles = useCallback(
-    async (fileList: FileList | File[]) => {
+    async (fileList: FileList | ProjectFileInput[]) => {
       if (!activeProjectId) return;
 
       const newFiles: ProjectFile[] = [];
-      const files = Array.from(fileList);
+      const fileInputs = Array.from(fileList);
 
-      for (const file of files) {
+      for (const input of fileInputs) {
+        const isProjectFileImport = !(input instanceof File) && 'file' in input;
+        const file = isProjectFileImport ? input.file : input;
         const content = await file.text();
-        // Use webkitRelativePath if available (folder upload), otherwise just filename
+        // Use an explicit import path first, then webkitRelativePath from folder upload, then filename.
         const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
-        const path = relativePath || file.name;
+        const path = isProjectFileImport
+          ? input.path || relativePath || file.name
+          : relativePath || file.name;
+        const fileId = uuidv4();
+        const fileHandle = isProjectFileImport ? input.fileHandle : undefined;
+        const fileHandleId = fileHandle ? createFileHandleId(activeProjectId, fileId) : undefined;
+
         newFiles.push({
-          id: uuidv4(),
+          id: fileId,
           name: file.name,
           path,
           content,
           language: getFileLanguage(file.name),
+          fileHandle,
+          fileHandleId,
+          savedContentHash: getContentHash(content),
+          lastKnownDiskModified: file.lastModified,
         });
       }
 
@@ -708,10 +991,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             );
 
             if (existingIndex === -1) {
+              if (newFile.fileHandle && newFile.fileHandleId) {
+                void storeFileSystemHandle(newFile.fileHandleId, newFile.fileHandle).catch((error) => {
+                  console.warn('Failed to persist imported file handle:', error);
+                });
+              }
+
               updatedFiles.push(newFile);
               firstImportedFileId ??= newFile.id;
             } else {
               const existingFile = updatedFiles[existingIndex];
+              const nextFileHandleId = newFile.fileHandle
+                ? createFileHandleId(activeProjectId, existingFile.id)
+                : existingFile.fileHandleId;
+
+              if (newFile.fileHandle && nextFileHandleId) {
+                void storeFileSystemHandle(nextFileHandleId, newFile.fileHandle).catch((error) => {
+                  console.warn('Failed to persist replacement file handle:', error);
+                });
+              }
 
               updatedFiles[existingIndex] = {
                 ...existingFile,
@@ -719,6 +1017,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                 path: newFile.path,
                 content: newFile.content,
                 language: newFile.language,
+                fileHandle: newFile.fileHandle ?? existingFile.fileHandle,
+                fileHandleId: nextFileHandleId,
+                lastKnownDiskModified: newFile.fileHandle ? newFile.lastKnownDiskModified : existingFile.lastKnownDiskModified,
+                savedContentHash: getContentHash(newFile.content),
                 parameters: existingFile.parameters
                   ? {
                     parameters: existingFile.parameters.parameters,
@@ -766,6 +1068,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         path: f.p || f.n, // Use path if available, otherwise default to filename
         content: f.c,
         language: f.l || DEFAULT_FILE_LANGUAGE,
+        savedContentHash: getContentHash(f.c),
       }));
 
       // Map selected file indices to new IDs
@@ -813,6 +1116,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     deleteFile,
     renameFile,
     selectFile,
+    setFileHandle,
+    markFileSaved,
+    replaceFileFromDisk,
     updateSchemaSQL,
     importFiles,
     importProject,

@@ -3,6 +3,14 @@ import { Upload, FolderUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/lib/project-store';
 import { ACCEPTED_FILE_TYPES_ARRAY, FILE_LIMITS } from '@/lib/constants';
+import {
+  getDroppedFileSystemHandle,
+  readFileHandle,
+  type FileSystemDirectoryHandleLike,
+  type FileSystemFileHandleLike,
+  type FileSystemHandleLike,
+  type ProjectFileImport,
+} from '@/lib/file-system-access';
 
 interface FileSystemEntry {
   isFile: boolean;
@@ -64,12 +72,12 @@ function validateFile(file: File): { name: string; reason: 'type' | 'size' } | n
 }
 
 interface ProcessResult {
-  accepted: File[];
+  accepted: ProjectFileImport[];
   rejected: RejectedFile[];
 }
 
 async function processEntry(entry: FileSystemEntry, basePath: string = ''): Promise<ProcessResult> {
-  const accepted: File[] = [];
+  const accepted: ProjectFileImport[] = [];
   const rejected: RejectedFile[] = [];
 
   // Skip hidden files and directories (e.g., .DS_Store, .git)
@@ -91,7 +99,7 @@ async function processEntry(entry: FileSystemEntry, basePath: string = ''): Prom
           value: currentPath,
           writable: false,
         });
-        accepted.push(fileWithPath);
+        accepted.push({ file: fileWithPath, path: currentPath });
       }
     }
   } else if (entry.isDirectory && entry.createReader) {
@@ -106,6 +114,41 @@ async function processEntry(entry: FileSystemEntry, basePath: string = ''): Prom
 
     for (const childEntry of entries) {
       const result = await processEntry(childEntry, currentPath);
+      accepted.push(...result.accepted);
+      rejected.push(...result.rejected);
+    }
+  }
+
+  return { accepted, rejected };
+}
+
+async function processFileSystemHandle(
+  handle: FileSystemHandleLike,
+  basePath: string = ''
+): Promise<ProcessResult> {
+  const accepted: ProjectFileImport[] = [];
+  const rejected: RejectedFile[] = [];
+
+  if (isHiddenFile(handle.name)) {
+    return { accepted, rejected };
+  }
+
+  const currentPath = basePath ? `${basePath}/${handle.name}` : handle.name;
+
+  if (handle.kind === 'file' || 'getFile' in handle) {
+    const fileHandle = handle as FileSystemFileHandleLike;
+    const file = await readFileHandle(fileHandle);
+    const rejection = validateFile(file);
+
+    if (rejection) {
+      rejected.push(rejection);
+    } else {
+      accepted.push({ file, path: currentPath, fileHandle });
+    }
+  } else if ( handle.kind === 'directory' && 'values' in handle ) {
+    const directoryHandle = handle as FileSystemDirectoryHandleLike;
+    for await (const childHandle of directoryHandle.values()) {
+      const result = await processFileSystemHandle(childHandle, currentPath);
       accepted.push(...result.accepted);
       rejected.push(...result.rejected);
     }
@@ -193,12 +236,24 @@ export function GlobalDropZone() {
       setIsProcessing(true);
 
       try {
-        const allAccepted: File[] = [];
+        const allAccepted: ProjectFileImport[] = [];
         const allRejected: RejectedFile[] = [];
 
+        const hasFileSystemHandle = Array.from(items).some(
+          (item) => typeof (item as { getAsFileSystemHandle?: unknown }).getAsFileSystemHandle === 'function'
+        );
         const hasWebkitEntry = items[0] && 'webkitGetAsEntry' in items[0];
 
-        if (hasWebkitEntry) {
+        if (hasFileSystemHandle) {
+          for (let i = 0; i < items.length; i++) {
+            const handle = await getDroppedFileSystemHandle(items[i]);
+            if (handle) {
+              const result = await processFileSystemHandle(handle);
+              allAccepted.push(...result.accepted);
+              allRejected.push(...result.rejected);
+            }
+          }
+        } else if (hasWebkitEntry) {
           for (let i = 0; i < items.length; i++) {
             const item = items[i] as DataTransferItemWithEntry;
             const entry = item.webkitGetAsEntry?.();
@@ -221,7 +276,9 @@ export function GlobalDropZone() {
               if (rejection) {
                 allRejected.push(rejection);
               } else {
-                allAccepted.push(file);
+                const relativePath = (file as File & { webkitRelativePath?: string })
+                  .webkitRelativePath;
+                allAccepted.push({ file, path: relativePath || file.name });
               }
             }
           }
@@ -231,7 +288,7 @@ export function GlobalDropZone() {
         const filesToImport = allAccepted.slice(0, FILE_LIMITS.MAX_COUNT);
         const excessFiles = allAccepted.slice(FILE_LIMITS.MAX_COUNT);
         for (const file of excessFiles) {
-          allRejected.push({ name: file.name, reason: 'count' });
+          allRejected.push({ name: file.file.name, reason: 'count' });
         }
 
         if (filesToImport.length > 0) {

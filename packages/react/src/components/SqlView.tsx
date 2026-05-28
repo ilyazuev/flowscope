@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
   type JSX,
+  type ReactNode,
   useImperativeHandle,
   forwardRef,
   useState,
@@ -131,7 +132,12 @@ function ToolbarDivider(): JSX.Element {
   return <div className="mx-1 h-5 w-px shrink-0 bg-border" />;
 }
 
-export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
+type SqlViewPropsWithToolbarSlots = SqlViewProps & {
+  /** Optional toolbar slot rendered before the built-in editor toolbar buttons. */
+  preToolbarElements?: ReactNode;
+};
+
+export const SqlView = forwardRef<SqlViewRef, SqlViewPropsWithToolbarSlots>(
   (
     {
       className,
@@ -142,6 +148,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       highlightedSpan: highlightedSpanProp,
       lineWrapping = false,
       dialect,
+      preToolbarElements,
       extraToolbarElements,
       onRunSqlShortcut,
     },
@@ -559,6 +566,13 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         className={`flowscope-sql-view flex h-full w-full min-h-0 min-w-0 flex-col ${className || ''}`}
       >
         <div className="flex shrink-0 items-center gap-1 border-b bg-background px-2 py-1">
+          {preToolbarElements && (
+            <>
+              {preToolbarElements}
+              <ToolbarDivider />
+            </>
+          )}
+
           <ToolbarButton
             title={`Cut (${modKey} + X)`}
             onClick={() => {

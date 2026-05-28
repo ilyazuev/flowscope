@@ -22,6 +22,7 @@ import { useAnalysis, useDebounce, useFileNavigation, useGlobalShortcuts } from 
 import type { SqlViewMode } from './EditorToolbar';
 import { EditorToolbar } from './EditorToolbar';
 import { ErrorBoundary } from './ErrorBoundary';
+import { FileControlsToolbar } from './FileControlsToolbar';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
@@ -723,6 +724,8 @@ export function EditorArea({
   const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
   const selectedCount = currentProject.selectedFileIds?.length || 0;
 
+  const fileControlsToolbar = !isReadOnly ? <FileControlsToolbar /> : undefined;
+
   const graphSyncWarning = isGraphOutOfSync ? (
     <div
       className="ml-1 flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
@@ -777,6 +780,7 @@ export function EditorArea({
             isDark={isDark}
             highlightedSpan={sqlViewMode === 'template' ? highlightedSpan : null}
             onRunSqlShortcut={handleExecuteSql}
+            preToolbarElements={fileControlsToolbar}
             extraToolbarElements={graphSyncWarning}
           />
         </ErrorBoundary>
