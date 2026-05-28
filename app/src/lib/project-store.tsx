@@ -231,6 +231,7 @@ interface ProjectContextType {
   ) => void;
   markFileSaved: (fileId: string, lastKnownDiskModified?: number) => void;
   replaceFileFromDisk: (fileId: string, content: string, lastKnownDiskModified?: number) => void;
+  restoreFileHandle: (fileId: string, handleId: string) => Promise<void>;
 
   // Schema SQL management
   updateSchemaSQL: (projectId: string, schemaSQL: string) => void;
@@ -366,7 +367,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(() =>
     loadActiveProjectIdFromStorage(projects)
   );
-  const restoredFileHandleIdsRef = useRef<Set<string>>(new Set());
 
   // Get backend state
   const { backendType } = useBackend();
@@ -466,55 +466,66 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   // In backend mode, default to backend project
   const effectiveActiveProjectId = isBackendMode ? BACKEND_PROJECT_ID : activeProjectId;
 
-  const currentProject = effectiveProjects.find((p) => p.id === effectiveActiveProjectId) || null;
-  const isReadOnly = isBackendMode && currentProject?.id === BACKEND_PROJECT_ID;
+  const restoreFileHandle = useCallback(
+    async (fileId: string, fileHandleId: string) => {
+      const fileHandle = await loadFileSystemHandle(fileHandleId);
+      if (!fileHandle) {
+        return;
+      }
+      setProjects((prevProjects) =>
+        prevProjects.map((project) => ({
+          ...project,
+          files: project.files.map((file) => {
+            if (file.id !== fileId) {
+              return file;
+            }
+            if (file.fileHandleId !== fileHandleId) {
+              return file;
+            }
+            if (file.fileHandle) {
+              return file;
+            }
+            return {
+              ...file,
+              fileHandle,
+            };
+          }),
+        }))
+      );
+    },
+    []
+  );
+
+  const restoringHandleIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
-    if (isBackendMode) return;
+    if (isBackendMode) {
+      return;
+    }
 
-    let cancelled = false;
-    const restoreHandles = async () => {
-      const filesToRestore = projects.flatMap((project) =>
-        project.files
-          .filter((file) => file.fileHandleId && !file.fileHandle)
-          .map((file) => ({ projectId: project.id, fileId: file.id, handleId: file.fileHandleId! }))
-      );
-
-      for (const file of filesToRestore) {
-        if (restoredFileHandleIdsRef.current.has(file.handleId)) {
+    for (const project of projects) {
+      for (const file of project.files) {
+        if (!file.fileHandleId || file.fileHandle) {
           continue;
         }
-        restoredFileHandleIdsRef.current.add(file.handleId);
 
-        try {
-          const fileHandle = await loadFileSystemHandle(file.handleId);
-          if (!fileHandle || cancelled) {
-            continue;
-          }
+        const restoreKey = `${file.id}:${file.fileHandleId}`;
 
-          setProjects((prev) =>
-            prev.map((project) => {
-              if (project.id !== file.projectId) return project;
-              return {
-                ...project,
-                files: project.files.map((projectFile) =>
-                  projectFile.id === file.fileId ? { ...projectFile, fileHandle } : projectFile
-                ),
-              };
-            })
-          );
-        } catch (error) {
-          console.warn('Failed to restore persisted file handle:', error);
+        if (restoringHandleIdsRef.current.has(restoreKey)) {
+          continue;
         }
+
+        restoringHandleIdsRef.current.add(restoreKey);
+
+        void restoreFileHandle(file.id, file.fileHandleId).finally(() => {
+          restoringHandleIdsRef.current.delete(restoreKey);
+        });
       }
-    };
+    }
+  }, [projects, isBackendMode, restoreFileHandle]);
 
-    void restoreHandles();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isBackendMode, projects]);
+  const currentProject = effectiveProjects.find((p) => p.id === effectiveActiveProjectId) || null;
+  const isReadOnly = isBackendMode && currentProject?.id === BACKEND_PROJECT_ID;
 
   const createProject = useCallback(
     (name: string) => {
@@ -998,7 +1009,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
               }
 
               updatedFiles.push(newFile);
-              firstImportedFileId ??= newFile.id;
+              if( !firstImportedFileId ) {
+                firstImportedFileId = newFile.id;
+              }
             } else {
               const existingFile = updatedFiles[existingIndex];
               const nextFileHandleId = newFile.fileHandle
@@ -1028,8 +1041,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                   }
                   : undefined,
               };
-
-              firstImportedFileId ??= existingFile.id;
+              if( !firstImportedFileId ) {
+                firstImportedFileId = existingFile.id;
+              }
             }
           }
 
@@ -1119,6 +1133,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setFileHandle,
     markFileSaved,
     replaceFileFromDisk,
+    restoreFileHandle,
     updateSchemaSQL,
     importFiles,
     importProject,
