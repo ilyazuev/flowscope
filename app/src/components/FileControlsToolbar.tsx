@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type ReactNode,
+  type JSX,
 } from 'react';
 import {
   AlertTriangle,
@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
 import { DEFAULT_FILE_NAMES, ACCEPTED_FILE_TYPES } from '@/lib/constants';
 import { isProjectFileDirty, useProject } from '@/lib/project-store';
 import {
@@ -34,6 +33,7 @@ import {
   showSaveFileHandle,
   writeFileHandle,
 } from '@/lib/file-system-access';
+import { ToolbarButton } from '@pondpilot/flowscope-react';
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
@@ -260,12 +260,12 @@ export function FileControlsToolbar() {
     });
   }, [activeFile, disabled, isDirty, replaceFileFromDisk, runCommand]);
 
-  const renderIcon = (command: FileCommand, icon: ReactNode) =>
+  const renderIcon = (command: FileCommand, icon: JSX.Element) =>
     busyCommand === command ? <Loader2 className="h-4 w-4 animate-spin" /> : icon;
 
   const saveTitle = useMemo(() => {
     if (!fileSystemAccessSupported) return 'Download file';
-    if (!activeFile?.fileHandle) return 'Save file as...';
+    if (!activeFile?.fileHandle) return 'Save file as... (not linked to file system)';
     if (diskNameMismatch) {
       return `Save to linked disk file "${activeFile?.fileHandle?.name ?? activeFile?.name ?? 'linked file'}". Project rename does not rename files on disk; use Save As for a new disk file.`;
     }
@@ -352,50 +352,34 @@ export function FileControlsToolbar() {
         onChange={handleFallbackOpen}
       />
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
+      <ToolbarButton
         title="New file"
         aria-label="New file"
         disabled={disabled}
         onClick={handleNew}
       >
         <FilePlus2 className="h-4 w-4" />
-      </Button>
+      </ToolbarButton>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
+      <ToolbarButton
         title={fileSystemAccessSupported ? 'Open file from disk' : 'Open file by upload'}
         aria-label={fileSystemAccessSupported ? 'Open file from disk' : 'Open file by upload'}
         disabled={disabled}
         onClick={handleOpen}
       >
         {renderIcon('open', <FolderOpen className="h-4 w-4" />)}
-      </Button>
+      </ToolbarButton>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
+      <ToolbarButton
         title={saveTitle}
         aria-label={fileSystemAccessSupported ? 'Save file' : 'Download file'}
         disabled={disabled || !activeFile}
         onClick={handleSave}
       >
         {renderIcon('save', <Save className="h-4 w-4" />)}
-      </Button>
+      </ToolbarButton>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
+      <ToolbarButton
         title={
           fileSystemAccessSupported
             ? 'Save file as...'
@@ -406,13 +390,9 @@ export function FileControlsToolbar() {
         onClick={handleSaveAsClick}
       >
         {renderIcon('saveAs', <SaveAll className="h-4 w-4" />)}
-      </Button>
+      </ToolbarButton>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
+      <ToolbarButton
         title={
           activeFile?.fileHandle
             ? 'Reload file from disk'
@@ -423,7 +403,7 @@ export function FileControlsToolbar() {
         onClick={handleRefresh}
       >
         {renderIcon('refresh', <RefreshCw className="h-4 w-4" />)}
-      </Button>
+      </ToolbarButton>
 
       {status && (
         <button

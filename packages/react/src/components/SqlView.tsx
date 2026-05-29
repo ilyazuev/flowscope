@@ -4,7 +4,6 @@ import {
   useEffect,
   useRef,
   type JSX,
-  type ReactNode,
   useImperativeHandle,
   forwardRef,
   useState,
@@ -132,12 +131,7 @@ function ToolbarDivider(): JSX.Element {
   return <div className="mx-1 h-5 w-px shrink-0 bg-border" />;
 }
 
-type SqlViewPropsWithToolbarSlots = SqlViewProps & {
-  /** Optional toolbar slot rendered before the built-in editor toolbar buttons. */
-  preToolbarElements?: ReactNode;
-};
-
-export const SqlView = forwardRef<SqlViewRef, SqlViewPropsWithToolbarSlots>(
+export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
   (
     {
       className,
@@ -275,6 +269,14 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewPropsWithToolbarSlots>(
               preventDefault: true,
               run: () => {
                 onRunSqlShortcut?.();
+                return true;
+              },
+            },
+            {
+              key: 'Mod-s',
+              preventDefault: true,
+              run: () => {
+                // save (or save as) here
                 return true;
               },
             },

@@ -271,8 +271,14 @@ export interface SqlViewProps {
   highlightedSpan?: Span | null;
   lineWrapping?: boolean;
   dialect?: Dialect | null;
+  preToolbarElements?: JSX.Element;
   extraToolbarElements?: JSX.Element;
   onRunSqlShortcut?: () => void;
+  // ??????
+  // shortcuts?: {
+  //   key: string;
+  //   action: () => void;
+  // };
 }
 
 /**
