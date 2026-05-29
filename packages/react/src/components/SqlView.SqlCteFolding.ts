@@ -113,7 +113,7 @@ function advanceLexState(text: string, i: number, state: ScanState): number {
   return i + 1;
 }
 
-function skipWhitespaceAndComments(text: string, pos: number): number {
+export function skipWhitespaceAndComments(text: string, pos: number): number {
   const state = createScanState();
   let i = pos;
 

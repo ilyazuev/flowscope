@@ -36,9 +36,16 @@ import { toast } from 'sonner';
 import { useLineage } from '../store';
 import type { SqlViewProps } from '../types';
 import { useBookmarkExtension } from './SqlView.Bookmarks';
-import { sqlCteFolding } from './SqlView.SqlCteFolding';
+import { parseCteAt, type ParsedCte, sqlCteFolding } from './SqlView.SqlCteFolding';
 import { format, SqlLanguage } from 'sql-formatter';
 import { Dialect } from '@pondpilot/flowscope-core';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@pondpilot/flowscope-app/src/components/ui/select';
 
 type HighlightRange = { from: number; to: number; className: string };
 
@@ -55,6 +62,7 @@ type StatusState = {
   line: number;
   column: number;
   position: number;
+  cte?: string;
 };
 
 const setHighlights = StateEffect.define<HighlightRange[]>();
@@ -188,6 +196,9 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         });
     }, [state.result, isControlled]);
 
+
+    const parsedCtesRef = useRef<Record<string, ParsedCte>>({});
+
     const editorRef = useRef<ReactCodeMirrorRef>(null);
     const [editorView, setEditorView] = useState<EditorView | null>(null);
     const [toolbarState, setToolbarState] = useState<ToolbarState>({
@@ -215,6 +226,14 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       const { doc, selection } = view.state;
       const head = selection.main.head;
       const line = doc.lineAt(head);
+      let cte = undefined;
+      for (const key in parsedCtesRef.current) {
+        const cteRange = parsedCtesRef.current[key];
+        if( cteRange.nameFrom <= head && head <= cteRange.bodyClose) {
+          cte = cteRange.name;
+          break;
+        }
+      }
 
       setStatusState({
         length: doc.length,
@@ -222,6 +241,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         line: line.number,
         column: head - line.from + 1,
         position: head + 1,
+        cte
       });
     }, []);
 
@@ -323,6 +343,22 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     useEffect(() => {
       updateStatusState(editorRef.current?.view ?? editorView);
     }, [sqlText, editorView, updateStatusState]);
+
+    useEffect(() => {
+      if( !sqlText ) {
+        parsedCtesRef.current = {};
+        return;
+      }
+      let lineFrom = 0;
+      let parsed = null;
+      do{
+        parsed = parseCteAt(sqlText, lineFrom);
+        if( parsed ) {
+          parsedCtesRef.current[parsed.name] = parsed;
+          lineFrom = parsed.bodyClose + 1;
+        }
+      } while(parsed);
+    }, [sqlText]);
 
     const handleUndo = useCallback(() => {
       const view = editorRef.current?.view ?? editorView;
@@ -555,6 +591,8 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     const modKey = isMac ? '⌘' : 'Ctrl';
     const redoShortcut = isMac ? '⇧⌘Z' : 'Ctrl+Y';
 
+    const parsedCteNames = Object.keys(parsedCtesRef.current).sort();
+
     return (
       <div
         className={`flowscope-sql-view flex h-full w-full min-h-0 min-w-0 flex-col ${className || ''}`}
@@ -642,7 +680,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             <Wand className="h-4 w-4" />
           </ToolbarButton>
 
-          { extraToolbarElements && (
+          {extraToolbarElements && (
             <>
               <ToolbarDivider />
               {extraToolbarElements}
@@ -673,13 +711,48 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 border-t bg-background px-2 py-1 text-[11px] leading-none text-muted-foreground">
-          <span>Len: {statusState.length}</span>
-          <span>Lines: {statusState.lines}</span>
+        <div
+          className="flex shrink-0 items-center gap-2 border-t bg-background px-2 py-1 text-[11px] leading-none text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap">Len: {statusState.length}</span>
+          <span className="shrink-0 whitespace-nowrap">Lines: {statusState.lines}</span>
+
           <ToolbarDivider />
-          <span>Line: {statusState.line}</span>
-          <span>Col: {statusState.column}</span>
-          <span>Pos: {statusState.position}</span>
+
+          <span className="shrink-0 whitespace-nowrap">Line: {statusState.line}</span>
+          <span className="shrink-0 whitespace-nowrap">Col: {statusState.column}</span>
+          <span className="shrink-0 whitespace-nowrap">Pos: {statusState.position}</span>
+
+          <ToolbarDivider />
+
+          {!!parsedCteNames.length && (
+            <Select
+              value={statusState.cte}
+              onValueChange={(v) => {
+                const view = editorRef.current?.view || editorView;
+                if (!view) return;
+                const cte = parsedCtesRef.current[v];
+                if (cte) {
+                  view.dispatch({
+                    selection: { anchor: cte.nameFrom },
+                    scrollIntoView: true,
+                  });
+                }
+              }}
+            >
+              <SelectTrigger
+                className="h-7 min-w-0 flex-1 whitespace-nowrap px-3 text-xs [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
+                <SelectValue placeholder="No CTE under cursor" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {parsedCteNames.map((cte) => (
+                  <SelectItem key={cte} value={cte} className="max-w-[min(80vw,520px)]">
+                    <span className="block truncate">{cte}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
     );

@@ -712,17 +712,6 @@ export function EditorArea({
 
   useGlobalShortcuts(analysisShortcuts);
 
-  if (!currentProject || !activeFile) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-muted-foreground bg-muted/5">
-        <Loader2 className="h-6 w-6 animate-spin opacity-50" />
-      </div>
-    );
-  }
-
-  const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
-  const selectedCount = currentProject.selectedFileIds?.length || 0;
-
   const fileControlsToolbarRef = useRef<FileControlsToolbarRef>(null);
   const fileControlsToolbar = !isReadOnly ? (
     <FileControlsToolbar ref={fileControlsToolbarRef} />
@@ -746,6 +735,17 @@ export function EditorArea({
     [handleExecuteSql, fileControlsToolbar]
   );
 
+
+  if (!currentProject || !activeFile) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground bg-muted/5">
+        <Loader2 className="h-6 w-6 animate-spin opacity-50" />
+      </div>
+    );
+  }
+
+  const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
+  const selectedCount = currentProject.selectedFileIds?.length || 0;
 
   const graphSyncWarning = isGraphOutOfSync ? (
     <div
