@@ -62,7 +62,7 @@ type StatusState = {
   line: number;
   column: number;
   position: number;
-  cte?: string;
+  cte: string;
 };
 
 const setHighlights = StateEffect.define<HighlightRange[]>();
@@ -215,6 +215,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         line: 1,
         column: 1,
         position: 1,
+        cte: '',
       };
     });
 
@@ -226,7 +227,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       const { doc, selection } = view.state;
       const head = selection.main.head;
       const line = doc.lineAt(head);
-      let cte = undefined;
+      let cte = '';
       for (const key in parsedCtesRef.current) {
         const cteRange = parsedCtesRef.current[key];
         if( cteRange.nameFrom <= head && head <= cteRange.bodyClose) {
@@ -349,10 +350,11 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         parsedCtesRef.current = {};
         return;
       }
+      const text = sqlText.replace(/\r\n?/g, '\n');
       let lineFrom = 0;
       let parsed = null;
       do{
-        parsed = parseCteAt(sqlText, lineFrom);
+        parsed = parseCteAt(text, lineFrom);
         if( parsed ) {
           parsedCtesRef.current[parsed.name] = parsed;
           lineFrom = parsed.bodyClose + 1;
@@ -726,17 +728,23 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
           {!!parsedCteNames.length && (
             <Select
-              value={statusState.cte}
+              value={statusState.cte ?? ''}
               onValueChange={(v) => {
                 const view = editorRef.current?.view || editorView;
                 if (!view) return;
                 const cte = parsedCtesRef.current[v];
-                if (cte) {
-                  view.dispatch({
-                    selection: { anchor: cte.nameFrom },
-                    scrollIntoView: true,
-                  });
+                if (!cte) {
+                  return;
                 }
+                view.dispatch({
+                  selection: EditorSelection.cursor(cte.nameFrom),
+                  scrollIntoView: true,
+                });
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    view.focus();
+                  });
+                });
               }}
             >
               <SelectTrigger
