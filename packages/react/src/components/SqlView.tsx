@@ -144,7 +144,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       dialect,
       preToolbarElements,
       extraToolbarElements,
-      onRunSqlShortcut,
+      shortcuts = [],
     },
     ref
   ): JSX.Element => {
@@ -260,34 +260,26 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
     const bookmarkExtension = useBookmarkExtension();
 
-    const runShortcutExtension = useMemo(
+    const shortcutExtension = useMemo(
       () =>
         Prec.highest(
-          keymap.of([
-            {
-              key: 'Mod-Enter',
-              preventDefault: true,
+          keymap.of(
+            shortcuts.map(({ key, action, preventDefault = true }) => ({
+              key,
+              preventDefault,
               run: () => {
-                onRunSqlShortcut?.();
+                action();
                 return true;
               },
-            },
-            {
-              key: 'Mod-s',
-              preventDefault: true,
-              run: () => {
-                // save (or save as) here
-                return true;
-              },
-            },
-          ])
+            }))
+          )
         ),
-      [onRunSqlShortcut]
+      [shortcuts]
     );
 
     const extensions = useMemo(
       () => [
-        runShortcutExtension, // EditorState.lineSeparator.of('\n'),
+        shortcutExtension, // EditorState.lineSeparator.of('\n'),
         sql({
           upperCaseKeywords: true,
         }),
@@ -313,7 +305,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         bookmarkExtension,
         sqlCteFolding(),
       ],
-      [editable, bookmarkExtension, lineWrapping, updateStatusState, runShortcutExtension]
+      [editable, bookmarkExtension, lineWrapping, updateStatusState, shortcutExtension]
     );
 
     const theme = useMemo(() => (isDark ? oneDark : 'light'), [isDark]);

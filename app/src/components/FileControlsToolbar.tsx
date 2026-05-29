@@ -1,9 +1,11 @@
 import {
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
+  forwardRef,
   type ChangeEvent,
   type JSX,
 } from 'react';
@@ -55,7 +57,13 @@ function hasExternalChange(
   );
 }
 
-export function FileControlsToolbar() {
+export type FileControlsToolbarRef = {
+  save: () => void;
+  saveAs: () => void;
+};
+
+export const FileControlsToolbar = forwardRef<FileControlsToolbarRef>(
+  function FileControlsToolbar(_props, ref) {
   const {
     currentProject,
     createFile,
@@ -341,6 +349,15 @@ export function FileControlsToolbar() {
     isDirty,
   ]);
 
+    useImperativeHandle(
+      ref,
+      () => ({
+        save: handleSave,
+        saveAs: handleSaveAsClick,
+      }),
+      [handleSave, handleSaveAsClick]
+    );
+
   return (
     <div className="flex shrink-0 items-center gap-1" aria-label="File controls">
       <input
@@ -418,4 +435,4 @@ export function FileControlsToolbar() {
       )}
     </div>
   );
-}
+});

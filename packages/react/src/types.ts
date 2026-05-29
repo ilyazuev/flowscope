@@ -253,6 +253,13 @@ export interface GraphViewFocusNodeProps {
 
 export type FocusSelectMode = 'none' | 'column' | 'table';
 
+
+export type SqlViewShortcut = {
+  key: string;
+  action: () => void;
+  preventDefault?: boolean;
+};
+
 /**
  * Props for the SqlView component.
  */
@@ -273,12 +280,7 @@ export interface SqlViewProps {
   dialect?: Dialect | null;
   preToolbarElements?: JSX.Element;
   extraToolbarElements?: JSX.Element;
-  onRunSqlShortcut?: () => void;
-  // ??????
-  // shortcuts?: {
-  //   key: string;
-  //   action: () => void;
-  // };
+  shortcuts?: SqlViewShortcut[];
 }
 
 /**

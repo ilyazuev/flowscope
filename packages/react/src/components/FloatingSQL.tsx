@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Loader2, Play } from 'lucide-react';
 import { SqlView } from './SqlView';
 import type { Dialect } from '@pondpilot/flowscope-core';
@@ -255,6 +255,16 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
     [runSql, sql]
   );
 
+  const sqlViewShortcuts = useMemo(
+    () => [
+      {
+        key: 'Mod-Enter',
+        action: handleRunSql,
+      },
+    ],
+    [handleRunSql]
+  );
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background">
       <ResizablePanelGroup direction="vertical" className="min-h-0 flex-1">
@@ -266,7 +276,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
             dialect={dialect}
             isDark={isDark}
             className="h-full text-sm"
-            onRunSqlShortcut={handleRunSql}
+            shortcuts={sqlViewShortcuts}
             extraToolbarElements={
               <Button
                 type="button"

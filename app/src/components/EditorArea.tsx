@@ -22,7 +22,7 @@ import { useAnalysis, useDebounce, useFileNavigation, useGlobalShortcuts } from 
 import type { SqlViewMode } from './EditorToolbar';
 import { EditorToolbar } from './EditorToolbar';
 import { ErrorBoundary } from './ErrorBoundary';
-import { FileControlsToolbar } from './FileControlsToolbar';
+import { FileControlsToolbar, type FileControlsToolbarRef, } from './FileControlsToolbar';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
@@ -705,7 +705,6 @@ export function EditorArea({
     [
       handleAnalyze,
       handleAnalyzeActiveOnly,
-      handleExecuteSql,
       handleExecuteCte,
       handleRevealInLineage,
     ]
@@ -724,7 +723,29 @@ export function EditorArea({
   const allFileCount = currentProject.files.filter((f) => f.name.endsWith('.sql')).length;
   const selectedCount = currentProject.selectedFileIds?.length || 0;
 
-  const fileControlsToolbar = !isReadOnly ? <FileControlsToolbar /> : undefined;
+  const fileControlsToolbarRef = useRef<FileControlsToolbarRef>(null);
+  const fileControlsToolbar = !isReadOnly ? (
+    <FileControlsToolbar ref={fileControlsToolbarRef} />
+  ) : undefined;
+
+  const sqlViewShortcuts = useMemo(
+    () => [
+      {
+        key: 'Mod-Enter',
+        action: handleExecuteSql,
+      },
+      ...(fileControlsToolbar
+        ? [
+          {
+            key: 'Mod-s',
+            action: () => fileControlsToolbarRef.current?.save(),
+          },
+        ]
+        : []),
+    ],
+    [handleExecuteSql, fileControlsToolbar]
+  );
+
 
   const graphSyncWarning = isGraphOutOfSync ? (
     <div
@@ -779,7 +800,7 @@ export function EditorArea({
             editable={sqlViewMode === 'template' && !isReadOnly}
             isDark={isDark}
             highlightedSpan={sqlViewMode === 'template' ? highlightedSpan : null}
-            onRunSqlShortcut={handleExecuteSql}
+            shortcuts={sqlViewShortcuts}
             preToolbarElements={fileControlsToolbar}
             extraToolbarElements={graphSyncWarning}
           />
