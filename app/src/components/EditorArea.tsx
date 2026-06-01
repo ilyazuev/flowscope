@@ -555,9 +555,9 @@ export function EditorArea({
     const text = buffer.join('');
     const parts = text.split('.');
     void openActionWindow(windowManager, isDark, currentProject.dialect,
-      parts.length == 0 ? parts[0] : parts[1],
+      parts.length == 1 ? parts[0] : parts[1],
       currentProject.database,
-      parts.length == 0 ? undefined : parts[0], undefined);
+      parts.length == 1 ? undefined : parts[0], undefined);
 
   }, [
     currentProject,

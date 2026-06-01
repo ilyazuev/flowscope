@@ -7,21 +7,13 @@ import { ToolbarButton } from './ToolbarButton';
 import { toast } from 'sonner';
 import {
   DataDescribePayload,
-  DataDescribePayloadResponse,
+  DataDescribeType,
   SqlPartType,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
 import { devLineageDataDescribe } from '@pondpilot/flowscope-app/src/lib/utils_backend';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@pondpilot/flowscope-app/src/components/ui/tabs';
-import {
-  DataLoadProvider,
-  useSharedDataLoad,
-} from '@pondpilot/flowscope-app/src/components/DataLoadContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pondpilot/flowscope-app/src/components/ui/tabs';
+import { DataLoadProvider, useSharedDataLoad } from '@pondpilot/flowscope-app/src/components/DataLoadContext';
 import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
 
 type DescribeTab = 'Table' | 'Code';
@@ -92,11 +84,11 @@ function FloatingDescribe({
   const [activeTab, setActiveTab] = useState<DescribeTab>('Code');
   const [columnNames, setColumnNames] = useState<string[] | null>(null);
 
-  const [resultCode, setResultCode] = useState<DataDescribePayloadResponse | null>(null);
+  const [script, setScript] = useState<string | null>(null);
   const [isCodeLoading, setIsCodeLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  const { setCsv, isDataLoading, setDataLoading } = useSharedDataLoad();
+  const {csv, setCsv, isDataLoading, setDataLoading } = useSharedDataLoad();
   const [errorTable, setErrorTable] = useState<string | null>(null);
 
   const requestIdRef = useRef(0);
@@ -105,20 +97,25 @@ function FloatingDescribe({
 
   useEffect(() => {
     let cancelled = false;
-
+    const asCode = activeTab == 'Code';
+    if (asCode) {
+      setErrorCode(null);
+      if (script) {
+        return;
+      }
+      setIsCodeLoading(true);
+      setScript(null);
+    } else {
+      setErrorTable(null);
+      if (csv) {
+        return;
+      }
+      setDataLoading(SqlPartType.sql);
+      setCsv(null);
+    }
     async function loadDescription() {
       if (!currentProject) {
         throw new Error('Project not found.');
-      }
-      const asCode = activeTab == 'Code';
-      if (asCode) {
-        setIsCodeLoading(true);
-        setErrorCode(null);
-        setResultCode(null);
-      } else {
-        setDataLoading(SqlPartType.sql);
-        setErrorTable(null);
-        setCsv(null);
       }
       const requestId = ++requestIdRef.current;
 
@@ -129,16 +126,16 @@ function FloatingDescribe({
           columnName,
           database: currentProject.database,
           userName: currentProject.userName,
-          asCode: asCode,
+          describeType: asCode ? DataDescribeType.code : DataDescribeType.table,
         };
         const response = await devLineageDataDescribe(dataDescribePayload);
         if (cancelled || requestIdRef.current !== requestId) {
           return;
         }
         if (asCode) {
-          setResultCode(response);
+          setScript(response?.script);
         } else {
-          setCsv(response?.csv ?? 'empty\nNo columns data found', tableFullName);
+          setCsv(response?.csv, tableFullName);
         }
         setColumnNames(response.columnNames ?? null);
       } catch (err) {
@@ -180,8 +177,8 @@ function FloatingDescribe({
 
   let columnSpan: { start: number; end: number } | undefined;
 
-  if (resultCode?.script && columnName) {
-    const start = resultCode.script.indexOf(`"${columnName}"`);
+  if (script && columnName) {
+    const start = script.indexOf(`"${columnName}"`);
     if (start !== -1) {
       columnSpan = {
         start,
@@ -207,7 +204,7 @@ function FloatingDescribe({
             isDark={isDark}
             editable
             lineWrapping={false}
-            value={resultCode?.script ?? (isCodeLoading ? '' : 'No description found')}
+            value={script ?? (isCodeLoading ? '' : 'No description found')}
             highlightedSpan={columnSpan}
             extraToolbarElements={
               isCodeLoading ? (
@@ -220,17 +217,23 @@ function FloatingDescribe({
             }
           />
         </TabsContent>
-        <TabsContent value="Table" className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden h-full flex flex-col">
+        <TabsContent
+          value="Table"
+          className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden h-full flex flex-col"
+        >
           {isDataLoading !== SqlPartType.none ? (
             <LoadingState isDark={isDark} tableFullName={tableFullName} />
           ) : errorTable ? (
             <span>{errorTable}</span>
-          ) : columnNames?.length ? (
+          ) : (
             <div className="shrink-0 flex items-center gap-2 p-1">
-              <CopyDescribedColumns columnNames={columnNames} />
+              {columnNames?.length && <CopyDescribedColumns columnNames={columnNames} />}
+              {!csv && <span>No columns data found</span>}
             </div>
-          ) : null}
-          <DataView className="flex-1 min-h-0" />
+          )}
+          <div className="flex-1 min-h-0">
+            <DataView />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

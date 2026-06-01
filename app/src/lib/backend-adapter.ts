@@ -62,13 +62,17 @@ export interface SqlPayloadResponse {
   parameters?: SqlParameters;
 }
 
+export enum DataDescribeType {
+  code, table, columns
+}
+
 export interface DataDescribePayload {
   schema?: string;
   tableName: string;
   columnName?: string;
   database?: string;
   userName?: string;
-  asCode: boolean;
+  describeType: DataDescribeType;
 }
 
 export interface DataDescribePayloadResponse {
