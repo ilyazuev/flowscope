@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, CopyPlus, Loader2 } from 'lucide-react';
 import { type WindowManagerApi } from './floating-window';
 import { SqlView } from './SqlView';
@@ -8,9 +8,27 @@ import { toast } from 'sonner';
 import {
   DataDescribePayload,
   DataDescribePayloadResponse,
+  SqlPartType,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
 import { devLineageDataDescribe } from '@pondpilot/flowscope-app/src/lib/utils_backend';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@pondpilot/flowscope-app/src/components/ui/tabs';
+import {
+  DataLoadProvider,
+  useSharedDataLoad,
+} from '@pondpilot/flowscope-app/src/components/DataLoadContext';
+import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
+
+type DescribeTab = 'Table' | 'Code';
+const VALID_TABS: readonly DescribeTab[] = ['Table', 'Code'];
+export function isValidTab(tab: string): tab is DescribeTab {
+  return VALID_TABS.includes(tab as DescribeTab);
+}
 
 function LoadingState({ tableFullName, isDark }: { tableFullName: string; isDark: boolean }) {
   return (
@@ -71,9 +89,16 @@ function FloatingDescribe({
   columnName?: string;
 }) {
   const { currentProject } = useProject();
-  const [result, setResult] = useState<DataDescribePayloadResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<DescribeTab>('Code');
+  const [columnNames, setColumnNames] = useState<string[] | null>(null);
+
+  const [resultCode, setResultCode] = useState<DataDescribePayloadResponse | null>(null);
+  const [isCodeLoading, setIsCodeLoading] = useState(true);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+
+  const { setCsv, isDataLoading, setDataLoading } = useSharedDataLoad();
+  const [errorTable, setErrorTable] = useState<string | null>(null);
+
   const requestIdRef = useRef(0);
 
   const tableFullName = `${schema ? `${schema}.` : ''}${tableName}`;
@@ -85,10 +110,16 @@ function FloatingDescribe({
       if (!currentProject) {
         throw new Error('Project not found.');
       }
-
-      setIsLoading(true);
-      setError(null);
-      setResult(null);
+      const asCode = activeTab == 'Code';
+      if (asCode) {
+        setIsCodeLoading(true);
+        setErrorCode(null);
+        setResultCode(null);
+      } else {
+        setDataLoading(SqlPartType.sql);
+        setErrorTable(null);
+        setCsv(null);
+      }
       const requestId = ++requestIdRef.current;
 
       try {
@@ -98,22 +129,35 @@ function FloatingDescribe({
           columnName,
           database: currentProject.database,
           userName: currentProject.userName,
+          asCode: asCode,
         };
         const response = await devLineageDataDescribe(dataDescribePayload);
         if (cancelled || requestIdRef.current !== requestId) {
           return;
         }
-
-        setResult(response);
+        if (asCode) {
+          setResultCode(response);
+        } else {
+          setCsv(response?.csv ?? 'empty\nNo columns data found', tableFullName);
+        }
+        setColumnNames(response.columnNames ?? null);
       } catch (err) {
         if (cancelled) {
           return;
         }
-
-        setError(err instanceof Error ? err.message : 'Failed to describe object');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to describe object';
+        if (asCode) {
+          setErrorCode(errorMessage);
+        } else {
+          setErrorTable(errorMessage);
+        }
       } finally {
         if (!cancelled) {
-          setIsLoading(false);
+          if (asCode) {
+            setIsCodeLoading(false);
+          } else {
+            setDataLoading(SqlPartType.none);
+          }
         }
       }
     }
@@ -123,25 +167,21 @@ function FloatingDescribe({
     return () => {
       cancelled = true;
     };
-  }, [tableName, schema, columnName]);
+  }, [activeTab, tableName, schema, columnName]);
 
-  if (isLoading) {
-    return <LoadingState isDark={isDark} tableFullName={tableFullName} />;
-  }
-
-  if (error) {
-    return <span>{error}</span>;
-  }
-
-  if (!result?.script) {
-    return <span>No description found</span>;
-  }
+  const handleTabChange = useCallback(
+    (value: string) => {
+      if (isValidTab(value)) {
+        setActiveTab(value);
+      }
+    },
+    [setActiveTab]
+  );
 
   let columnSpan: { start: number; end: number } | undefined;
 
-  if (columnName) {
-    const start = result.script.indexOf(`"${columnName}"`);
-
+  if (resultCode?.script && columnName) {
+    const start = resultCode.script.indexOf(`"${columnName}"`);
     if (start !== -1) {
       columnSpan = {
         start,
@@ -152,17 +192,47 @@ function FloatingDescribe({
 
   return (
     <div className="h-full w-full min-h-0">
-      <SqlView
-        className="h-full w-full"
-        isDark={isDark}
-        editable={true}
-        lineWrapping={false}
-        value={result.script}
-        highlightedSpan={columnSpan}
-        extraToolbarElements={
-          result.columnNames ? <CopyDescribedColumns columnNames={result.columnNames} /> : undefined
-        }
-      />
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="h-full w-full flex flex-col min-h-0"
+      >
+        <TabsList>
+          <TabsTrigger value="Code">Code</TabsTrigger>
+          <TabsTrigger value="Table">Table</TabsTrigger>
+        </TabsList>
+        <TabsContent value="Code" className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden">
+          <SqlView
+            className="h-full w-full"
+            isDark={isDark}
+            editable
+            lineWrapping={false}
+            value={resultCode?.script ?? (isCodeLoading ? '' : 'No description found')}
+            highlightedSpan={columnSpan}
+            extraToolbarElements={
+              isCodeLoading ? (
+                <LoadingState isDark={isDark} tableFullName={tableFullName} />
+              ) : errorCode ? (
+                <span>{errorCode}</span>
+              ) : columnNames?.length ? (
+                <CopyDescribedColumns columnNames={columnNames} />
+              ) : undefined
+            }
+          />
+        </TabsContent>
+        <TabsContent value="Table" className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden h-full flex flex-col">
+          {isDataLoading !== SqlPartType.none ? (
+            <LoadingState isDark={isDark} tableFullName={tableFullName} />
+          ) : errorTable ? (
+            <span>{errorTable}</span>
+          ) : columnNames?.length ? (
+            <div className="shrink-0 flex items-center gap-2 p-1">
+              <CopyDescribedColumns columnNames={columnNames} />
+            </div>
+          ) : null}
+          <DataView className="flex-1 min-h-0" />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -182,12 +252,14 @@ export const openDescribeWindow = (
     id: `describeWindow-${database ?? ''}-${objectFullName}`,
     title: `${database ? `${database}. ` : ''}Describe object ${objectFullName}`,
     content: (
-      <FloatingDescribe
-        isDark={isDark}
-        tableName={tableName}
-        schema={schema}
-        columnName={columnName}
-      />
+      <DataLoadProvider>
+        <FloatingDescribe
+          isDark={isDark}
+          tableName={tableName}
+          schema={schema}
+          columnName={columnName}
+        />
+      </DataLoadProvider>
     ),
   });
 };

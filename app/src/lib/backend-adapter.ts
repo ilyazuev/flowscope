@@ -68,12 +68,14 @@ export interface DataDescribePayload {
   columnName?: string;
   database?: string;
   userName?: string;
+  asCode: boolean;
 }
 
 export interface DataDescribePayloadResponse {
   schema?: string;
   tableName?: string;
   script?: string;
+  csv?: string;
   columnNames?: string[];
   lastDdlTime?: number;
   errorMessage?: string;

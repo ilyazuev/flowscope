@@ -9,6 +9,7 @@ import { resolveTheme, useThemeStore } from '@/lib/theme-store.ts';
 import SERVER_WASM from '@perspective-dev/server/dist/wasm/perspective-server.wasm?url';
 import CLIENT_WASM from '@perspective-dev/viewer/dist/wasm/perspective-viewer.wasm?url';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
+import { SqlPartType } from '@/lib/backend-adapter.ts';
 
 // noinspection JSVoidFunctionReturnValueUsed
 await Promise.all([
@@ -192,7 +193,8 @@ export function DataView() {
   useEffect(() => {
     if (!initializedRef.current) return;
     if (!requestId) return;
-    if (isDataLoading || lastAppliedRequestIdRef.current === requestId) return;
+    if (isDataLoading != SqlPartType.none) return;
+    if (lastAppliedRequestIdRef.current === requestId) return;
 
     lastAppliedRequestIdRef.current = requestId;
 
@@ -213,7 +215,7 @@ export function DataView() {
     };
 
     void run();
-  }, [csv, requestId]);
+  }, [csv, requestId, isDataLoading, title]);
 
   return (
     <>

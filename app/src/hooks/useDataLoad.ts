@@ -39,8 +39,17 @@ export function useDataLoad() {
     setState((prev) => ({ ...prev, parameters }));
   }, []);
 
-  const setCsv = useCallback((csv?: string|null) => {
-    setState((prev) => ({ ...prev, csv }));
+  const setCsv = useCallback((csv?: string | null, title?: string | null) => { // const setCsv = useCallback((csv?: string|null) => { setState((prev) => ({ ...prev, csv })); }, []);
+    requestIdRef.current += 1;
+
+    setState((prev) => ({
+      ...prev,
+      requestId: requestIdRef.current,
+      csv,
+      title: title ?? prev.title,
+      dataLoadingError: null,
+      _lastLoadAt: Date.now(),
+    }));
   }, []);
 
   const setDataLoading = useCallback((isDataLoading: SqlPartType) => {
