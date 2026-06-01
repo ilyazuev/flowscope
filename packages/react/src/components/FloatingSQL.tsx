@@ -308,7 +308,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {foundInSqlParameters.current && Object.keys(foundInSqlParameters.current).length && (
+      {foundInSqlParameters.current && Object.keys(foundInSqlParameters.current).length > 0 && (
         <SqlParametersEditor
           open={needParameters}
           isDark={isDark}

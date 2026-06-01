@@ -134,7 +134,7 @@ export function DataView() {
   useEffect(() => {
     let cancelled = false;
 
-    const run = async () => {
+    const run = async (csv?: string | null) => {
       const viewer = viewerRef.current;
       if (!viewer || initializedRef.current) {
         return;
@@ -142,9 +142,9 @@ export function DataView() {
       setError(null);
       setStatus('Loading data...');
       try {
-        const csv = 'empty\n'; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
+        const currentCsv = csv ?? 'empty\n'; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
         if (cancelled) return;
-        await loadCsvToViewer(csv);
+        await loadCsvToViewer(currentCsv);
         setStatus(null);
         initializedRef.current = true;
       } catch (e) {
@@ -153,7 +153,7 @@ export function DataView() {
       }
     };
 
-    void run();
+    void run(csv);
 
     return () => {
       cancelled = true; // if (initializedRef.current) {}
@@ -191,20 +191,19 @@ export function DataView() {
   }, [isDataLoading, dataLoadingError]);
 
   useEffect(() => {
-    if (!initializedRef.current) return;
     if (!requestId) return;
     if (isDataLoading != SqlPartType.none) return;
-    if (lastAppliedRequestIdRef.current === requestId) return;
+    if (lastAppliedRequestIdRef.current === requestId) return; // if (!initializedRef.current) return;
 
     lastAppliedRequestIdRef.current = requestId;
 
+    if (!csv?.trim()) {
+      setError(null);
+      setStatus('No data');
+      return;
+    }
     const run = async () => {
       try {
-        if (!csv?.trim()) {
-          setError(null);
-          setStatus('No data');
-          return;
-        }
         await loadCsvToViewer(csv, title);
         setStatus(null);
       } catch (e) {

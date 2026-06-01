@@ -84,7 +84,7 @@ function FloatingDescribe({
   const [activeTab, setActiveTab] = useState<DescribeTab>('Code');
   const [columnNames, setColumnNames] = useState<string[] | null>(null);
 
-  const [script, setScript] = useState<string | null>(null);
+  const [script, setScript] = useState<string | null | undefined>(null);
   const [isCodeLoading, setIsCodeLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
@@ -99,17 +99,17 @@ function FloatingDescribe({
     let cancelled = false;
     const asCode = activeTab == 'Code';
     if (asCode) {
-      setErrorCode(null);
       if (script) {
         return;
       }
+      setErrorCode(null);
       setIsCodeLoading(true);
       setScript(null);
     } else {
-      setErrorTable(null);
       if (csv) {
         return;
       }
+      setErrorTable(null);
       setDataLoading(SqlPartType.sql);
       setCsv(null);
     }
@@ -135,7 +135,7 @@ function FloatingDescribe({
         if (asCode) {
           setScript(response?.script);
         } else {
-          setCsv(response?.csv, tableFullName);
+          setCsv(response?.csv ?? 'empty\nNo columns data found', tableFullName);
         }
         setColumnNames(response.columnNames ?? null);
       } catch (err) {
