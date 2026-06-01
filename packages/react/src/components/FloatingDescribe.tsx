@@ -197,7 +197,7 @@ function FloatingDescribe({
         onValueChange={handleTabChange}
         className="h-full w-full flex flex-col min-h-0"
       >
-        <TabsList>
+        <TabsList className="shrink-1">
           <TabsTrigger value="Code">Code</TabsTrigger>
           <TabsTrigger value="Table">Table</TabsTrigger>
         </TabsList>

@@ -469,51 +469,40 @@ export function EditorArea({
     ) {
       return;
     }
-    const actionMessage = action == 'RunDescribe'
-      ? 'describing objects'
-      : 'preview sql';
-    if (isGraphOutOfSync) {
-      setError(`Graph is stale. Re-run analysis before ${actionMessage}.`);
-      return;
-    }
     const selection = sqlViewRef.current.getSelection();
     if (!selection) {
       return;
     }
-    const result = getResult(activeProjectId, hideCTEs);
-    if (!result) {
-      setError(`No Lineage Data: need to parse SQL before ${actionMessage}.`);
-      return;
-    }
-    if (result.resolvedSchema) {
-      const openActionWindow = (
-        windowManager: Pick<WindowManagerApi, 'openWindow'>,
-        isDark: boolean,
-        dialect: Dialect,
-        tableName: string,
-        database?: string,
-        schema?: string,
-        columns?: Array<{
-          name: string;
-        }>,
-        columnName?: string,
-      ) => {
-        if( action == 'RunDescribe' ) {
-          void openDescribeWindow(
-            windowManager, isDark, tableName, database, schema, columnName);
-        } else if( action == 'RunSqlPreview' ) {
-          openFloatingSQLPreview({
-            windowManager,
-            dialect,
-            table: {
-              catalog: database,
-              schema,
-              tableName,
-              columns
-            }
-          });
-        }
+    const openActionWindow = (
+      windowManager: Pick<WindowManagerApi, 'openWindow'>,
+      isDark: boolean,
+      dialect: Dialect,
+      tableName: string,
+      database?: string,
+      schema?: string,
+      columns?: Array<{
+        name: string;
+      }>,
+      columnName?: string,
+    ) => {
+      if( action == 'RunDescribe' ) {
+        void openDescribeWindow(
+          windowManager, isDark, tableName, database, schema, columnName);
+      } else if( action == 'RunSqlPreview' ) {
+        openFloatingSQLPreview({
+          windowManager,
+          dialect,
+          table: {
+            catalog: database,
+            schema,
+            tableName,
+            columns
+          }
+        });
       }
+    } // const actionMessage = action == 'RunDescribe' ? 'describing objects' : 'preview sql'; if (isGraphOutOfSync) { setError(`Graph is stale. Re-run analysis before ${actionMessage}.`); return; }
+    const result = getResult(activeProjectId, hideCTEs); // if (!result) { setError(`No Lineage Data: need to parse SQL before ${actionMessage}.`); return; }
+    if (result?.resolvedSchema) {
       for (const table of result.resolvedSchema.tables) {
         if (table.spans) {
           for (const span of table.spans) {
@@ -543,7 +532,33 @@ export function EditorArea({
         }
       }
     }
-    setError('No database object found under cursor.');
+    const buffer: string[] = [];
+    for (let i = selection.head; i >= 0 ; i--) {
+      const ch = displayContent[i];
+      if( /[A-Za-z0-9_.]/.test(ch) ) {
+        buffer.unshift(ch);
+      } else {
+        break;
+      }
+    }
+    for (let i = selection.head + 1; i < displayContent.length ; i++) {
+      const ch = displayContent[i];
+      if( /[A-Za-z0-9_.]/.test(ch) ) {
+        buffer.push(ch);
+      } else {
+        break;
+      }
+    }
+    if( buffer.length == 0 ) {
+      setError('No database object found under cursor.');
+    }
+    const text = buffer.join('');
+    const parts = text.split('.');
+    void openActionWindow(windowManager, isDark, currentProject.dialect,
+      parts.length == 0 ? parts[0] : parts[1],
+      currentProject.database,
+      parts.length == 0 ? undefined : parts[0], undefined);
+
   }, [
     currentProject,
     activeFile,
