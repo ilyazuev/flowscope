@@ -304,7 +304,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
         <ResizableHandle withHandleHoriz />
 
         <ResizablePanel defaultSize={50} minSize={20}>
-          <DataView />
+          <DataView settings={true} />
         </ResizablePanel>
       </ResizablePanelGroup>
 

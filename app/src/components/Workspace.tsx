@@ -544,7 +544,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                       collapsedSize={0}
                       data-testid="analysis-panel"
                     >
-                      <DataView />
+                      <DataView settings={true}/>
                     </ResizablePanel>
                   </ResizablePanelGroup>
                 </div>

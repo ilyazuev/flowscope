@@ -31,7 +31,11 @@ type PerspectiveTable = {
   delete?: (options?: { lazy?: boolean }) => Promise<void>;
 };
 
-export function DataView() {
+export function DataView({
+  settings
+}: {
+  settings: boolean
+}) {
   const viewerRef = useRef<PerspectiveViewerElement | null>(null);
   const workerRef = useRef<PerspectiveWorker | null>(null);
   const tableRef = useRef<PerspectiveTable | null>(null);
@@ -63,6 +67,20 @@ export function DataView() {
       void applyTheme(viewer);
     }
   }, [isDark]);
+
+  useEffect(() => {
+    if (dataLoadingError) {
+      setError('Data Loading Error: ' + dataLoadingError);
+    } else {
+      setError(null);
+      if (isDataLoading) {
+        setStatus('Data loading...');
+      } else {
+        setStatus(null);
+      }
+    }
+  }, [isDataLoading, dataLoadingError]);
+
 
   const safeDeleteTable = async (table: PerspectiveTable | null) => {
     if (!table?.delete) return;
@@ -109,7 +127,7 @@ export function DataView() {
 
     await viewer.restore({
       plugin: 'Datagrid',
-      settings: true,
+      settings: settings,
       title: title ?? 'no data',
       plugin_config: {
         editable: true,
@@ -142,9 +160,10 @@ export function DataView() {
       setError(null);
       setStatus('Loading data...');
       try {
-        const currentCsv = csv ?? 'empty\n'; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
+        const currentCsv = csv ?? '_\n'; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
+        const currentTitle = csv ? title: null;
         if (cancelled) return;
-        await loadCsvToViewer(currentCsv);
+        await loadCsvToViewer(currentCsv, currentTitle);
         setStatus(null);
         initializedRef.current = true;
       } catch (e) {
@@ -176,19 +195,6 @@ export function DataView() {
       })();
     };
   }, []);
-
-  useEffect(() => {
-    if (dataLoadingError) {
-      setError('Data Loading Error: ' + dataLoadingError);
-    } else {
-      setError(null);
-      if (isDataLoading) {
-        setStatus('Data loading...');
-      } else {
-        setStatus(null);
-      }
-    }
-  }, [isDataLoading, dataLoadingError]);
 
   useEffect(() => {
     if (!requestId) return;

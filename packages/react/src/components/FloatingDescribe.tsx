@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pondpilot/flowscope-a
 import { DataLoadProvider, useSharedDataLoad } from '@pondpilot/flowscope-app/src/components/DataLoadContext';
 import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
 
+const EMPTY_NO_COLUMNS_FOUND = '_\nNo columns found';
+
 type DescribeTab = 'Table' | 'Code';
 const VALID_TABS: readonly DescribeTab[] = ['Table', 'Code'];
 export function isValidTab(tab: string): tab is DescribeTab {
@@ -135,7 +137,7 @@ function FloatingDescribe({
         if (asCode) {
           setScript(response?.script);
         } else {
-          setCsv(response?.csv ?? 'empty\nNo columns data found', tableFullName);
+          setCsv(response?.csv ?? EMPTY_NO_COLUMNS_FOUND, tableFullName);
         }
         setColumnNames(response.columnNames ?? null);
       } catch (err) {
@@ -146,6 +148,7 @@ function FloatingDescribe({
         if (asCode) {
           setErrorCode(errorMessage);
         } else {
+          setCsv(EMPTY_NO_COLUMNS_FOUND, tableFullName);
           setErrorTable(errorMessage);
         }
       } finally {
@@ -232,7 +235,7 @@ function FloatingDescribe({
             </div>
           )}
           <div className="flex-1 min-h-0">
-            <DataView />
+            <DataView settings={false}/>
           </div>
         </TabsContent>
       </Tabs>
