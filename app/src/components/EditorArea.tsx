@@ -122,8 +122,8 @@ export function EditorArea({
   const { adapter } = useBackend();
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
   const {
-    isDataLoading,
-    setDataLoading,
+    dataLoadingState,
+    setDataLoadingState,
     runExecuteSql,
     parameters,
     setParameters,
@@ -779,7 +779,7 @@ export function EditorArea({
         dialect={currentProject.dialect}
         onRunModeChange={(mode: RunMode) => setRunMode(currentProject.id, mode)}
         isAnalyzing={isAnalyzing}
-        isDataLoading={isDataLoading}
+        dataLoadingState={dataLoadingState}
         backendReady={backendReady}
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}
@@ -837,7 +837,7 @@ export function EditorArea({
               focusSqlView();
             }
             if (!ok) {
-              setDataLoading(SqlPartType.none);
+              setDataLoadingState(SqlPartType.none);
             }
           }}
           onRunSql={handleUseParameters}

@@ -43,7 +43,7 @@ export function DataView({
   const lastAppliedRequestIdRef = useRef(0);
   const loadTokenRef = useRef(0);
 
-  const { isDataLoading, dataLoadingError, csv, title, requestId } = useSharedDataLoad();
+  const { dataLoadingState, dataLoadingError, csv, title, requestId } = useSharedDataLoad();
 
   const [status, setStatus] = useState<string | null>('Initialization...');
   const [error, setError] = useState<string | null>(null);
@@ -73,13 +73,13 @@ export function DataView({
       setError('Data Loading Error: ' + dataLoadingError);
     } else {
       setError(null);
-      if (isDataLoading) {
+      if (dataLoadingState) {
         setStatus('Data loading...');
       } else {
         setStatus(null);
       }
     }
-  }, [isDataLoading, dataLoadingError]);
+  }, [dataLoadingState, dataLoadingError]);
 
 
   const safeDeleteTable = async (table: PerspectiveTable | null) => {
@@ -136,6 +136,10 @@ export function DataView({
     });
 
     const elements = viewer.getElementsByTagName('perspective-viewer-datagrid');
+    const themeElements = viewer.shadowRoot?.querySelectorAll('#theme_icon, #theme');
+    for (const themeElement of themeElements ?? []) {
+      (themeElement as HTMLElement).style.display = 'none';
+    }
     if( elements && elements.length > 0 ){
       const tds = elements[0].shadowRoot?.querySelectorAll('regular-table > table td, regular-table > table th');
       if (tds && elements.length > 0) {
@@ -198,7 +202,7 @@ export function DataView({
 
   useEffect(() => {
     if (!requestId) return;
-    if (isDataLoading != SqlPartType.none) return;
+    if (dataLoadingState !== SqlPartType.none) return;
     if (lastAppliedRequestIdRef.current === requestId) return; // if (!initializedRef.current) return;
 
     lastAppliedRequestIdRef.current = requestId;
@@ -220,7 +224,7 @@ export function DataView({
     };
 
     void run();
-  }, [csv, requestId, isDataLoading, title]);
+  }, [csv, requestId, dataLoadingState, title]);
 
   return (
     <>

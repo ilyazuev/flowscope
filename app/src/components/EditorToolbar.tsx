@@ -30,7 +30,7 @@ interface EditorToolbarProps {
   dialect: Dialect;
   onRunModeChange: (mode: RunMode) => void;
   isAnalyzing: boolean;
-  isDataLoading: SqlPartType;
+  dataLoadingState: SqlPartType;
   backendReady: boolean;
   onAnalyze: () => void;
   onExecuteSql: () => void;
@@ -53,7 +53,7 @@ export function EditorToolbar({
   dialect,
   onRunModeChange,
   isAnalyzing,
-  isDataLoading,
+  dataLoadingState,
   backendReady,
   onAnalyze,
   onExecuteSql,
@@ -124,11 +124,11 @@ export function EditorToolbar({
                   <GraphTooltipTrigger asChild>
                     <Button
                       onClick={onExecuteSql}
-                      disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
+                      disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
                       size="sm"
                       className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
                     >
-                      {isDataLoading != SqlPartType.none ? (
+                      {dataLoadingState !== SqlPartType.none ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <Play className="h-3.5 w-3.5 fill-current" />
@@ -152,7 +152,7 @@ export function EditorToolbar({
                   <Button
                     size="sm"
                     className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
-                    disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
+                    disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
                   >
                     <ChevronDown className="size-3.5" />
                   </Button>
@@ -211,7 +211,7 @@ export function EditorToolbar({
           )}
           <Button
             onClick={onAnalyze}
-            disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
+            disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
             size="sm"
             className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3 ml-1"
           >
@@ -227,7 +227,7 @@ export function EditorToolbar({
               <Button
                 size="sm"
                 className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
-                disabled={!backendReady || isAnalyzing || isDataLoading != SqlPartType.none}
+                disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
               >
                 <ChevronDown className="size-3.5" />
               </Button>

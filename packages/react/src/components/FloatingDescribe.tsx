@@ -90,7 +90,7 @@ function FloatingDescribe({
   const [isCodeLoading, setIsCodeLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  const {csv, setCsv, isDataLoading, setDataLoading } = useSharedDataLoad();
+  const {csv, setCsv, dataLoadingState, setDataLoadingState } = useSharedDataLoad();
   const [errorTable, setErrorTable] = useState<string | null>(null);
 
   const requestIdRef = useRef(0);
@@ -112,7 +112,7 @@ function FloatingDescribe({
         return;
       }
       setErrorTable(null);
-      setDataLoading(SqlPartType.sql);
+      setDataLoadingState(SqlPartType.sql);
       setCsv(null);
     }
     async function loadDescription() {
@@ -156,7 +156,7 @@ function FloatingDescribe({
           if (asCode) {
             setIsCodeLoading(false);
           } else {
-            setDataLoading(SqlPartType.none);
+            setDataLoadingState(SqlPartType.none);
           }
         }
       }
@@ -224,7 +224,7 @@ function FloatingDescribe({
           value="Table"
           className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden h-full flex flex-col"
         >
-          {isDataLoading !== SqlPartType.none ? (
+          {dataLoadingState !== SqlPartType.none ? (
             <LoadingState isDark={isDark} tableFullName={tableFullName} />
           ) : errorTable ? (
             <span>{errorTable}</span>

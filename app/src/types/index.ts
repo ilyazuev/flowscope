@@ -65,7 +65,7 @@ export interface AnalysisState {
 }
 
 export interface DataLoadState {
-  isDataLoading: SqlPartType;
+  dataLoadingState: SqlPartType;
   requestId: number;
   title?: string | null;
   csv?: string | null;

@@ -204,13 +204,13 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
 
   const {
     runExecuteSql,
-    isDataLoading,
+    dataLoadingState,
     needParameters,
     setNeedParameters,
-    setDataLoading,
+    setDataLoadingState,
   } = useSharedDataLoad();
 
-  const isRunning = isDataLoading !== SqlPartType.none;
+  const isRunning = dataLoadingState !== SqlPartType.none;
 
   const needParametersForSql = (
     sql: string,
@@ -316,7 +316,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
             setNeedParameters(open);
 
             if (!ok) {
-              setDataLoading(SqlPartType.none);
+              setDataLoadingState(SqlPartType.none);
             }
           }}
           onRunSql={handleUseParameters}

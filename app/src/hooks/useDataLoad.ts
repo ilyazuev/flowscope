@@ -9,7 +9,7 @@ export function useDataLoad() {
   const requestIdRef = useRef(0);
 
   const [state, setState] = useState<DataLoadState>({
-    isDataLoading: SqlPartType.none,
+    dataLoadingState: SqlPartType.none,
     requestId: 0,
     csv: null,
     dataLoadingError: null,
@@ -23,7 +23,7 @@ export function useDataLoad() {
     setState((prev) => ({
       ...prev,
       requestId,
-      isDataLoading: partType,
+      dataLoadingState: partType,
       dataLoadingError: null,
       csv: null,
       needParameters: false,
@@ -52,8 +52,8 @@ export function useDataLoad() {
     }));
   }, []);
 
-  const setDataLoading = useCallback((isDataLoading: SqlPartType) => {
-    setState((prev) => ({ ...prev, isDataLoading }));
+  const setDataLoadingState = useCallback((dataLoadingState: SqlPartType) => {
+    setState((prev) => ({ ...prev, dataLoadingState: dataLoadingState }));
   }, []);
 
   const setDataLoadingError = useCallback((error: string | null) => {
@@ -73,7 +73,7 @@ export function useDataLoad() {
       if (!activeFileContent?.trim()) {
         setState((prev) => ({
           ...prev,
-          isDataLoading: SqlPartType.none,
+          dataLoadingState: SqlPartType.none,
           dataLoadingError: 'No SQL content to execute',
         }));
         return;
@@ -100,7 +100,7 @@ export function useDataLoad() {
         if (!sqlPayloadResponse.csv) {
           setState((prev) => ({
             ...prev,
-            isDataLoading: needParameters ? partType : SqlPartType.none,
+            dataLoadingState: needParameters ? partType : SqlPartType.none,
             dataLoadingError: needParameters ? null : 'No data response',
             csv: null,
             parameters: sqlPayloadResponse.parameters,
@@ -111,7 +111,7 @@ export function useDataLoad() {
 
         setState((prev) => ({
           ...prev,
-          isDataLoading: SqlPartType.none,
+          dataLoadingState: SqlPartType.none,
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
           parameters: sqlPayloadResponse.parameters,
@@ -126,7 +126,7 @@ export function useDataLoad() {
 
         setState((prev) => ({
           ...prev,
-          isDataLoading: SqlPartType.none,
+          dataLoadingState: SqlPartType.none,
           dataLoadingError: error instanceof Error ? error.message : 'Data load failed',
         }));
 
@@ -145,7 +145,7 @@ export function useDataLoad() {
     setState((prev) => ({
       ...prev,
       requestId: requestIdRef.current,
-      isDataLoading: SqlPartType.none,
+      dataLoadingState: SqlPartType.none,
       csv: null,
       dataLoadingError: null,
     }));
@@ -155,7 +155,7 @@ export function useDataLoad() {
     ...state,
     runExecuteSql,
     setDataLoadingError,
-    setDataLoading,
+    setDataLoadingState: setDataLoadingState,
     setNeedParameters,
     setParameters,
     setCsv,
