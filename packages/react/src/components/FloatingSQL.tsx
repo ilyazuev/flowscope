@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Loader2, Play } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Loader2, LoaderCircle, Play } from 'lucide-react';
 import { SqlView } from './SqlView';
 import type { Dialect } from '@pondpilot/flowscope-core';
 import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
@@ -14,12 +14,15 @@ import {
   ResizablePanelGroup,
 } from '@pondpilot/flowscope-app/src/components/ui/resizable';
 import { resolveTheme, useThemeStore } from '@pondpilot/flowscope-app/src/lib/theme-store';
-import { SqlParameters } from '@pondpilot/flowscope-app/src/lib/project-store';
-import { SqlPartType } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
+import { SqlParameters, useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
+import { DataDescribePayload, DataDescribeType, SqlPartType } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import type { WindowManagerApi } from './floating-window';
 import { Button } from './ui/button';
 import { modKey } from '@pondpilot/flowscope-app/src/lib/shortcuts';
 import { extractKnownSqlParamsInSqlOrder } from '@pondpilot/flowscope-app/src/lib/utils';
+import { devLineageDataDescribe } from '@pondpilot/flowscope-app/src/lib/utils_backend';
+
+const DATABASE_OBJECT_NOT_FOUND = "Database object not found";
 
 export type SchemaPreviewTableData = {
   catalog?: string;
@@ -75,8 +78,8 @@ function quoteBigQueryPath(parts: string[]): string {
   return `\`${parts.join('.').replace(/`/g, '\\`')}\``;
 }
 
-function buildQualifiedTableName(data: SchemaPreviewTableData, dialect: Dialect): string {
-  const parts = [/*data.catalog, */data.schema, data.tableName].filter(
+function buildQualifiedTableName(table: SchemaPreviewTableData, dialect: Dialect): string {
+  const parts = [/*data.catalog, */table.schema, table.tableName].filter(
     (part): part is string => Boolean(part?.trim())
   );
 
@@ -108,17 +111,17 @@ function buildLimitParts(dialect: Dialect): {
   };
 }
 
-export function buildSchemaPreviewSql(
-  data: SchemaPreviewTableData,
+function buildSchemaPreviewSql(
+  table: SchemaPreviewTableData,
   dialect: Dialect
 ): string {
-  const columns = data.columns?.length
-    ? data.columns
+  const columns = table.columns?.length
+    ? table.columns
       .map((column) => `${quoteIdentifierPart(column.name, dialect)}`)
       .join(', ')
     : '\t*';
 
-  const tableName = buildQualifiedTableName(data, dialect);
+  const tableName = buildQualifiedTableName(table, dialect);
   const limit = buildLimitParts(dialect);
 
   const selectLine = limit.selectPrefix
@@ -139,7 +142,7 @@ ${limit.suffix}`
     : sql;
 }
 
-export function buildSchemaPreviewWindowId(data: SchemaPreviewTableData): string {
+function buildSchemaPreviewWindowId(data: SchemaPreviewTableData): string {
   return [
     'schema-sql-preview',
     data.catalog || 'default-catalog',
@@ -156,10 +159,10 @@ export function buildSchemaPreviewWindowId(data: SchemaPreviewTableData): string
 }
 
 export function openFloatingSQLPreview({
-                                         windowManager,
-                                         table,
-                                         dialect,
-                                       }: {
+  windowManager,
+  table,
+  dialect,
+}: {
   windowManager: Pick<WindowManagerApi, 'openWindow'>;
   table: SchemaPreviewTableData;
   dialect: Dialect;
@@ -167,7 +170,6 @@ export function openFloatingSQLPreview({
   const title = `Preview: ${[table.catalog, table.schema, table.tableName]
     .filter(Boolean)
     .join('.')}`;
-
   windowManager.openWindow({
     id: buildSchemaPreviewWindowId(table),
     title,
@@ -177,16 +179,86 @@ export function openFloatingSQLPreview({
     minHeight: 420,
     contentClassName: 'min-h-0 flex-1 overflow-hidden p-1 text-sm leading-6',
     content: (
-      <FloatingSQL
+      <LoadSQL
         title={title}
-        initialSql={buildSchemaPreviewSql(table, dialect)}
+        table={table}
         dialect={dialect}
       />
     ),
   });
 }
 
-export function FloatingSQL(props: FloatingSQLProps) {
+interface LoadSQLProps {
+  title: string;
+  table: SchemaPreviewTableData;
+  dialect: Dialect;
+}
+
+function LoadSQL({ title, table, dialect }: LoadSQLProps) {
+  const { currentProject } = useProject();
+  const [currentTable, setCurrentTable] = useState<SchemaPreviewTableData>(table);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if(error || currentTable.columns?.length > 0) {
+      return;
+    }
+    async function loadDescription() {
+      try {
+        if (!currentProject) {
+          // noinspection ExceptionCaughtLocallyJS
+          throw new Error('Project not found.');
+        }
+        const dataDescribePayload: DataDescribePayload = {
+          schema: currentTable.schema,
+          tableName: currentTable.tableName,
+          database: currentProject.database,
+          userName: currentProject.userName,
+          describeType: DataDescribeType.columns,
+        };
+        const response = await devLineageDataDescribe(dataDescribePayload);
+        if (cancelled) {
+          return;
+        }
+        if( response.columnNames) {
+          setCurrentTable((prev) => ({
+            ...prev,
+            columns: response.columnNames.map(name=>({name}))
+          }));
+        } else {
+          setError(DATABASE_OBJECT_NOT_FOUND);
+        }
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        setError(err instanceof Error ? err.message : DATABASE_OBJECT_NOT_FOUND);
+      }
+    }
+    void loadDescription();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTable]);
+
+  return currentTable.columns?.length > 0 ? (
+    <FloatingSQL
+      title={title}
+      initialSql={buildSchemaPreviewSql(currentTable, dialect)}
+      dialect={dialect}
+    />
+  ) : error ? (
+    <span className="text-red-500 text-xs">{error}</span>
+  ) : (
+    <div className="flex p-1 gap-1">
+      <LoaderCircle className="h-4 w-4 animate-spin" />
+      <span className="text-xs">Search object in database...</span>
+    </div>
+  );
+}
+
+function FloatingSQL(props: FloatingSQLProps) {
   return (
     <DataLoadProvider>
       <FloatingSQLInner {...props} />
