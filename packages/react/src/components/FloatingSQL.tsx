@@ -201,7 +201,7 @@ function LoadSQL({ title, table, dialect }: LoadSQLProps) {
 
   useEffect(() => {
     let cancelled = false;
-    if(error || currentTable.columns?.length > 0) {
+    if(error || (currentTable.columns?.length ?? 0) > 0 ) {
       return;
     }
     async function loadDescription() {
@@ -221,10 +221,10 @@ function LoadSQL({ title, table, dialect }: LoadSQLProps) {
         if (cancelled) {
           return;
         }
-        if( response.columnNames) {
+        if( response?.columnNames) {
           setCurrentTable((prev) => ({
             ...prev,
-            columns: response.columnNames.map(name=>({name}))
+            columns: response.columnNames?.map(name=>({name}))
           }));
         } else {
           setError(DATABASE_OBJECT_NOT_FOUND);
@@ -242,7 +242,7 @@ function LoadSQL({ title, table, dialect }: LoadSQLProps) {
     };
   }, [currentTable]);
 
-  return currentTable.columns?.length > 0 ? (
+  return (currentTable.columns?.length ?? 0) > 0 ? (
     <FloatingSQL
       title={title}
       initialSql={buildSchemaPreviewSql(currentTable, dialect)}
