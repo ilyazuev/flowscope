@@ -552,7 +552,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
             </FocusRegistryProvider>
           </NavigationProvider>
           <div className={"text-xs text-right pt-2 pb-1 text-slate-600"}>
-            Flowscope Enterprise Edition. Trial Version. <a href={"https://www.data-analytics.biz/"} target={"_blank"} className={"underline"}>Data Analytics GmbH und Co KG</a>. Copyright 2025.
+            Flowscope Enterprise Edition.
           </div>
         </div>
       </GenericFormProvider>
