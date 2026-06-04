@@ -552,7 +552,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
             </FocusRegistryProvider>
           </NavigationProvider>
           <div className={"text-xs text-right pt-2 pb-1 text-slate-600"}>
-            Flowscope Enterprise Edition.
+            <a href={"https://flowscope.pondpilot.io/"} target={"_blank"} className={"underline"}>flowscope fork</a>.
           </div>
         </div>
       </GenericFormProvider>
