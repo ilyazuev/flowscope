@@ -66,12 +66,15 @@ export enum DataDescribeType {
   code, table, columns
 }
 
-export interface DataDescribePayload {
+export interface CredentialsPayload {
+  database?: string;
+  userName?: string;
+}
+
+export interface DataDescribePayload extends CredentialsPayload {
   schema?: string;
   tableName: string;
   columnName?: string;
-  database?: string;
-  userName?: string;
   describeType: DataDescribeType;
 }
 
@@ -84,6 +87,23 @@ export interface DataDescribePayloadResponse {
   lastDdlTime?: number;
   errorMessage?: string;
 }
+
+export interface SchemesPayloadResponse {
+  schemes: string[];
+}
+
+export type ObjectTypes = 'MATERIALIZED VIEW' | 'TABLE' | 'VIEW';
+
+export interface TablesPayload extends CredentialsPayload {
+  pattern: string;
+  regExp: boolean;
+  objectTypes: ObjectTypes[];
+}
+
+export interface TablesPayloadResponse {
+  csv?: string;
+}
+
 
 /**
  * Result from analysis operations.

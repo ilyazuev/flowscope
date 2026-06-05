@@ -1,8 +1,8 @@
 import {
   AnalysisPayload,
-  AnalysisPayloadEx, DataDescribePayload, DataDescribePayloadResponse,
+  AnalysisPayloadEx, CredentialsPayload, DataDescribePayload, DataDescribePayloadResponse, SchemesPayloadResponse,
   SqlPayload,
-  SqlPayloadResponse,
+  SqlPayloadResponse, TablesPayload, TablesPayloadResponse,
 } from '@/lib/backend-adapter.ts';
 import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
@@ -104,8 +104,8 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
   return analysisResponse;
 }
 
-export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProject: Project) {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV, sqlPayload));
+export async function devLineageExecuteSql(payload: SqlPayload, _currentProject: Project) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV, payload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
@@ -119,8 +119,8 @@ export async function devLineageExecuteSql(sqlPayload: SqlPayload, _currentProje
   return sqlPayloadResponse;
 }
 
-export async function devLineageDataDescribe(dataDescribePayload: DataDescribePayload) {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_DATADESCRIBE, dataDescribePayload));
+export async function devLineageDataDescribe(payload: DataDescribePayload) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_DATADESCRIBE, payload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
@@ -132,6 +132,35 @@ export async function devLineageDataDescribe(dataDescribePayload: DataDescribePa
   }
   return dataDescribePayloadResponse;
 }
+
+export async function devLineageLoadSchemes(payload: CredentialsPayload) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADSCHEMES, payload));
+  if (!res.ok) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+  }
+  const schemesPayloadResponse: SchemesPayloadResponse = await res.json();
+  if ('errorMessage' in schemesPayloadResponse && schemesPayloadResponse.errorMessage) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(schemesPayloadResponse.errorMessage as string);
+  }
+  return schemesPayloadResponse;
+}
+
+export async function devLineageLoadTables(payload: TablesPayload) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADTABLES, payload));
+  if (!res.ok) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+  }
+  const tablesPayloadResponse: TablesPayloadResponse = await res.json();
+  if ('errorMessage' in tablesPayloadResponse && tablesPayloadResponse.errorMessage) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(tablesPayloadResponse.errorMessage as string);
+  }
+  return tablesPayloadResponse;
+}
+
 
 // ------------------------------ DATABASES and USERS ------------------------------
 type DatabaseUsers = Record<string, string[]>;

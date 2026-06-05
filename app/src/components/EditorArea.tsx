@@ -27,8 +27,9 @@ import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
-import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { CredentialsPayload, ObjectTypes, SqlPartType, TablesPayload } from '@/lib/backend-adapter.ts';
 import { AnalysisRunResult } from '@/hooks/useAnalysis.ts';
+import { devLineageLoadSchemes, devLineageLoadTables } from '@/lib/utils_backend.tsx';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -457,6 +458,34 @@ export function EditorArea({
     setRevealInLineageError('Object not found');
   }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage, isGraphOutOfSync, getResult, hideCTEs,]);
 
+  const handleOpenSchemaExplorer = useCallback(async () => {
+    clearErrors();
+    if (
+      !currentProject ||
+      !backendParsed(currentProject.dialect)
+    ) {
+      return;
+    }
+    console.log("OpenSchemaExplorer");
+    // const credentialsPayload: CredentialsPayload = {
+    //   database: currentProject.database,
+    //   userName: currentProject.userName,
+    // };
+    // const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
+    // console.log(schemesPayloadResponse.schemes);
+    const tablesPayload: TablesPayload = {
+      database: currentProject.database,
+      userName: currentProject.userName,
+      //pattern: '*IDAF*',
+      //regExp: false,
+      pattern: '^IDAF_DS.*$',
+      regExp: true,
+      objectTypes: ['TABLE', 'VIEW'],
+    };
+    const tablesPayloadResponse = await devLineageLoadTables(tablesPayload);
+    console.log(tablesPayloadResponse.csv);
+  }, [currentProject]);
+
   const handleRunAction = useCallback((action: 'RunDescribe' | 'RunSqlPreview') => {
     clearErrors();
     if (
@@ -716,6 +745,13 @@ export function EditorArea({
         allowInInput: true,
         handler: handleRevealInLineage,
       },
+      {
+        key: 'r',
+        cmdOrCtrl: true,
+        alt: true,
+        allowInInput: true,
+        handler: handleOpenSchemaExplorer,
+      },
     ],
     [
       handleAnalyze,
@@ -787,6 +823,7 @@ export function EditorArea({
         onRunDescribe={() => handleRunAction('RunDescribe')}
         onRunSqlPreview={() => handleRunAction('RunSqlPreview')}
         onRevealInLineage={handleRevealInLineage}
+        onOpenSchemaExplorer={handleOpenSchemaExplorer}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
         fileSelectorOpen={fileSelectorOpen}

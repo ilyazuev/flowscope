@@ -38,6 +38,7 @@ interface EditorToolbarProps {
   onRunDescribe: () => void;
   onRunSqlPreview: () => void;
   onRevealInLineage: () => Promise<void>;
+  onOpenSchemaExplorer: () => Promise<void>;
   allFileCount: number;
   selectedCount: number;
   fileSelectorOpen: boolean;
@@ -69,6 +70,7 @@ export function EditorToolbar({
   showSqlViewToggle = false,
   hasResolvedSql = false,
   onRevealInLineage,
+  onOpenSchemaExplorer,
 }: EditorToolbarProps) {
   return (
     <div className="flex items-center justify-between px-3 py-2 border-b h-[44px] shrink-0 bg-muted/30 overflow-hidden gap-2">
@@ -124,7 +126,9 @@ export function EditorToolbar({
                   <GraphTooltipTrigger asChild>
                     <Button
                       onClick={onExecuteSql}
-                      disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
+                      disabled={
+                        !backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none
+                      }
                       size="sm"
                       className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
                     >
@@ -203,6 +207,19 @@ export function EditorToolbar({
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                       <span className="text-xs">{modKey()}</span>
                       <span className="text-xs">Q</span>
+                    </kbd>
+                  </div>
+                  <div
+                    className={
+                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
+                    }
+                    onClick={onOpenSchemaExplorer}
+                  >
+                    <span>Open schema explorer</span>
+                    <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                      <span className="text-xs">{modKey()}</span>
+                      <span className="text-xs">{optionKey()}</span>
+                      <span className="text-xs">R</span>
                     </kbd>
                   </div>
                 </DropdownMenuContent>
