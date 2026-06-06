@@ -92,7 +92,13 @@ export interface SchemesPayloadResponse {
   schemes: string[];
 }
 
-export type ObjectTypes = 'MATERIALIZED VIEW' | 'TABLE' | 'VIEW';
+export const objectTypes = [
+  'MATERIALIZED VIEW',
+  'TABLE',
+  'VIEW',
+] as const;
+
+export type ObjectTypes = typeof objectTypes[number];
 
 export interface TablesPayload extends CredentialsPayload {
   pattern: string;

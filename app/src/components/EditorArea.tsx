@@ -27,9 +27,8 @@ import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
-import { CredentialsPayload, ObjectTypes, SqlPartType, TablesPayload } from '@/lib/backend-adapter.ts';
+import { SqlPartType } from '@/lib/backend-adapter.ts';
 import { AnalysisRunResult } from '@/hooks/useAnalysis.ts';
-import { devLineageLoadSchemes, devLineageLoadTables } from '@/lib/utils_backend.tsx';
 
 // Fallback component shown when SqlView encounters an error
 function SqlViewFallback() {
@@ -484,8 +483,7 @@ export function EditorArea({
     // };
     // const tablesPayloadResponse = await devLineageLoadTables(tablesPayload);
     // console.log(tablesPayloadResponse.csv);
-    void openSchemaExplorer(
-      windowManager, isDark, currentProject.database, currentProject.userName);
+    void openSchemaExplorer(windowManager, isDark);
   }, [currentProject]);
 
   const handleRunAction = useCallback((action: 'RunDescribe' | 'RunSqlPreview') => {
