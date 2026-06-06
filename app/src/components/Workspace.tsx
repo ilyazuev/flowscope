@@ -397,24 +397,6 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
                   )}
                 </>
               )}
-              {/* <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                      <a
-                        href="https://github.com/pondpilot/flowscope"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Github className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View on GitHub</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider> */}
 
               <TooltipProvider>
                 <Tooltip>

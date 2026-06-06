@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SqlViewSelection, WindowManagerApi } from '@pondpilot/flowscope-react';
+import { openSchemaExplorer, SqlViewSelection, WindowManagerApi } from '@pondpilot/flowscope-react';
 import {
   SqlView,
   useLineageState,
@@ -473,17 +473,19 @@ export function EditorArea({
     // };
     // const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
     // console.log(schemesPayloadResponse.schemes);
-    const tablesPayload: TablesPayload = {
-      database: currentProject.database,
-      userName: currentProject.userName,
-      //pattern: '*IDAF*',
-      //regExp: false,
-      pattern: '^IDAF_DS.*$',
-      regExp: true,
-      objectTypes: ['TABLE', 'VIEW'],
-    };
-    const tablesPayloadResponse = await devLineageLoadTables(tablesPayload);
-    console.log(tablesPayloadResponse.csv);
+    // const tablesPayload: TablesPayload = {
+    //   database: currentProject.database,
+    //   userName: currentProject.userName,
+    //   //pattern: '*IDAF*',
+    //   //regExp: false,
+    //   pattern: '^IDAF_DS.*$',
+    //   regExp: true,
+    //   objectTypes: ['TABLE', 'VIEW'],
+    // };
+    // const tablesPayloadResponse = await devLineageLoadTables(tablesPayload);
+    // console.log(tablesPayloadResponse.csv);
+    void openSchemaExplorer(
+      windowManager, isDark, currentProject.database, currentProject.userName);
   }, [currentProject]);
 
   const handleRunAction = useCallback((action: 'RunDescribe' | 'RunSqlPreview') => {
