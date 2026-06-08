@@ -204,11 +204,11 @@ function FloatingSchemaExplorer({
             </div>
             <hr />
             <div className="text-xs p-1 flex gap-1">
-              <span>Schemes</span>
               <RefreshCw
                 className={`size-3.5 ${schemes ? '' : 'opacity-25'}`}
                 onClick={handleRefreshSchemes}
               />
+              <span>schemes</span>
             </div>
             {loadSchemes && (
               <div className="flex p-1 gap-1">
@@ -259,11 +259,16 @@ function FloatingSchemaExplorer({
         <ResizablePanel defaultSize={20} collapsible collapsedSize={0}>
           <div className="h-full w-full min-h-0 flex flex-col">
             <div className="text-xs p-1 flex gap-1">
-              <span>DB Objects</span>
               <RefreshCw
                 className={`size-3.5 ${dbObjects ? '' : 'opacity-25'}`}
                 onClick={handleRefreshDBObjects}
               />
+              {filterSchemes?.length == 1 && <span>filterSchemes[0]</span>}
+              <span>
+                {filterObjectTypes.length == 1
+                  ? `${filterObjectTypes[0].toLowerCase()}s`
+                  : 'DB Objects'}
+              </span>
             </div>
             {loadDBObjects && (
               <div className="flex p-1 gap-1">
@@ -279,9 +284,20 @@ function FloatingSchemaExplorer({
                   <div className="p-1">
                     {dbObjects.map((dbObject) => {
                       const key = `${dbObject.owner}.${dbObject.objectName} (${dbObject.objectType})`;
+                      const name = [dbObject.objectName];
+                      if (filterSchemes?.length > 1) {
+                        name.unshift(`${dbObject.owner}.`);
+                      }
+                      if (filterObjectTypes?.length > 1) {
+                        name.push(`(${dbObject.objectType})`);
+                      }
                       return (
-                        <div key={key} className="text-xs whitespace-nowrap" onClick={() => alert(key)}>
-                          {key}
+                        <div
+                          key={key}
+                          className="text-xs whitespace-nowrap"
+                          onClick={() => alert(key)}
+                        >
+                          {name.join('')}
                         </div>
                       );
                     })}
