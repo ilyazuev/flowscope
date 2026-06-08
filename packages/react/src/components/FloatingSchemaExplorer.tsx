@@ -189,14 +189,6 @@ function FloatingSchemaExplorer({
     [setFilterOwners, handleRefreshDBObjects]
   );
 
-  const handleFilterDBObjectText = useCallback(
-    (value: string) => {
-      setFilterDBObjectsText(value ?? '');
-      handleRefreshDBObjects();
-    },
-    [setRefreshOwnersRequest, setOwners]
-  );
-
   const handleFilterDBObjectsRegexp = useCallback(
     (checked: boolean) => {
       setFilterDBObjectsRegexp(checked);
@@ -326,7 +318,14 @@ function FloatingSchemaExplorer({
               <input
                 type="text"
                 value=""
-                onChange={(e) => handleFilterDBObjectText(e.target.value)}
+                onChange={(e) => setFilterDBObjectsText(e.target.value ?? '')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !dbObjectsError && !loadDBObjects) {
+                    e.preventDefault();
+                    handleRefreshDBObjects();
+                  }
+                }}
+                onBlur={handleRefreshDBObjects}
                 className={cn(
                   'w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-white',
                   'dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400',
