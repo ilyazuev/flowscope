@@ -1,5 +1,4 @@
 import type { WindowManagerApi } from './floating-window';
-import { useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
 import { DataLoadProvider } from '@pondpilot/flowscope-app/src/components/DataLoadContext';
 import {
   ResizableHandle,
@@ -9,42 +8,94 @@ import {
 import {
   CredentialsPayload,
   ObjectTypes,
-  objectTypes,
+  objectTypes, TablesPayload,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
-import { useEffect, useRef, useState } from 'react';
-import { devLineageLoadSchemes } from '@pondpilot/flowscope-app/src/lib/utils_backend';
-import { LoaderCircle } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { devLineageLoadSchemes, devLineageLoadTables } from '@pondpilot/flowscope-app/src/lib/utils_backend';
+import { LoaderCircle, RefreshCw } from 'lucide-react';
 
-function FloatingSchemaExplorer({ _isDark }: { _isDark: boolean }) {
-  const { currentProject } = useProject();
+function FloatingSchemaExplorer({
+  database,
+  userName,
+  _isDark,
+}: {
+  database: string;
+  userName: string;
+  _isDark: boolean;
+}) {
   const [schemes, setSchemes] = useState<string[] | null>(null);
+  const [schemesError, setSchemesError] = useState<string | null>(null);
   const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectTypes[]>(['TABLE']);
-  const [filterSchemes, setFilterSchemes] = useState<string[]>([currentProject?.userName]);
+  const [filterSchemes, setFilterSchemes] = useState<string[]>([userName]);
+  const [refreshSchemesRequest, setRefreshSchemesRequest] = useState(0);
+
+  const [tables, setTables] = useState<string[] | null>(null);
+  const [tablesError, setTablesError] = useState<string | null>(null);
+  const [refreshTablesRequest, setRefreshTablesRequest] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const handleRefreshSchemes = useCallback(() => {
+    setRefreshSchemesRequest((key) => key + 1);
+    setSchemes(null);
+  }, [setRefreshSchemesRequest, setSchemes]);
+
   useEffect(() => {
-    if (!currentProject) {
+    void (async () => {
+      const credentialsPayload: CredentialsPayload = {
+        database,
+        userName,
+      };
+      setSchemesError(null);
+      try {
+        const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
+        setSchemes(schemesPayloadResponse.schemes || ['NO SCHEMES FOUND']);
+        handleRefreshTables();
+        setTimeout(() => {
+          const selectedItem = rootRef.current?.querySelector(
+            '[data-key=FloatingSchemaExplorer-schemes] [data-state=checked]'
+          );
+          selectedItem?.scrollIntoView({
+            block: 'center',
+            behavior: 'smooth',
+          });
+        }, 200);
+      } catch (e) {
+        setSchemesError(e instanceof Error ? e.message : String(e));
+      }
+    })();
+  }, [refreshSchemesRequest, setSchemesError, setSchemes]);
+
+  const handleRefreshTables = useCallback(() => {
+    setRefreshTablesRequest((key) => key + 1);
+    setTables(null);
+  }, [setRefreshSchemesRequest, setSchemes]);
+
+  useEffect(() => {
+    if( !schemes ) {
       return;
     }
     void (async () => {
-      const credentialsPayload: CredentialsPayload = {
-        database: currentProject.database,
-        userName: currentProject.userName,
-      };
-      const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
-      setSchemes(schemesPayloadResponse.schemes);
-      if(currentProject.userName) {
-        setTimeout(()=>{
-            const selectedItem = rootRef.current?.querySelector(`#FloatingSchemaExplorer-scheme-${currentProject.userName.replace(/\s/g, '-')}`);
-            selectedItem?.scrollIntoView({
-              block: 'center',
-              behavior: 'smooth',
-            });
-        }, 200);
+      try {
+        const tablesPayload: TablesPayload = {
+          database,
+          userName,
+          //pattern: '*IDAF*',
+          //regExp: false,
+          pattern: '^IDAF_DS.*$',
+          regExp: true,
+          objectTypes: ['TABLE', 'VIEW'],
+        };
+        const tablesPayloadResponse = await devLineageLoadTables(tablesPayload);
+        setTables(
+          tablesPayloadResponse.csv ? tablesPayloadResponse.csv?.split('\n') : ['NO TABLES FOUND']
+        );
+      } catch (e) {
+        setTablesError(e instanceof Error ? e.message : String(e));
       }
     })();
-  }, []);
+  }, [refreshTablesRequest, setTablesError, setTables]);
+
   return (
     <div className="h-full w-full min-h-0" ref={rootRef}>
       <ResizablePanelGroup direction="horizontal">
@@ -79,45 +130,92 @@ function FloatingSchemaExplorer({ _isDark }: { _isDark: boolean }) {
               })}
             </div>
             <hr />
-            <div className="flex-1 overflow-auto">
-              {schemes ? (
-                <div className="p-1">
-                  {schemes.map((scheme) => {
-                    const id = `FloatingSchemaExplorer-scheme-${scheme.replace(/\s/g, '-')}`;
-                    return (
-                      <div key={scheme} className="flex gap-1 items-center text-nowrap">
-                        <Checkbox
-                          id={id}
-                          checked={filterSchemes.includes(scheme)}
-                          onCheckedChange={(checked) =>
-                            setFilterSchemes((prevState) =>
-                              checked
-                                ? prevState.includes(scheme)
-                                  ? prevState
-                                  : [...prevState, scheme]
-                                : prevState.filter((s) => s !== scheme)
-                            )
-                          }
-                          className="shrink-0 border-muted-foreground"
-                        />
-                        <label htmlFor={id}>{scheme}</label>
-                      </div>
-                    );
-                  })}
-                </div>
+            <div className="text-xs p-1 flex gap-1">
+              <span>Schemes</span>
+              <RefreshCw
+                className={`size-3.5 ${schemes ? '' : 'opacity-25'}`}
+                onClick={handleRefreshSchemes}
+              />
+            </div>
+            {!schemes && (
+              <div className="flex p-1 gap-1">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <span className="text-xs">Loading schemes...</span>
+              </div>
+            )}
+            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-schemes">
+              {schemesError ? (
+                <span className="text-xs text-red-500">{schemesError}</span>
               ) : (
-                <div className="flex p-1 gap-1">
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                  <span className="text-xs">Loading schemes...</span>
-                </div>
+                schemes && (
+                  <div className="p-1">
+                    {schemes.map((scheme) => {
+                      const id = `FloatingSchemaExplorer-scheme-${scheme.replace(/\s/g, '-')}`;
+                      return (
+                        <div key={scheme} className="flex gap-1 items-center text-nowrap">
+                          <Checkbox
+                            id={id}
+                            checked={filterSchemes.includes(scheme)}
+                            onCheckedChange={(checked) =>
+                              setFilterSchemes((prevState) =>
+                                checked
+                                  ? prevState.includes(scheme)
+                                    ? prevState
+                                    : [...prevState, scheme]
+                                  : prevState.filter((s) => s !== scheme)
+                              )
+                            }
+                            className="shrink-0 border-muted-foreground"
+                          />
+                          <label htmlFor={id}>{scheme}</label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               )}
             </div>
-            {schemes && <div className="text-xs p-1">Choosed {filterSchemes.length} element{`${filterSchemes.length == 1 ? '' : 's'}`}</div>}
+            {schemes && (
+              <div className="text-xs p-1">
+                Choosed {filterSchemes.length} element{`${filterSchemes.length == 1 ? '' : 's'}`}
+              </div>
+            )}
           </div>
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel defaultSize={20} collapsible collapsedSize={0}>
-          tables tables tables tables
+          <div className="h-full w-full min-h-0 flex flex-col">
+            <div className="text-xs p-1 flex gap-1">
+              <span>Tables</span>
+              <RefreshCw
+                className={`size-3.5 ${tables ? '' : 'opacity-25'}`}
+                onClick={handleRefreshTables}
+              />
+            </div>
+            {!tables && (
+              <div className="flex p-1 gap-1">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <span className="text-xs">Loading tables...</span>
+              </div>
+            )}
+            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-tables">
+              {tablesError ? (
+                <span className="text-xs text-red-500">{tablesError}</span>
+              ) : (
+                tables && (
+                  <div className="p-1">
+                    {tables.map((table) => {
+                      return (
+                        <div key={table} className="text-xs" onClick={() => alert(table)}>
+                          {table}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel defaultSize={60} collapsible collapsedSize={0}>
@@ -130,14 +228,20 @@ function FloatingSchemaExplorer({ _isDark }: { _isDark: boolean }) {
 
 export const openSchemaExplorer = (
   manager: Pick<WindowManagerApi, 'openWindow'>,
-  isDark: boolean
+  isDark: boolean,
+  database: string,
+  userName: string
 ) => {
   manager.openWindow({
-    id: `SchemaExplorer`,
-    title: `Schema Explorer`,
+    id: `SchemaExplorer-${database}-${userName}`,
+    title: `SchemaExplorer. ${database}: ${userName}`,
+    width: 980,
+    height: 680,
+    minWidth: 640,
+    minHeight: 420,
     content: (
       <DataLoadProvider>
-        <FloatingSchemaExplorer _isDark={isDark} />
+        <FloatingSchemaExplorer _isDark={isDark} database={database} userName={userName} />
       </DataLoadProvider>
     ),
   });

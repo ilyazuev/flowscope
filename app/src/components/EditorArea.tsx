@@ -465,25 +465,14 @@ export function EditorArea({
     ) {
       return;
     }
-    console.log("OpenSchemaExplorer");
-    // const credentialsPayload: CredentialsPayload = {
-    //   database: currentProject.database,
-    //   userName: currentProject.userName,
-    // };
-    // const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
-    // console.log(schemesPayloadResponse.schemes);
-    // const tablesPayload: TablesPayload = {
-    //   database: currentProject.database,
-    //   userName: currentProject.userName,
-    //   //pattern: '*IDAF*',
-    //   //regExp: false,
-    //   pattern: '^IDAF_DS.*$',
-    //   regExp: true,
-    //   objectTypes: ['TABLE', 'VIEW'],
-    // };
-    // const tablesPayloadResponse = await devLineageLoadTables(tablesPayload);
-    // console.log(tablesPayloadResponse.csv);
-    void openSchemaExplorer(windowManager, isDark);
+    if( !currentProject.database || !currentProject.userName ) {
+      toast.error('Schema Explorer', {
+        description: 'Database or User Name not defined',
+        duration: 5000,
+      });
+      return;
+    }
+    void openSchemaExplorer(windowManager, isDark, currentProject.database, currentProject.userName);
   }, [currentProject]);
 
   const handleRunAction = useCallback((action: 'RunDescribe' | 'RunSqlPreview') => {
