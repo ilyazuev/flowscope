@@ -15,38 +15,46 @@ import {
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
-  devLineageLoadSchemes,
+  devLineageLoadOwners,
   devLineageLoadDBObjects,
 } from '@pondpilot/flowscope-app/src/lib/utils_backend';
 import { LoaderCircle, RefreshCw } from 'lucide-react';
+import { cn } from './ui/button';
 
 function useSchemaExplorerInner() {
-  const [loadSchemes, setLoadSchemes] = useState(false);
-  const [schemes, setSchemes] = useState<string[] | null>(null);
+  const [loadOwners, setLoadOwners] = useState(false);
+  const [owners, setOwners] = useState<string[] | null>(null);
   const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(['TABLE']);
-  const [filterSchemes, setFilterSchemes] = useState<string[]>([]);
-  const [refreshSchemesRequest, setRefreshSchemesRequest] = useState(0);
+  const [filterOwners, setFilterOwners] = useState<string[]>([]);
+  const [refreshOwnersRequest, setRefreshOwnersRequest] = useState(0);
 
   const [loadDBObjects, setLoadDBObjects] = useState(false);
   const [dbObjects, setDbObjects] = useState<DBObject[] | null>(null);
   const [refreshDbObjectsRequest, setRefreshDbObjectsRequest] = useState(0);
+  const [filterDBObjectsText, setFilterDBObjectsText] = useState<string>('');
+  const [filterDBObjectsRegexp, setFilterDBObjectsRegexp] = useState(false);
+
   return {
-    loadSchemes,
-    setLoadSchemes,
-    schemes,
-    setSchemes,
+    loadOwners,
+    setLoadOwners,
+    owners,
+    setOwners,
     filterObjectTypes,
     setFilterObjectTypes,
-    filterSchemes,
-    setFilterSchemes,
-    refreshSchemesRequest,
-    setRefreshSchemesRequest,
+    filterOwners,
+    setFilterOwners,
+    refreshOwnersRequest,
+    setRefreshOwnersRequest,
     loadDBObjects,
     setLoadDBObjects,
     dbObjects,
     setDbObjects,
     refreshDbObjectsRequest,
     setRefreshDbObjectsRequest,
+    filterDBObjectsText,
+    setFilterDBObjectsText,
+    filterDBObjectsRegexp,
+    setFilterDBObjectsRegexp,
   };
 }
 
@@ -75,54 +83,58 @@ function FloatingSchemaExplorer({
   _isDark: boolean;
 }) {
   const {
-    loadSchemes,
-    setLoadSchemes,
-    schemes,
-    setSchemes,
+    loadOwners,
+    setLoadOwners,
+    owners,
+    setOwners,
     filterObjectTypes,
     setFilterObjectTypes,
-    filterSchemes,
-    setFilterSchemes,
-    refreshSchemesRequest,
-    setRefreshSchemesRequest,
+    filterOwners,
+    setFilterOwners,
+    refreshOwnersRequest,
+    setRefreshOwnersRequest,
     loadDBObjects,
     setLoadDBObjects,
     dbObjects,
     setDbObjects,
     refreshDbObjectsRequest,
     setRefreshDbObjectsRequest,
+    filterDBObjectsText,
+    setFilterDBObjectsText,
+    filterDBObjectsRegexp,
+    setFilterDBObjectsRegexp,
   } = useSchemaExplorer();
-  const [schemesError, setSchemesError] = useState<string | null>(null);
+  const [ownersError, setOwnersError] = useState<string | null>(null);
   const [dbObjectsError, setDbObjectsError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const handleRefreshSchemes = useCallback(() => {
-    setRefreshSchemesRequest((key) => key + 1);
-    setSchemes(null);
-  }, [setRefreshSchemesRequest, setSchemes]);
+  const handleRefreshOwners = useCallback(() => {
+    setRefreshOwnersRequest((key) => key + 1);
+    setOwners(null);
+  }, [setRefreshOwnersRequest, setOwners]);
 
   useEffect(() => {
-    if (filterSchemes.length == 0) {
-      filterSchemes.push(userName);
+    if (filterOwners.length == 0) {
+      filterOwners.push(userName);
     }
     void (async () => {
       const credentialsPayload: CredentialsPayload = {
         database,
         userName,
       };
-      setSchemesError(null);
+      setOwnersError(null);
       try {
-        if (!schemes) {
-          setLoadSchemes(true);
+        if (!owners) {
+          setLoadOwners(true);
           setLoadDBObjects(true);
           setDbObjects(null);
-          const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
-          setSchemes(schemesPayloadResponse.schemes || ['NO SCHEMES FOUND']);
+          const ownersPayloadResponse = await devLineageLoadOwners(credentialsPayload);
+          setOwners(ownersPayloadResponse.owners);
           handleRefreshDBObjects();
         }
         setTimeout(() => {
           const selectedItem = rootRef.current?.querySelector(
-            '[data-key=FloatingSchemaExplorer-schemes] [data-state=checked]'
+            '[data-key=FloatingSchemaExplorer-owners] [data-state=checked]'
           );
           selectedItem?.scrollIntoView({
             block: 'center',
@@ -131,20 +143,52 @@ function FloatingSchemaExplorer({
         }, 200);
       } catch (e) {
         setLoadDBObjects(false);
-        setSchemesError(e instanceof Error ? e.message : String(e));
+        setOwnersError(e instanceof Error ? e.message : String(e));
       } finally {
-        setLoadSchemes(false);
+        setLoadOwners(false);
       }
     })();
-  }, [refreshSchemesRequest, setSchemesError, setSchemes]);
+  }, [refreshOwnersRequest, setOwnersError, setOwners]);
 
   const handleRefreshDBObjects = useCallback(() => {
     setRefreshDbObjectsRequest((key) => key + 1);
     setDbObjects(null);
-  }, [setRefreshSchemesRequest, setSchemes]);
+  }, [setRefreshOwnersRequest, setOwners]);
+
+  const handleFilterObjectTypes = useCallback((checked: boolean, objectType: ObjectType) => {
+    setFilterObjectTypes((prevState) =>
+      checked
+        ? prevState.includes(objectType)
+          ? prevState
+          : [...prevState, objectType]
+        : prevState.filter((ot) => ot !== objectType)
+    );
+    handleRefreshDBObjects();
+  }, [setFilterObjectTypes, handleRefreshDBObjects]);
+
+  const handleFilterOwners = useCallback((checked: boolean, owner: string) => {
+    setFilterOwners((prevState) =>
+      checked
+        ? prevState.includes(owner)
+          ? prevState
+          : [...prevState, owner]
+        : prevState.filter((s) => s !== owner)
+    )
+    handleRefreshDBObjects();
+  }, [setFilterOwners, handleRefreshDBObjects]);
+
+  const handleFilterDBObjectText = useCallback((value: string) => {
+    setFilterDBObjectsText(value ?? '');
+    handleRefreshDBObjects();
+  }, [setRefreshOwnersRequest, setOwners]);
+
+  const handleFilterDBObjectsRegexp = useCallback((checked: boolean) => {
+    setFilterDBObjectsRegexp(checked);
+    handleRefreshDBObjects();
+  }, [setRefreshOwnersRequest, setOwners]);
 
   useEffect(() => {
-    if (!schemes) {
+    if (!owners) {
       return;
     }
     void (async () => {
@@ -153,11 +197,10 @@ function FloatingSchemaExplorer({
         const dbObjectsPayload: DBObjectsPayload = {
           database,
           userName,
-          //pattern: '*IDAF*',
-          //regExp: false,
-          pattern: '^IDAF_DS.*$',
-          regExp: true,
-          objectTypes: ['TABLE', 'VIEW'],
+          objectTypes: filterObjectTypes, // objectTypes: ['TABLE', 'VIEW'],
+          owners: filterOwners,
+          pattern: filterDBObjectsText, //'^IDAF_DS.*$', //pattern: '*IDAF*', //regExp: false,
+          regExp: filterDBObjectsRegexp,
         };
         const dbObjectsPayloadResponse = await devLineageLoadDBObjects(dbObjectsPayload);
         setDbObjects(dbObjectsPayloadResponse.dbObjects ?? null);
@@ -184,17 +227,9 @@ function FloatingSchemaExplorer({
                   >
                     <Checkbox
                       id={id}
-                      disabled={!schemes}
+                      disabled={!owners}
                       checked={filterObjectTypes.includes(objectType)}
-                      onCheckedChange={(checked) =>
-                        setFilterObjectTypes((prevState) =>
-                          checked
-                            ? prevState.includes(objectType)
-                              ? prevState
-                              : [...prevState, objectType]
-                            : prevState.filter((ot) => ot !== objectType)
-                        )
-                      }
+                      onCheckedChange={(checked)=>handleFilterObjectTypes(checked === true, objectType)}
                       className="shrink-0 border-muted-foreground"
                     />
                     <label htmlFor={id}>{objectType.toLowerCase()}</label>
@@ -205,42 +240,34 @@ function FloatingSchemaExplorer({
             <hr />
             <div className="text-xs p-1 flex gap-1">
               <RefreshCw
-                className={`size-3.5 ${schemes ? '' : 'opacity-25'}`}
-                onClick={handleRefreshSchemes}
+                className={`size-3.5 ${owners ? '' : 'opacity-25'}`}
+                onClick={handleRefreshOwners}
               />
               <span>schemes</span>
             </div>
-            {loadSchemes && (
+            {loadOwners && (
               <div className="flex p-1 gap-1">
                 <LoaderCircle className="h-4 w-4 animate-spin" />
                 <span className="text-xs">Loading schemes...</span>
               </div>
             )}
-            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-schemes">
-              {schemesError ? (
-                <span className="text-xs text-red-500">{schemesError}</span>
+            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-owners">
+              {ownersError ? (
+                <span className="text-xs text-red-500">{ownersError}</span>
               ) : (
-                schemes && (
+                owners && (
                   <div className="p-1">
-                    {schemes.map((scheme) => {
-                      const id = `FloatingSchemaExplorer-scheme-${scheme.replace(/\s/g, '-')}`;
+                    {owners.map((owner) => {
+                      const id = `FloatingSchemaExplorer-scheme-${owner.replace(/\s/g, '-')}`;
                       return (
-                        <div key={scheme} className="flex gap-1 items-center text-nowrap">
+                        <div key={owner} className="flex gap-1 items-center text-nowrap">
                           <Checkbox
                             id={id}
-                            checked={filterSchemes.includes(scheme)}
-                            onCheckedChange={(checked) =>
-                              setFilterSchemes((prevState) =>
-                                checked
-                                  ? prevState.includes(scheme)
-                                    ? prevState
-                                    : [...prevState, scheme]
-                                  : prevState.filter((s) => s !== scheme)
-                              )
-                            }
+                            checked={filterOwners.includes(owner)}
+                            onCheckedChange={(checked) =>handleFilterOwners(checked === true, owner)}
                             className="shrink-0 border-muted-foreground"
                           />
-                          <label htmlFor={id}>{scheme}</label>
+                          <label htmlFor={id}>{owner}</label>
                         </div>
                       );
                     })}
@@ -248,9 +275,9 @@ function FloatingSchemaExplorer({
                 )
               )}
             </div>
-            {schemes && (
+            {owners && (
               <div className="text-xs p-1">
-                selected {filterSchemes.length} item{`${filterSchemes.length == 1 ? '' : 's'}`}
+                selected {filterOwners.length} item{`${filterOwners.length == 1 ? '' : 's'}`}
               </div>
             )}
           </div>
@@ -263,12 +290,32 @@ function FloatingSchemaExplorer({
                 className={`size-3.5 ${dbObjects ? '' : 'opacity-25'}`}
                 onClick={handleRefreshDBObjects}
               />
-              {filterSchemes?.length == 1 && <span>filterSchemes[0]</span>}
+              {filterOwners?.length == 1 && <span>{filterOwners[0]}</span>}
               <span>
                 {filterObjectTypes.length == 1
                   ? `${filterObjectTypes[0].toLowerCase()}s`
                   : 'DB Objects'}
               </span>
+            </div>
+            <div className="text-xs p-1 flex gap-1">
+              <input
+                type="text"
+                value=""
+                onChange={(e) => handleFilterDBObjectText(e.target.value)}
+                className={cn(
+                  "w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-white",
+                  "dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400",
+                  "focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                )}
+                placeholder={`Filter db object by pattern or regexp`}
+              />
+              <Checkbox
+                id="FloatingSchemaExplorer-FilterDBObjectsRegexp"
+                checked={filterDBObjectsRegexp}
+                onCheckedChange={handleFilterDBObjectsRegexp}
+                className="shrink-0 border-muted-foreground"
+              />
+              <label htmlFor="FloatingSchemaExplorer-FilterDBObjectsRegexp">regExp</label>
             </div>
             {loadDBObjects && (
               <div className="flex p-1 gap-1">
@@ -285,7 +332,7 @@ function FloatingSchemaExplorer({
                     {dbObjects.map((dbObject) => {
                       const key = `${dbObject.owner}.${dbObject.objectName} (${dbObject.objectType})`;
                       const name = [dbObject.objectName];
-                      if (filterSchemes?.length > 1) {
+                      if (filterOwners?.length > 1) {
                         name.unshift(`${dbObject.owner}.`);
                       }
                       if (filterObjectTypes?.length > 1) {

@@ -1,8 +1,8 @@
 import {
   AnalysisPayload,
-  AnalysisPayloadEx, CredentialsPayload, DataDescribePayload, DataDescribePayloadResponse, SchemesPayloadResponse,
+  AnalysisPayloadEx, CredentialsPayload, DataDescribePayload, DataDescribePayloadResponse,
   SqlPayload,
-  SqlPayloadResponse, DBObjectsPayload, DBObjectsPayloadResponse,
+  SqlPayloadResponse, DBObjectsPayload, DBObjectsPayloadResponse, OwnersPayloadResponse,
 } from '@/lib/backend-adapter.ts';
 import { Project } from '@/lib/project-store.tsx';
 import { analyzeWithWorker } from '@/lib/analysis-worker.ts';
@@ -133,18 +133,18 @@ export async function devLineageDataDescribe(payload: DataDescribePayload) {
   return dataDescribePayloadResponse;
 }
 
-export async function devLineageLoadSchemes(payload: CredentialsPayload) {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADSCHEMES, payload));
+export async function devLineageLoadOwners(payload: CredentialsPayload) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADOWNERS, payload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
   }
-  const schemesPayloadResponse: SchemesPayloadResponse = await res.json();
-  if ('errorMessage' in schemesPayloadResponse && schemesPayloadResponse.errorMessage) {
+  const ownersPayloadResponse: OwnersPayloadResponse = await res.json();
+  if ('errorMessage' in ownersPayloadResponse && ownersPayloadResponse.errorMessage) {
     // noinspection ExceptionCaughtLocallyJS
-    throw new Error(schemesPayloadResponse.errorMessage as string);
+    throw new Error(ownersPayloadResponse.errorMessage as string);
   }
-  return schemesPayloadResponse;
+  return ownersPayloadResponse;
 }
 
 export async function devLineageLoadDBObjects(payload: DBObjectsPayload) {

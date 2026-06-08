@@ -88,8 +88,8 @@ export interface DataDescribePayloadResponse {
   errorMessage?: string;
 }
 
-export interface SchemesPayloadResponse {
-  schemes: string[];
+export interface OwnersPayloadResponse {
+  owners: string[];
 }
 
 export const objectTypes = [
@@ -101,9 +101,10 @@ export const objectTypes = [
 export type ObjectType = typeof objectTypes[number];
 
 export interface DBObjectsPayload extends CredentialsPayload {
+  objectTypes: ObjectType[];
+  owners: string[];
   pattern: string;
   regExp: boolean;
-  objectTypes: ObjectType[];
 }
 
 export interface DBObject {
