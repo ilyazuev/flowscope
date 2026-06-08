@@ -114,6 +114,7 @@ function FloatingSchemaExplorer({
       try {
         if (!schemes) {
           setLoadSchemes(true);
+          setLoadDBObjects(true);
           setDbObjects(null);
           const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
           setSchemes(schemesPayloadResponse.schemes || ['NO SCHEMES FOUND']);
@@ -129,6 +130,7 @@ function FloatingSchemaExplorer({
           });
         }, 200);
       } catch (e) {
+        setLoadDBObjects(false);
         setSchemesError(e instanceof Error ? e.message : String(e));
       } finally {
         setLoadSchemes(false);
@@ -278,7 +280,7 @@ function FloatingSchemaExplorer({
                     {dbObjects.map((dbObject) => {
                       const key = `${dbObject.owner}.${dbObject.objectName} (${dbObject.objectType})`;
                       return (
-                        <div key={key} className="text-xs" onClick={() => alert(key)}>
+                        <div key={key} className="text-xs whitespace-nowrap" onClick={() => alert(key)}>
                           {key}
                         </div>
                       );
