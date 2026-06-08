@@ -11,9 +11,53 @@ import {
   objectTypes, TablesPayload,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { devLineageLoadSchemes, devLineageLoadTables } from '@pondpilot/flowscope-app/src/lib/utils_backend';
 import { LoaderCircle, RefreshCw } from 'lucide-react';
+
+
+function useSchemaExplorerInner() {
+  const [schemes, setSchemes] = useState<string[] | null>(null);
+  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectTypes[]>(['TABLE']);
+  const [filterSchemes, setFilterSchemes] = useState<string[]>([]);
+  const [refreshSchemesRequest, setRefreshSchemesRequest] = useState(0);
+
+  const [tables, setTables] = useState<string[] | null>(null);
+  const [refreshTablesRequest, setRefreshTablesRequest] = useState(0);
+  return {
+    schemes,
+    setSchemes,
+    filterObjectTypes,
+    setFilterObjectTypes,
+    filterSchemes,
+    setFilterSchemes,
+    refreshSchemesRequest,
+    setRefreshSchemesRequest,
+    tables,
+    setTables,
+    refreshTablesRequest,
+    setRefreshTablesRequest,
+  };
+}
+
+const SchemaExplorerContext = createContext<ReturnType<typeof useSchemaExplorerInner> | null>(null);
+
+export function SchemaExplorerProvider({ children }: { children: React.ReactNode }) {
+  const value = useSchemaExplorerInner();
+  return (
+    <SchemaExplorerContext.Provider value={value}>
+      {children}
+    </SchemaExplorerContext.Provider>
+  );
+}
+
+function useSchemaExplorer() {
+  const ctx = useContext(SchemaExplorerContext);
+  if (!ctx) {
+    throw new Error('useSharedDataLoad must be used inside DataLoadProvider');
+  }
+  return ctx;
+}
 
 function FloatingSchemaExplorer({
   database,
@@ -24,15 +68,22 @@ function FloatingSchemaExplorer({
   userName: string;
   _isDark: boolean;
 }) {
-  const [schemes, setSchemes] = useState<string[] | null>(null);
+  const {
+    schemes,
+    setSchemes,
+    filterObjectTypes,
+    setFilterObjectTypes,
+    filterSchemes,
+    setFilterSchemes,
+    refreshSchemesRequest,
+    setRefreshSchemesRequest,
+    tables,
+    setTables,
+    refreshTablesRequest,
+    setRefreshTablesRequest,
+  } = useSchemaExplorer();
   const [schemesError, setSchemesError] = useState<string | null>(null);
-  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectTypes[]>(['TABLE']);
-  const [filterSchemes, setFilterSchemes] = useState<string[]>([userName]);
-  const [refreshSchemesRequest, setRefreshSchemesRequest] = useState(0);
-
-  const [tables, setTables] = useState<string[] | null>(null);
   const [tablesError, setTablesError] = useState<string | null>(null);
-  const [refreshTablesRequest, setRefreshTablesRequest] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const handleRefreshSchemes = useCallback(() => {
@@ -41,6 +92,9 @@ function FloatingSchemaExplorer({
   }, [setRefreshSchemesRequest, setSchemes]);
 
   useEffect(() => {
+    if( filterSchemes.length == 0 ) {
+      filterSchemes.push(userName);
+    }
     void (async () => {
       const credentialsPayload: CredentialsPayload = {
         database,
@@ -48,9 +102,12 @@ function FloatingSchemaExplorer({
       };
       setSchemesError(null);
       try {
-        const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
-        setSchemes(schemesPayloadResponse.schemes || ['NO SCHEMES FOUND']);
-        handleRefreshTables();
+        if( !schemes ) {
+          setTables(null);
+          const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
+          setSchemes(schemesPayloadResponse.schemes || ['NO SCHEMES FOUND']);
+          handleRefreshTables();
+        }
         setTimeout(() => {
           const selectedItem = rootRef.current?.querySelector(
             '[data-key=FloatingSchemaExplorer-schemes] [data-state=checked]'
@@ -177,7 +234,7 @@ function FloatingSchemaExplorer({
             </div>
             {schemes && (
               <div className="text-xs p-1">
-                Choosed {filterSchemes.length} element{`${filterSchemes.length == 1 ? '' : 's'}`}
+                selected {filterSchemes.length} item{`${filterSchemes.length == 1 ? '' : 's'}`}
               </div>
             )}
           </div>

@@ -5,7 +5,7 @@ export { ToolbarButton } from './components/ToolbarButton';
 export type { SqlViewSelection } from './components/SqlView';
 export { ColumnPanel } from './components/ColumnPanel';
 export { openDescribeWindow } from './components/FloatingDescribe';
-export { openSchemaExplorer } from './components/FloatingSchemaExplorer';
+export { openSchemaExplorer, SchemaExplorerProvider } from './components/FloatingSchemaExplorer';
 export { openFloatingSQLPreview } from './components/FloatingSQL';
 export { acquireBodyWaitCursor } from './utils/waitCursor';
 export { buildExecutableSqlForCte, findCteAtPosition } from './components/SqlView.SqlCteFolding';
