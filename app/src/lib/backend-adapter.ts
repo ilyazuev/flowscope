@@ -114,7 +114,7 @@ export interface DBObject {
 }
 
 export interface DBObjectsPayloadResponse {
-  dbObjects?: DBObject[];
+  dbObjects: DBObject[];
 }
 
 
