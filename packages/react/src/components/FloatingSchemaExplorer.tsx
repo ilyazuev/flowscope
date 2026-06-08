@@ -7,24 +7,32 @@ import {
 } from '@pondpilot/flowscope-app/src/components/ui/resizable';
 import {
   CredentialsPayload,
-  ObjectTypes,
-  objectTypes, TablesPayload,
+  ObjectType,
+  objectTypes,
+  DBObjectsPayload,
+  DBObject,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { devLineageLoadSchemes, devLineageLoadTables } from '@pondpilot/flowscope-app/src/lib/utils_backend';
+import {
+  devLineageLoadSchemes,
+  devLineageLoadDBObjects,
+} from '@pondpilot/flowscope-app/src/lib/utils_backend';
 import { LoaderCircle, RefreshCw } from 'lucide-react';
 
-
 function useSchemaExplorerInner() {
+  const [loadSchemes, setLoadSchemes] = useState(false);
   const [schemes, setSchemes] = useState<string[] | null>(null);
-  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectTypes[]>(['TABLE']);
+  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(['TABLE']);
   const [filterSchemes, setFilterSchemes] = useState<string[]>([]);
   const [refreshSchemesRequest, setRefreshSchemesRequest] = useState(0);
 
-  const [tables, setTables] = useState<string[] | null>(null);
-  const [refreshTablesRequest, setRefreshTablesRequest] = useState(0);
+  const [loadDBObjects, setLoadDBObjects] = useState(false);
+  const [dbObjects, setDbObjects] = useState<DBObject[] | null>(null);
+  const [refreshDbObjectsRequest, setRefreshDbObjectsRequest] = useState(0);
   return {
+    loadSchemes,
+    setLoadSchemes,
     schemes,
     setSchemes,
     filterObjectTypes,
@@ -33,10 +41,12 @@ function useSchemaExplorerInner() {
     setFilterSchemes,
     refreshSchemesRequest,
     setRefreshSchemesRequest,
-    tables,
-    setTables,
-    refreshTablesRequest,
-    setRefreshTablesRequest,
+    loadDBObjects,
+    setLoadDBObjects,
+    dbObjects,
+    setDbObjects,
+    refreshDbObjectsRequest,
+    setRefreshDbObjectsRequest,
   };
 }
 
@@ -44,11 +54,7 @@ const SchemaExplorerContext = createContext<ReturnType<typeof useSchemaExplorerI
 
 export function SchemaExplorerProvider({ children }: { children: React.ReactNode }) {
   const value = useSchemaExplorerInner();
-  return (
-    <SchemaExplorerContext.Provider value={value}>
-      {children}
-    </SchemaExplorerContext.Provider>
-  );
+  return <SchemaExplorerContext.Provider value={value}>{children}</SchemaExplorerContext.Provider>;
 }
 
 function useSchemaExplorer() {
@@ -69,6 +75,8 @@ function FloatingSchemaExplorer({
   _isDark: boolean;
 }) {
   const {
+    loadSchemes,
+    setLoadSchemes,
     schemes,
     setSchemes,
     filterObjectTypes,
@@ -77,13 +85,15 @@ function FloatingSchemaExplorer({
     setFilterSchemes,
     refreshSchemesRequest,
     setRefreshSchemesRequest,
-    tables,
-    setTables,
-    refreshTablesRequest,
-    setRefreshTablesRequest,
+    loadDBObjects,
+    setLoadDBObjects,
+    dbObjects,
+    setDbObjects,
+    refreshDbObjectsRequest,
+    setRefreshDbObjectsRequest,
   } = useSchemaExplorer();
   const [schemesError, setSchemesError] = useState<string | null>(null);
-  const [tablesError, setTablesError] = useState<string | null>(null);
+  const [dbObjectsError, setDbObjectsError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const handleRefreshSchemes = useCallback(() => {
@@ -92,7 +102,7 @@ function FloatingSchemaExplorer({
   }, [setRefreshSchemesRequest, setSchemes]);
 
   useEffect(() => {
-    if( filterSchemes.length == 0 ) {
+    if (filterSchemes.length == 0) {
       filterSchemes.push(userName);
     }
     void (async () => {
@@ -102,11 +112,12 @@ function FloatingSchemaExplorer({
       };
       setSchemesError(null);
       try {
-        if( !schemes ) {
-          setTables(null);
+        if (!schemes) {
+          setLoadSchemes(true);
+          setDbObjects(null);
           const schemesPayloadResponse = await devLineageLoadSchemes(credentialsPayload);
           setSchemes(schemesPayloadResponse.schemes || ['NO SCHEMES FOUND']);
-          handleRefreshTables();
+          handleRefreshDBObjects();
         }
         setTimeout(() => {
           const selectedItem = rootRef.current?.querySelector(
@@ -119,22 +130,25 @@ function FloatingSchemaExplorer({
         }, 200);
       } catch (e) {
         setSchemesError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoadSchemes(false);
       }
     })();
   }, [refreshSchemesRequest, setSchemesError, setSchemes]);
 
-  const handleRefreshTables = useCallback(() => {
-    setRefreshTablesRequest((key) => key + 1);
-    setTables(null);
+  const handleRefreshDBObjects = useCallback(() => {
+    setRefreshDbObjectsRequest((key) => key + 1);
+    setDbObjects(null);
   }, [setRefreshSchemesRequest, setSchemes]);
 
   useEffect(() => {
-    if( !schemes ) {
+    if (!schemes) {
       return;
     }
     void (async () => {
       try {
-        const tablesPayload: TablesPayload = {
+        setLoadDBObjects(true);
+        const dbObjectsPayload: DBObjectsPayload = {
           database,
           userName,
           //pattern: '*IDAF*',
@@ -143,15 +157,15 @@ function FloatingSchemaExplorer({
           regExp: true,
           objectTypes: ['TABLE', 'VIEW'],
         };
-        const tablesPayloadResponse = await devLineageLoadTables(tablesPayload);
-        setTables(
-          tablesPayloadResponse.csv ? tablesPayloadResponse.csv?.split('\n') : ['NO TABLES FOUND']
-        );
+        const dbObjectsPayloadResponse = await devLineageLoadDBObjects(dbObjectsPayload);
+        setDbObjects(dbObjectsPayloadResponse.dbObjects ?? null);
       } catch (e) {
-        setTablesError(e instanceof Error ? e.message : String(e));
+        setDbObjectsError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoadDBObjects(false);
       }
     })();
-  }, [refreshTablesRequest, setTablesError, setTables]);
+  }, [refreshDbObjectsRequest, setDbObjectsError, setDbObjects]);
 
   return (
     <div className="h-full w-full min-h-0" ref={rootRef}>
@@ -194,7 +208,7 @@ function FloatingSchemaExplorer({
                 onClick={handleRefreshSchemes}
               />
             </div>
-            {!schemes && (
+            {loadSchemes && (
               <div className="flex p-1 gap-1">
                 <LoaderCircle className="h-4 w-4 animate-spin" />
                 <span className="text-xs">Loading schemes...</span>
@@ -243,28 +257,29 @@ function FloatingSchemaExplorer({
         <ResizablePanel defaultSize={20} collapsible collapsedSize={0}>
           <div className="h-full w-full min-h-0 flex flex-col">
             <div className="text-xs p-1 flex gap-1">
-              <span>Tables</span>
+              <span>DB Objects</span>
               <RefreshCw
-                className={`size-3.5 ${tables ? '' : 'opacity-25'}`}
-                onClick={handleRefreshTables}
+                className={`size-3.5 ${dbObjects ? '' : 'opacity-25'}`}
+                onClick={handleRefreshDBObjects}
               />
             </div>
-            {!tables && (
+            {loadDBObjects && (
               <div className="flex p-1 gap-1">
                 <LoaderCircle className="h-4 w-4 animate-spin" />
-                <span className="text-xs">Loading tables...</span>
+                <span className="text-xs">Loading db objects...</span>
               </div>
             )}
-            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-tables">
-              {tablesError ? (
-                <span className="text-xs text-red-500">{tablesError}</span>
+            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-dbObjects">
+              {dbObjectsError ? (
+                <span className="text-xs text-red-500">{dbObjectsError}</span>
               ) : (
-                tables && (
+                dbObjects && (
                   <div className="p-1">
-                    {tables.map((table) => {
+                    {dbObjects.map((dbObject) => {
+                      const key = `${dbObject.owner}.${dbObject.objectName} (${dbObject.objectType})`;
                       return (
-                        <div key={table} className="text-xs" onClick={() => alert(table)}>
-                          {table}
+                        <div key={key} className="text-xs" onClick={() => alert(key)}>
+                          {key}
                         </div>
                       );
                     })}

@@ -98,16 +98,22 @@ export const objectTypes = [
   'VIEW',
 ] as const;
 
-export type ObjectTypes = typeof objectTypes[number];
+export type ObjectType = typeof objectTypes[number];
 
-export interface TablesPayload extends CredentialsPayload {
+export interface DBObjectsPayload extends CredentialsPayload {
   pattern: string;
   regExp: boolean;
-  objectTypes: ObjectTypes[];
+  objectTypes: ObjectType[];
 }
 
-export interface TablesPayloadResponse {
-  csv?: string;
+export interface DBObject {
+  owner: string;
+  objectName: string;
+  objectType: ObjectType;
+}
+
+export interface DBObjectsPayloadResponse {
+  dbObjects?: DBObject[];
 }
 
 
