@@ -13,13 +13,20 @@ import {
   DBObject,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   devLineageLoadOwners,
   devLineageLoadDBObjects,
 } from '@pondpilot/flowscope-app/src/lib/utils_backend';
-import { ChevronDown, LoaderCircle, RefreshCw } from 'lucide-react';
-import { cn } from './ui/button';
+import { ChevronDown, LoaderCircle, RefreshCw, X } from 'lucide-react';
+import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import {
   Tooltip,
   TooltipContent,
@@ -30,9 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
-import { Button } from '@pondpilot/flowscope-app/src/components/ui/button';
 import { DropdownMenu, DropdownMenuContent } from './ui/dropdown-menu';
-import { escapeHtml } from '../utils/sanitize';
 
 interface FilterDBObjectsTextHistory {
   pattern: string;
@@ -42,7 +47,9 @@ interface FilterDBObjectsTextHistory {
 function useSchemaExplorerInner() {
   const [loadOwners, setLoadOwners] = useState(false);
   const [owners, setOwners] = useState<string[] | null>(null);
-  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(['TABLE']);
+  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>([
+    'TABLE',
+  ]);
   const [filterOwners, setFilterOwners] = useState<string[]>([]);
   const [refreshOwnersRequest, setRefreshOwnersRequest] = useState(0);
 
@@ -54,7 +61,8 @@ function useSchemaExplorerInner() {
   const [filterDBObjectsTextHistory, setFilterDBObjectsTextHistory] = useState<
     FilterDBObjectsTextHistory[]
   >([]);
-  const [openFilterDBObjectsTextHistory, setOpenFilterDBObjectsTextHistory] = useState(false);
+  const [openFilterDBObjectsTextHistory, setOpenFilterDBObjectsTextHistory] =
+    useState(false);
 
   return {
     loadOwners,
@@ -84,17 +92,29 @@ function useSchemaExplorerInner() {
   };
 }
 
-const SchemaExplorerContext = createContext<ReturnType<typeof useSchemaExplorerInner> | null>(null);
+const SchemaExplorerContext = createContext<ReturnType<
+  typeof useSchemaExplorerInner
+> | null>(null);
 
-export function SchemaExplorerProvider({ children }: { children: React.ReactNode }) {
+export function SchemaExplorerProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const value = useSchemaExplorerInner();
-  return <SchemaExplorerContext.Provider value={value}>{children}</SchemaExplorerContext.Provider>;
+  return (
+    <SchemaExplorerContext.Provider value={value}>
+      {children}
+    </SchemaExplorerContext.Provider>
+  );
 }
 
 function useSchemaExplorer() {
   const ctx = useContext(SchemaExplorerContext);
   if (!ctx) {
-    throw new Error('useSharedDataLoad must be used inside DataLoadProvider');
+    throw new Error(
+      'useSchemaExplorer must be used inside SchemaExplorerProvider',
+    );
   }
   return ctx;
 }
@@ -138,15 +158,23 @@ function FloatingSchemaExplorer({
   const [dbObjectsError, setDbObjectsError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const handleRefreshDBObjects = useCallback(() => {
+    setRefreshDbObjectsRequest((key) => key + 1);
+    setDbObjects(null);
+  }, [setRefreshDbObjectsRequest, setDbObjects]);
+
   const handleRefreshOwners = useCallback(() => {
     setRefreshOwnersRequest((key) => key + 1);
     setOwners(null);
   }, [setRefreshOwnersRequest, setOwners]);
 
   useEffect(() => {
-    if (filterOwners.length == 0) {
-      filterOwners.push(userName);
-    }
+    setFilterOwners((prevState) =>
+      prevState.length === 0 ? [userName] : prevState,
+    );
+  }, [userName, setFilterOwners]);
+
+  useEffect(() => {
     void (async () => {
       const credentialsPayload: CredentialsPayload = {
         database,
@@ -158,13 +186,14 @@ function FloatingSchemaExplorer({
           setLoadOwners(true);
           setLoadDBObjects(true);
           setDbObjects(null);
-          const ownersPayloadResponse = await devLineageLoadOwners(credentialsPayload);
+          const ownersPayloadResponse =
+            await devLineageLoadOwners(credentialsPayload);
           setOwners(ownersPayloadResponse.owners);
           handleRefreshDBObjects();
         }
         setTimeout(() => {
           const selectedItem = rootRef.current?.querySelector(
-            '[data-key=FloatingSchemaExplorer-owners] [data-state=checked]'
+            '[data-key=FloatingSchemaExplorer-owners] [data-state=checked]',
           );
           selectedItem?.scrollIntoView({
             block: 'center',
@@ -178,12 +207,17 @@ function FloatingSchemaExplorer({
         setLoadOwners(false);
       }
     })();
-  }, [refreshOwnersRequest, setOwnersError, setOwners]);
-
-  const handleRefreshDBObjects = useCallback(() => {
-    setRefreshDbObjectsRequest((key) => key + 1);
-    setDbObjects(null);
-  }, [setRefreshOwnersRequest, setOwners]);
+  }, [
+    database,
+    userName,
+    owners,
+    refreshOwnersRequest,
+    setLoadOwners,
+    setLoadDBObjects,
+    setDbObjects,
+    setOwners,
+    handleRefreshDBObjects,
+  ]);
 
   const handleFilterObjectTypes = useCallback(
     (checked: boolean, objectType: ObjectType) => {
@@ -192,11 +226,11 @@ function FloatingSchemaExplorer({
           ? prevState.includes(objectType)
             ? prevState
             : [...prevState, objectType]
-          : prevState.filter((ot) => ot !== objectType)
+          : prevState.filter((ot) => ot !== objectType),
       );
       handleRefreshDBObjects();
     },
-    [setFilterObjectTypes, handleRefreshDBObjects]
+    [setFilterObjectTypes, handleRefreshDBObjects],
   );
 
   const handleFilterOwners = useCallback(
@@ -206,11 +240,11 @@ function FloatingSchemaExplorer({
           ? prevState.includes(owner)
             ? prevState
             : [...prevState, owner]
-          : prevState.filter((s) => s !== owner)
+          : prevState.filter((s) => s !== owner),
       );
       handleRefreshDBObjects();
     },
-    [setFilterOwners, handleRefreshDBObjects]
+    [setFilterOwners, handleRefreshDBObjects],
   );
 
   const handleFilterDBObjectsRegexp = useCallback(
@@ -218,18 +252,28 @@ function FloatingSchemaExplorer({
       setFilterDBObjectsRegexp(checked);
       handleRefreshDBObjects();
     },
-    [setRefreshOwnersRequest, setOwners, handleRefreshDBObjects]
+    [setFilterDBObjectsRegexp, handleRefreshDBObjects],
   );
 
   const handleFilterDBObjectsTextHistory = useCallback(
-    (historyItem) => {
+    (historyItem: FilterDBObjectsTextHistory) => {
       setOpenFilterDBObjectsTextHistory(false);
       setFilterDBObjectsText(historyItem.pattern);
       setFilterDBObjectsRegexp(historyItem.regExp);
       handleRefreshDBObjects();
     },
-    [setFilterDBObjectsText, setFilterDBObjectsRegexp, handleRefreshDBObjects]
+    [
+      setOpenFilterDBObjectsTextHistory,
+      setFilterDBObjectsText,
+      setFilterDBObjectsRegexp,
+      handleRefreshDBObjects,
+    ],
   );
+
+  const handleClearFilterDBObjectsText = useCallback(() => {
+    setFilterDBObjectsText('');
+    handleRefreshDBObjects();
+  }, [setFilterDBObjectsText, handleRefreshDBObjects]);
 
   useEffect(() => {
     if (!owners || owners.length === 0) {
@@ -238,25 +282,37 @@ function FloatingSchemaExplorer({
     void (async () => {
       try {
         setLoadDBObjects(true);
+        setDbObjectsError(null);
+        const normalizedPattern = filterDBObjectsText.trim();
         const dbObjectsPayload: DBObjectsPayload = {
           database,
           userName,
-          objectTypes: filterObjectTypes, // objectTypes: ['TABLE', 'VIEW'],
+          objectTypes: filterObjectTypes,
           owners: filterOwners,
-          pattern: filterDBObjectsText, //'^IDAF_DS.*$', //pattern: '*IDAF*', //regExp: false,
+          pattern: normalizedPattern,
           regExp: filterDBObjectsRegexp,
         };
-        setFilterDBObjectsTextHistory((prevState) => [
-          ...prevState.filter(
-            (o, k) =>
-              k < 10 || (o.pattern == filterDBObjectsText && o.regExp == filterDBObjectsRegexp)
-          ), ...(filterDBObjectsText
-            ? [{
-              pattern: filterDBObjectsText,
-              regExp: filterDBObjectsRegexp,
-            }]
-            : [])]);
-        const dbObjectsPayloadResponse = await devLineageLoadDBObjects(dbObjectsPayload);
+        setFilterDBObjectsTextHistory((prevState) => {
+          if (!normalizedPattern) {
+            return prevState;
+          }
+
+          const nextItem: FilterDBObjectsTextHistory = {
+            pattern: normalizedPattern,
+            regExp: filterDBObjectsRegexp,
+          };
+
+          return [
+            nextItem,
+            ...prevState.filter(
+              (item) =>
+                item.pattern !== nextItem.pattern ||
+                item.regExp !== nextItem.regExp,
+            ),
+          ].slice(0, 10);
+        });
+        const dbObjectsPayloadResponse =
+          await devLineageLoadDBObjects(dbObjectsPayload);
         setDbObjects(dbObjectsPayloadResponse.dbObjects);
       } catch (e) {
         setDbObjectsError(e instanceof Error ? e.message : String(e));
@@ -264,7 +320,10 @@ function FloatingSchemaExplorer({
         setLoadDBObjects(false);
       }
     })();
-  }, [refreshDbObjectsRequest, setDbObjectsError, setDbObjects]);
+    // Intentionally refresh-driven: typing into the input updates local state only.
+    // Backend reload happens via handleRefreshDBObjects on Enter, blur, clear, menu select,
+    // owner/type changes, or explicit refresh click.
+  }, [refreshDbObjectsRequest, owners]);
 
   return (
     <div className="h-full w-full min-h-0" ref={rootRef}>
@@ -307,19 +366,25 @@ function FloatingSchemaExplorer({
                 <span className="text-xs">Loading schemes...</span>
               </div>
             )}
-            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-owners">
+            <div
+              className="flex-1 overflow-auto"
+              data-key="FloatingSchemaExplorer-owners"
+            >
               {ownersError ? (
                 <span className="text-xs text-red-500">{ownersError}</span>
               ) : (
                 owners &&
-                (!loadOwners && (!owners || owners.length == 0) ? (
+                (!loadOwners && owners.length === 0 ? (
                   <span className="text-xs p-1">No schemes found</span>
                 ) : (
                   <div className="p-1">
                     {owners.map((owner) => {
                       const id = `FloatingSchemaExplorer-scheme-${owner.replace(/\s/g, '-')}`;
                       return (
-                        <div key={owner} className="flex gap-1 items-center text-nowrap">
+                        <div
+                          key={owner}
+                          className="flex gap-1 items-center text-nowrap"
+                        >
                           <Checkbox
                             id={id}
                             checked={filterOwners.includes(owner)}
@@ -338,7 +403,8 @@ function FloatingSchemaExplorer({
             </div>
             {owners && (
               <div className="text-xs p-1">
-                selected {filterOwners.length} item{`${filterOwners.length == 1 ? '' : 's'}`}
+                selected {filterOwners.length} item
+                {`${filterOwners.length === 1 ? '' : 's'}`}
               </div>
             )}
           </div>
@@ -351,58 +417,114 @@ function FloatingSchemaExplorer({
                 className={`size-3.5 ${dbObjects ? '' : 'opacity-25'}`}
                 onClick={handleRefreshDBObjects}
               />
-              {filterOwners?.length == 1 && <span>{filterOwners[0]}</span>}
+              {filterOwners?.length === 1 && <span>{filterOwners[0]}</span>}
               <span>
-                {filterObjectTypes.length == 1
+                {filterObjectTypes.length === 1
                   ? `${filterObjectTypes[0].toLowerCase()}s`
                   : 'DB Objects'}
               </span>
             </div>
             <div className="text-xs p-1 flex gap-1 items-center">
-              <input
-                type="text"
-                value={filterDBObjectsText}
-                onChange={(e) => setFilterDBObjectsText(e.target.value ?? '')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !dbObjectsError && !loadDBObjects) {
-                    e.preventDefault();
-                    handleRefreshDBObjects();
-                  }
-                }}
-                onBlur={handleRefreshDBObjects}
+              <div
                 className={cn(
-                  'w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-l-full bg-white',
-                  'dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400',
-                  'focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                  'flex min-w-0 flex-1 items-center rounded-full border',
+                  'border-slate-200 bg-white text-slate-900',
+                  'dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100',
+                  'focus-within:ring-1 focus-within:ring-blue-500',
                 )}
-                placeholder={`pattern or regexp`}
-              />
-              <DropdownMenu
-                open={openFilterDBObjectsTextHistory}
-                onOpenChange={setOpenFilterDBObjectsTextHistory}
               >
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="h-[34px] px-3 bg-brand-white-500 hover:bg-brand-white-700 text-white rounded-none rounded-r-full border-l border-brand-white-700/30"
-                  >
-                    <ChevronDown className="size-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {filterDBObjectsTextHistory.length > 0 ? (
-                    filterDBObjectsTextHistory.map((historyItem) => {
-                      const key = `${escapeHtml(historyItem.pattern)}${historyItem.regExp ? ' - regular expression' : ''}`;
-                      return (
-                      <DropdownMenuItem key={key}
-                        onClick={() => handleFilterDBObjectsTextHistory(historyItem)}
-                      >{key}</DropdownMenuItem>
-                    )})
-                  ) : (
-                    <span className="text-xs whitespace-nowrap">no items</span>
+                <input
+                  type="text"
+                  value={filterDBObjectsText}
+                  onChange={(e) => setFilterDBObjectsText(e.target.value ?? '')}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === 'Enter' &&
+                      !dbObjectsError &&
+                      !loadDBObjects
+                    ) {
+                      e.preventDefault();
+                      handleRefreshDBObjects();
+                    }
+                  }}
+                  onBlur={handleRefreshDBObjects}
+                  className={cn(
+                    'min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm',
+                    'placeholder:text-slate-400',
+                    'focus:outline-hidden',
                   )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  placeholder="pattern or regexp"
+                />
+
+                {filterDBObjectsText && (
+                  <button
+                    type="button"
+                    aria-label="Clear filter"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleClearFilterDBObjectsText}
+                    className={cn(
+                      'mr-1 flex size-6 shrink-0 items-center justify-center rounded-full',
+                      'text-slate-400 hover:text-slate-900 hover:bg-slate-100',
+                      'dark:hover:text-slate-100 dark:hover:bg-slate-700',
+                    )}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+
+                <DropdownMenu
+                  open={openFilterDBObjectsTextHistory}
+                  onOpenChange={setOpenFilterDBObjectsTextHistory}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Open filter history"
+                      className={cn(
+                        'mr-1 flex size-7 shrink-0 items-center justify-center rounded-full',
+                        'text-slate-500 hover:text-slate-900 hover:bg-slate-100',
+                        'dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-700',
+                      )}
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <ChevronDown className="size-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={4}
+                    className={cn(
+                      'z-50 min-w-[220px] max-w-[360px] p-1',
+                      'border border-slate-200 bg-white text-slate-900 shadow-md',
+                      'dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100',
+                    )}
+                  >
+                    {filterDBObjectsTextHistory.length > 0 ? (
+                      filterDBObjectsTextHistory.map((historyItem) => {
+                        const key = `${historyItem.pattern}${
+                          historyItem.regExp ? ' - regular expression' : ''
+                        }`;
+
+                        return (
+                          <DropdownMenuItem
+                            key={key}
+                            onSelect={() =>
+                              handleFilterDBObjectsTextHistory(historyItem)
+                            }
+                            className="cursor-pointer text-sm"
+                          >
+                            <span className="truncate">{key}</span>
+                          </DropdownMenuItem>
+                        );
+                      })
+                    ) : (
+                      <div className="px-2 py-1.5 text-xs text-slate-500 dark:text-slate-400">
+                        no items
+                      </div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -418,7 +540,11 @@ function FloatingSchemaExplorer({
                       </label>
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" align="start" className="max-w-md">
+                  <TooltipContent
+                    side="bottom"
+                    align="start"
+                    className="max-w-md"
+                  >
                     (W)ildcard Pattern or (R)egular Expression Filtering
                   </TooltipContent>
                 </Tooltip>
@@ -430,13 +556,16 @@ function FloatingSchemaExplorer({
                 <span className="text-xs">Loading db objects...</span>
               </div>
             )}
-            <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-dbObjects">
+            <div
+              className="flex-1 overflow-auto"
+              data-key="FloatingSchemaExplorer-dbObjects"
+            >
               {dbObjectsError ? (
                 <span className="text-xs text-red-500">{dbObjectsError}</span>
               ) : (
                 dbObjects &&
-                (!loadDBObjects && (!dbObjects || dbObjects.length == 0) ? (
-                  <span className="text-xs p-1">No do objects found</span>
+                (!loadDBObjects && dbObjects.length === 0 ? (
+                  <span className="text-xs p-1">No db objects found</span>
                 ) : (
                   <div className="p-1">
                     {dbObjects.map((dbObject) => {
@@ -477,7 +606,7 @@ export const openSchemaExplorer = (
   manager: Pick<WindowManagerApi, 'openWindow'>,
   isDark: boolean,
   database: string,
-  userName: string
+  userName: string,
 ) => {
   manager.openWindow({
     id: `SchemaExplorer-${database}-${userName}`,
