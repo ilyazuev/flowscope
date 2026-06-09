@@ -18,7 +18,7 @@ import {
   devLineageLoadOwners,
   devLineageLoadDBObjects,
 } from '@pondpilot/flowscope-app/src/lib/utils_backend';
-import { LoaderCircle, RefreshCw } from 'lucide-react';
+import { ChevronDown, LoaderCircle, RefreshCw } from 'lucide-react';
 import { cn } from './ui/button';
 import {
   Tooltip,
@@ -26,19 +26,35 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@pondpilot/flowscope-app/src/components/ui/tooltip';
+import {
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
+import { Button } from '@pondpilot/flowscope-app/src/components/ui/button';
+import { DropdownMenu, DropdownMenuContent } from './ui/dropdown-menu';
+import { escapeHtml } from '../utils/sanitize';
+
+interface FilterDBObjectsTextHistory {
+  pattern: string;
+  regExp: boolean;
+}
 
 function useSchemaExplorerInner() {
   const [loadOwners, setLoadOwners] = useState(false);
-  const [owners, setOwners] = useState<string[] | null >(null);
+  const [owners, setOwners] = useState<string[] | null>(null);
   const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(['TABLE']);
   const [filterOwners, setFilterOwners] = useState<string[]>([]);
   const [refreshOwnersRequest, setRefreshOwnersRequest] = useState(0);
 
   const [loadDBObjects, setLoadDBObjects] = useState(false);
-  const [dbObjects, setDbObjects] = useState<DBObject[] | null >(null);
+  const [dbObjects, setDbObjects] = useState<DBObject[] | null>(null);
   const [refreshDbObjectsRequest, setRefreshDbObjectsRequest] = useState(0);
   const [filterDBObjectsText, setFilterDBObjectsText] = useState<string>('');
   const [filterDBObjectsRegexp, setFilterDBObjectsRegexp] = useState(false);
+  const [filterDBObjectsTextHistory, setFilterDBObjectsTextHistory] = useState<
+    FilterDBObjectsTextHistory[]
+  >([]);
+  const [openFilterDBObjectsTextHistory, setOpenFilterDBObjectsTextHistory] = useState(false);
 
   return {
     loadOwners,
@@ -61,6 +77,10 @@ function useSchemaExplorerInner() {
     setFilterDBObjectsText,
     filterDBObjectsRegexp,
     setFilterDBObjectsRegexp,
+    filterDBObjectsTextHistory,
+    setFilterDBObjectsTextHistory,
+    openFilterDBObjectsTextHistory,
+    setOpenFilterDBObjectsTextHistory,
   };
 }
 
@@ -109,6 +129,10 @@ function FloatingSchemaExplorer({
     setFilterDBObjectsText,
     filterDBObjectsRegexp,
     setFilterDBObjectsRegexp,
+    filterDBObjectsTextHistory,
+    setFilterDBObjectsTextHistory,
+    openFilterDBObjectsTextHistory,
+    setOpenFilterDBObjectsTextHistory,
   } = useSchemaExplorer();
   const [ownersError, setOwnersError] = useState<string | null>(null);
   const [dbObjectsError, setDbObjectsError] = useState<string | null>(null);
@@ -194,7 +218,17 @@ function FloatingSchemaExplorer({
       setFilterDBObjectsRegexp(checked);
       handleRefreshDBObjects();
     },
-    [setRefreshOwnersRequest, setOwners]
+    [setRefreshOwnersRequest, setOwners, handleRefreshDBObjects]
+  );
+
+  const handleFilterDBObjectsTextHistory = useCallback(
+    (historyItem) => {
+      setOpenFilterDBObjectsTextHistory(false);
+      setFilterDBObjectsText(historyItem.pattern);
+      setFilterDBObjectsRegexp(historyItem.regExp);
+      handleRefreshDBObjects();
+    },
+    [setFilterDBObjectsText, setFilterDBObjectsRegexp, handleRefreshDBObjects]
   );
 
   useEffect(() => {
@@ -212,6 +246,16 @@ function FloatingSchemaExplorer({
           pattern: filterDBObjectsText, //'^IDAF_DS.*$', //pattern: '*IDAF*', //regExp: false,
           regExp: filterDBObjectsRegexp,
         };
+        setFilterDBObjectsTextHistory((prevState) => [
+          ...prevState.filter(
+            (o, k) =>
+              k < 10 || (o.pattern == filterDBObjectsText && o.regExp == filterDBObjectsRegexp)
+          ), ...(filterDBObjectsText
+            ? [{
+              pattern: filterDBObjectsText,
+              regExp: filterDBObjectsRegexp,
+            }]
+            : [])]);
         const dbObjectsPayloadResponse = await devLineageLoadDBObjects(dbObjectsPayload);
         setDbObjects(dbObjectsPayloadResponse.dbObjects);
       } catch (e) {
@@ -268,7 +312,7 @@ function FloatingSchemaExplorer({
                 <span className="text-xs text-red-500">{ownersError}</span>
               ) : (
                 owners &&
-                ( !loadOwners && ( !owners || owners.length == 0 ) ? (
+                (!loadOwners && (!owners || owners.length == 0) ? (
                   <span className="text-xs p-1">No schemes found</span>
                 ) : (
                   <div className="p-1">
@@ -317,7 +361,7 @@ function FloatingSchemaExplorer({
             <div className="text-xs p-1 flex gap-1 items-center">
               <input
                 type="text"
-                value=""
+                value={filterDBObjectsText}
                 onChange={(e) => setFilterDBObjectsText(e.target.value ?? '')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !dbObjectsError && !loadDBObjects) {
@@ -327,16 +371,42 @@ function FloatingSchemaExplorer({
                 }}
                 onBlur={handleRefreshDBObjects}
                 className={cn(
-                  'w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-white',
+                  'w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-l-full bg-white',
                   'dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400',
                   'focus:outline-hidden focus:ring-1 focus:ring-blue-500'
                 )}
                 placeholder={`pattern or regexp`}
               />
+              <DropdownMenu
+                open={openFilterDBObjectsTextHistory}
+                onOpenChange={setOpenFilterDBObjectsTextHistory}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-[34px] px-3 bg-brand-white-500 hover:bg-brand-white-700 text-white rounded-none rounded-r-full border-l border-brand-white-700/30"
+                  >
+                    <ChevronDown className="size-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {filterDBObjectsTextHistory.length > 0 ? (
+                    filterDBObjectsTextHistory.map((historyItem) => {
+                      const key = `${escapeHtml(historyItem.pattern)}${historyItem.regExp ? ' - regular expression' : ''}`;
+                      return (
+                      <DropdownMenuItem key={key}
+                        onClick={() => handleFilterDBObjectsTextHistory(historyItem)}
+                      >{key}</DropdownMenuItem>
+                    )})
+                  ) : (
+                    <span className="text-xs whitespace-nowrap">no items</span>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                     <span className="flex gap-1 items-center">
+                    <span className="flex gap-1 items-center">
                       <Checkbox
                         id="FloatingSchemaExplorer-FilterDBObjectsRegexp"
                         checked={filterDBObjectsRegexp}
@@ -365,7 +435,7 @@ function FloatingSchemaExplorer({
                 <span className="text-xs text-red-500">{dbObjectsError}</span>
               ) : (
                 dbObjects &&
-                ( !loadDBObjects && (!dbObjects || dbObjects.length == 0)  ? (
+                (!loadDBObjects && (!dbObjects || dbObjects.length == 0) ? (
                   <span className="text-xs p-1">No do objects found</span>
                 ) : (
                   <div className="p-1">
