@@ -51,6 +51,7 @@ function useSchemaExplorerInner() {
   const [refreshDbObjectsRequest, setRefreshDbObjectsRequest] = useState(0);
   const [loadingDBObjects, setLoadingDBObjects] = useState(false);
   const [dbObjects, setDbObjects] = useState<DBObject[] | null>(null);
+  const [dbObjectsCsv, setDbObjectsCsv] = useState<string | null>(null);
   const [filterDBObjectsText, setFilterDBObjectsText] = useState<string>('');
   const [filterDBObjectsRegexp, setFilterDBObjectsRegexp] = useState(false);
   const [filterDBObjectsTextHistory, setFilterDBObjectsTextHistory] = useState<
@@ -73,6 +74,8 @@ function useSchemaExplorerInner() {
     setLoadingDBObjects,
     dbObjects,
     setDbObjects,
+    dbObjectsCsv,
+    setDbObjectsCsv,
     refreshDbObjectsRequest,
     setRefreshDbObjectsRequest,
     filterDBObjectsText,
@@ -125,6 +128,8 @@ function FloatingSchemaExplorer({
     setLoadingDBObjects,
     dbObjects,
     setDbObjects,
+    dbObjectsCsv,
+    setDbObjectsCsv,
     refreshDbObjectsRequest,
     setRefreshDbObjectsRequest,
     filterDBObjectsText,
@@ -167,8 +172,9 @@ function FloatingSchemaExplorer({
       setSelectedDbObject(null);
       setRefreshDbObjectsRequest((key) => key + 1);
       setDbObjects(null);
+      setDbObjectsCsv(null);
     },
-    [filterDBObjectsRegexp, filterDBObjectsText, setRefreshDbObjectsRequest, setDbObjects]
+    [filterDBObjectsRegexp, filterDBObjectsText, setRefreshDbObjectsRequest, setDbObjects, setDbObjectsCsv]
   );
 
   const handleRefreshOwners = useCallback(() => {
@@ -192,6 +198,7 @@ function FloatingSchemaExplorer({
           setLoadingOwners(true);
           setLoadingDBObjects(true);
           setDbObjects(null);
+          setDbObjectsCsv(null);
           const ownersPayloadResponse = await devLineageLoadOwners(credentialsPayload);
           setOwners(ownersPayloadResponse.owners);
           handleRefreshDBObjects();
@@ -220,6 +227,7 @@ function FloatingSchemaExplorer({
     setLoadingOwners,
     setLoadingDBObjects,
     setDbObjects,
+    setDbObjectsCsv,
     setOwners,
     handleRefreshDBObjects,
   ]);
@@ -339,6 +347,7 @@ function FloatingSchemaExplorer({
           return;
         }
         setDbObjects(dbObjectsPayloadResponse.dbObjects);
+        setDbObjectsCsv(dbObjectsPayloadResponse.csv);
       } catch (e) {
         if (loadDBObjectsRequestIdRef.current !== requestId) {
           return;
@@ -377,7 +386,7 @@ function FloatingSchemaExplorer({
                       }
                       className="shrink-0 border-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
-                    <label htmlFor={id}>{objectType.toLowerCase()}</label>
+                    <label htmlFor={id}>{objectType.toLowerCase().replace('_', ' ')}</label>
                   </div>
                 );
               })}
@@ -385,7 +394,7 @@ function FloatingSchemaExplorer({
             <hr />
             <div className="text-xs p-1 flex gap-1">
               <RefreshCw
-                className={`size-3.5 ${owners ? '' : 'opacity-25'}`}
+                className={`size-3.5 ${loadingOwners ? 'opacity-25' : ''}`}
                 onClick={handleRefreshOwners}
               />
               <span>schemes</span>
@@ -398,7 +407,7 @@ function FloatingSchemaExplorer({
             )}
             <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-owners">
               {ownersError ? (
-                <span className="text-xs text-red-500">{ownersError}</span>
+                <span className="text-xs text-red-500 p-1">{ownersError}</span>
               ) : (
                 owners &&
                 (!loadingOwners && owners.length === 0 ? (
@@ -438,7 +447,7 @@ function FloatingSchemaExplorer({
           <div className="h-full w-full min-h-0 flex flex-col">
             <div className="text-xs p-1 flex gap-1">
               <RefreshCw
-                className={`size-3.5 ${dbObjects ? '' : 'opacity-25'}`}
+                className={`size-3.5 ${loadingDBObjects ? 'opacity-25' : ''}`}
                 onClick={() => handleRefreshDBObjects()}
               />
               {filterOwners?.length === 1 && <span>{filterOwners[0]}</span>}
@@ -580,7 +589,7 @@ function FloatingSchemaExplorer({
             )}
             <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-dbObjects">
               {dbObjectsError ? (
-                <span className="text-xs text-red-500">{dbObjectsError}</span>
+                <span className="text-xs text-red-500 p-1">{dbObjectsError}</span>
               ) : (
                 dbObjects &&
                 (!loadingDBObjects && dbObjects.length === 0 ? (
@@ -632,7 +641,10 @@ function FloatingSchemaExplorer({
                 {selectedDbObject.owner} {selectedDbObject.objectName} {selectedDbObject.objectType}
               </div>
             ) : (
-              <span className="text-slate-500 dark:text-slate-400">Select db object</span>
+              <>
+                <span className="text-slate-500 dark:text-slate-400">Select db object</span>
+                <span className="text-slate-500 dark:text-slate-400">{dbObjectsCsv}</span>
+              </>
             )}
           </div>
         </ResizablePanel>

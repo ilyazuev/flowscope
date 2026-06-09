@@ -93,7 +93,7 @@ export interface OwnersPayloadResponse {
 }
 
 export const objectTypes = [
-  'MATERIALIZED VIEW',
+  'MATERIALIZED_VIEW',
   'TABLE',
   'VIEW',
 ] as const;
@@ -115,6 +115,7 @@ export interface DBObject {
 
 export interface DBObjectsPayloadResponse {
   dbObjects: DBObject[];
+  csv: string;
 }
 
 
