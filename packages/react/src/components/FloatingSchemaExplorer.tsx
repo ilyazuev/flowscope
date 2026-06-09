@@ -143,8 +143,8 @@ function FloatingSchemaExplorer({
   const filterDBObjectsControlRef = useRef<HTMLDivElement>(null);
   const loadDBObjectsRequestIdRef = useRef(0);
   const lastAppliedDBObjectsFilterRef = useRef<FilterDBObjectsTextHistory>({
-    pattern: '',
-    regExp: false,
+    pattern: filterDBObjectsText,
+    regExp: filterDBObjectsRegexp,
   });
 
   const handleRefreshDBObjects = useCallback(
@@ -297,6 +297,9 @@ function FloatingSchemaExplorer({
 
   useEffect(() => {
     if (!owners || owners.length === 0) {
+      return;
+    }
+    if(dbObjects) {
       return;
     }
     const requestId = loadDBObjectsRequestIdRef.current + 1;
