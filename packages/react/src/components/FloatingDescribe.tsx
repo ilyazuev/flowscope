@@ -18,9 +18,9 @@ import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
 
 const EMPTY_NO_COLUMNS_FOUND = '_\nNo columns found';
 
-type DescribeTab = 'Table' | 'Code';
-const VALID_TABS: readonly DescribeTab[] = ['Table', 'Code'];
-export function isValidTab(tab: string): tab is DescribeTab {
+type DescribeTab = 'Columns' | 'Code';
+const VALID_TABS: readonly DescribeTab[] = ['Columns', 'Code'];
+function isValidTab(tab: string): tab is DescribeTab {
   return VALID_TABS.includes(tab as DescribeTab);
 }
 
@@ -199,7 +199,7 @@ function FloatingDescribe({
       >
         <TabsList className="shrink-0 self-start w-fit justify-start">
           <TabsTrigger value="Code">Code</TabsTrigger>
-          <TabsTrigger value="Table">Table</TabsTrigger>
+          <TabsTrigger value="Columns">Columns</TabsTrigger>
         </TabsList>
         <TabsContent value="Code" className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden">
           <SqlView
@@ -221,7 +221,7 @@ function FloatingDescribe({
           />
         </TabsContent>
         <TabsContent
-          value="Table"
+          value="Columns"
           className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden h-full flex flex-col"
         >
           {dataLoadingState !== SqlPartType.none ? (

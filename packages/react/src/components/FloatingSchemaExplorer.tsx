@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
+import { Button } from '@pondpilot/flowscope-app/src/components/ui/button';
 
 interface FilterDBObjectsTextHistory {
   pattern: string;
@@ -174,7 +175,13 @@ function FloatingSchemaExplorer({
       setDbObjects(null);
       setDbObjectsCsv(null);
     },
-    [filterDBObjectsRegexp, filterDBObjectsText, setRefreshDbObjectsRequest, setDbObjects, setDbObjectsCsv]
+    [
+      filterDBObjectsRegexp,
+      filterDBObjectsText,
+      setRefreshDbObjectsRequest,
+      setDbObjects,
+      setDbObjectsCsv,
+    ]
   );
 
   const handleRefreshOwners = useCallback(() => {
@@ -307,7 +314,7 @@ function FloatingSchemaExplorer({
     if (!owners || owners.length === 0) {
       return;
     }
-    if(dbObjects) {
+    if (dbObjects) {
       return;
     }
     const requestId = loadDBObjectsRequestIdRef.current + 1;
@@ -635,14 +642,27 @@ function FloatingSchemaExplorer({
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel defaultSize={50} collapsible collapsedSize={0}>
-          <div className="h-full w-full min-h-0 p-2 text-xs">
+          <div className="h-full w-full min-h-0 p-2 flex flex-col gap-2">
+            <div className="flex gap-2 items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedDbObject(null)}
+                disabled={selectedDbObject === null}
+                className="h-7 text-xs"
+              >
+                Show tables
+              </Button>
+              {selectedDbObject === null && !loadingDBObjects && (
+                <span className="text-slate-500 dark:text-slate-400">Select db object</span>
+              )}
+            </div>
             {selectedDbObject ? (
-              <div className="font-mono">
+              <div className="text-xs">
                 {selectedDbObject.owner} {selectedDbObject.objectName} {selectedDbObject.objectType}
               </div>
             ) : (
               <>
-                <span className="text-slate-500 dark:text-slate-400">Select db object</span>
                 <span className="text-slate-500 dark:text-slate-400">{dbObjectsCsv}</span>
               </>
             )}
