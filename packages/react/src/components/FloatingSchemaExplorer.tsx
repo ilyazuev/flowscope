@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
 import { Button } from '@pondpilot/flowscope-app/src/components/ui/button';
+import {FloatingDescribe} from './FloatingDescribe';
 
 interface FilterDBObjectsTextHistory {
   pattern: string;
@@ -108,11 +109,9 @@ function useSchemaExplorer() {
 function FloatingSchemaExplorer({
   database,
   userName,
-  _isDark,
 }: {
   database: string;
   userName: string;
-  _isDark: boolean;
 }) {
   const {
     loadingOwners,
@@ -374,7 +373,7 @@ function FloatingSchemaExplorer({
   return (
     <div className="h-full w-full min-h-0" ref={rootRef}>
       <ResizablePanelGroup direction="horizontal">
-        <ResizablePanel defaultSize={20} collapsible collapsedSize={0}>
+        <ResizablePanel defaultSize={15} collapsible collapsedSize={0}>
           <div className="h-full w-full min-h-0 flex flex-col">
             <div className="p-1">
               {objectTypes.map((objectType) => {
@@ -450,7 +449,7 @@ function FloatingSchemaExplorer({
           </div>
         </ResizablePanel>
         <ResizableHandle />
-        <ResizablePanel defaultSize={30} collapsible collapsedSize={0}>
+        <ResizablePanel defaultSize={20} collapsible collapsedSize={0}>
           <div className="h-full w-full min-h-0 flex flex-col">
             <div className="text-xs p-1 flex gap-1">
               <RefreshCw
@@ -627,7 +626,7 @@ function FloatingSchemaExplorer({
                             'hover:bg-slate-100 focus:bg-slate-100 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
                             'dark:hover:bg-slate-700 dark:focus:bg-slate-700',
                             selected &&
-                              'bg-blue-600 text-white hover:bg-blue-600 focus:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-600 dark:focus:bg-blue-600'
+                              'bg-blue-700 text-white hover:bg-blue-700 focus:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-700 dark:focus:bg-blue-700'
                           )}
                         >
                           {name.join('')}
@@ -641,7 +640,7 @@ function FloatingSchemaExplorer({
           </div>
         </ResizablePanel>
         <ResizableHandle />
-        <ResizablePanel defaultSize={50} collapsible collapsedSize={0}>
+        <ResizablePanel defaultSize={65} collapsible collapsedSize={0}>
           <div className="h-full w-full min-h-0 p-2 flex flex-col gap-2">
             <div className="flex gap-2 items-center">
               <Button
@@ -656,11 +655,19 @@ function FloatingSchemaExplorer({
               {selectedDbObject === null && !loadingDBObjects && (
                 <span className="text-slate-500 dark:text-slate-400">Select db object</span>
               )}
+              {selectedDbObject && (
+                <div className="text-xs">
+                  {`${selectedDbObject.owner}.${selectedDbObject.objectName} (${selectedDbObject.objectType})`}
+                </div>
+              )}
             </div>
             {selectedDbObject ? (
-              <div className="text-xs">
-                {selectedDbObject.owner} {selectedDbObject.objectName} {selectedDbObject.objectType}
-              </div>
+              <DataLoadProvider>
+                <FloatingDescribe
+                  tableName={selectedDbObject.objectName}
+                  schema={selectedDbObject.owner}
+                />
+              </DataLoadProvider>
             ) : (
               <>
                 <span className="text-slate-500 dark:text-slate-400">{dbObjectsCsv}</span>
@@ -675,20 +682,19 @@ function FloatingSchemaExplorer({
 
 export const openSchemaExplorer = (
   manager: Pick<WindowManagerApi, 'openWindow'>,
-  isDark: boolean,
   database: string,
   userName: string
 ) => {
   manager.openWindow({
     id: `SchemaExplorer-${database}-${userName}`,
     title: `SchemaExplorer. ${database}: ${userName}`,
-    width: 980,
+    width: window.innerWidth / 3 * 2,
     height: 680,
     minWidth: 640,
     minHeight: 420,
     content: (
       <DataLoadProvider>
-        <FloatingSchemaExplorer _isDark={isDark} database={database} userName={userName} />
+        <FloatingSchemaExplorer database={database} userName={userName} />
       </DataLoadProvider>
     ),
   });

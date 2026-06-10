@@ -290,7 +290,6 @@ const SchemaTableNodeComponent = ({
   const handleDescribeObject = useCallback(() => {
       void openDescribeWindow(
         windowManager,
-        isDark,
         data.label,
         data.catalog,
         data.schema

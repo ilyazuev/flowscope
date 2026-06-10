@@ -196,51 +196,73 @@ interface LoadSQLProps {
 
 export function LoadSQL({ title, table, dialect }: LoadSQLProps) {
   const { currentProject } = useProject();
+  const projectDatabase = currentProject?.database;
+  const projectUserName = currentProject?.userName;
   const [currentTable, setCurrentTable] = useState<SchemaPreviewTableData>(table);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    let cancelled = false;
-    if(error || (currentTable.columns?.length ?? 0) > 0 ) {
+    setCurrentTable(table);
+    setError(null);
+    requestIdRef.current += 1;
+  }, [table]);
+
+  useEffect(() => {
+    if ((currentTable.columns?.length ?? 0) > 0) {
       return;
     }
+
+    if (!currentProject) {
+      setError('Project not found.');
+      return;
+    }
+
+    let cancelled = false;
+    const requestId = ++requestIdRef.current;
+    setError(null);
+
     async function loadDescription() {
       try {
-        if (!currentProject) {
-          // noinspection ExceptionCaughtLocallyJS
-          throw new Error('Project not found.');
-        }
         const dataDescribePayload: DataDescribePayload = {
           schema: currentTable.schema,
           tableName: currentTable.tableName,
-          database: currentProject.database,
-          userName: currentProject.userName,
+          database: currentProject?.database,
+          userName: currentProject?.userName,
           describeType: DataDescribeType.columns,
         };
         const response = await devLineageDataDescribe(dataDescribePayload);
-        if (cancelled) {
+        if (cancelled || requestIdRef.current !== requestId) {
           return;
         }
-        if( response?.columnNames) {
+        if (response?.columnNames?.length) {
           setCurrentTable((prev) => ({
             ...prev,
-            columns: response.columnNames?.map(name=>({name}))
+            columns: response.columnNames?.map((name) => ({ name })),
           }));
         } else {
           setError(DATABASE_OBJECT_NOT_FOUND);
         }
       } catch (err) {
-        if (cancelled) {
+        if (cancelled || requestIdRef.current !== requestId) {
           return;
         }
         setError(err instanceof Error ? err.message : DATABASE_OBJECT_NOT_FOUND);
       }
     }
+
     void loadDescription();
+
     return () => {
       cancelled = true;
     };
-  }, [currentTable]);
+  }, [
+    projectDatabase,
+    projectUserName,
+    currentTable.columns,
+    currentTable.schema,
+    currentTable.tableName,
+  ]);
 
   return (currentTable.columns?.length ?? 0) > 0 ? (
     <FloatingSQL
@@ -259,8 +281,10 @@ export function LoadSQL({ title, table, dialect }: LoadSQLProps) {
 }
 
 function FloatingSQL(props: FloatingSQLProps) {
+  const dataLoadKey = `${props.title}\u0000${props.initialSql}`;
+
   return (
-    <DataLoadProvider>
+    <DataLoadProvider key={dataLoadKey}>
       <FloatingSQLInner {...props} />
     </DataLoadProvider>
   );
@@ -280,7 +304,17 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
     needParameters,
     setNeedParameters,
     setDataLoadingState,
+    setCsv,
   } = useSharedDataLoad();
+
+  useEffect(() => {
+    setSql(initialSql);
+    cachedParameters.current = null;
+    foundInSqlParameters.current = null;
+    setNeedParameters(false);
+    setDataLoadingState(SqlPartType.none);
+    setCsv(null);
+  }, [initialSql, setCsv, setDataLoadingState, setNeedParameters]);
 
   const isRunning = dataLoadingState !== SqlPartType.none;
 
@@ -376,7 +410,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
         <ResizableHandle withHandleHoriz />
 
         <ResizablePanel defaultSize={50} minSize={20}>
-          <DataView settings={true} />
+          <DataView settings={false} />
         </ResizablePanel>
       </ResizablePanelGroup>
 

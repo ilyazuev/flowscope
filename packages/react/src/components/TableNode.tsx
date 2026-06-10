@@ -351,7 +351,6 @@ function TableNodeComponent({ id, data, selected }: NodeProps): JSX.Element {
     if( nodeData.schemaTable ) {
       void openDescribeWindow(
         windowManager,
-        isDark,
         nodeData.schemaTable.name,
         currentProject?.database,
         nodeData.schemaTable.schema

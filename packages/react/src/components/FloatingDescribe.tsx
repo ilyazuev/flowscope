@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pondpilot/flowscope-a
 import { DataLoadProvider, useSharedDataLoad } from '@pondpilot/flowscope-app/src/components/DataLoadContext';
 import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
 import { LoadSQL, SchemaPreviewTableData } from './FloatingSQL';
+import { resolveTheme, useThemeStore } from '@pondpilot/flowscope-app/src/lib/theme-store';
 
 const EMPTY_NO_COLUMNS_FOUND = '_\nNo columns found';
 
@@ -72,18 +73,21 @@ function CopyDescribedColumns({ columnNames }: { columnNames: string[] }) {
   );
 }
 
-function FloatingDescribe({
-  isDark,
+export function FloatingDescribe({
   tableName,
   schema,
   columnName,
 }: {
-  isDark: boolean;
   tableName: string;
   schema?: string;
   columnName?: string;
 }) {
+  const theme = useThemeStore((state) => state.theme);
+  const isDark = resolveTheme(theme) === 'dark';
+
   const { currentProject } = useProject();
+  const projectDatabase = currentProject?.database;
+  const projectUserName = currentProject?.userName;
   const [activeTab, setActiveTab] = useState<DescribeTab>('Code');
   const [columnNames, setColumnNames] = useState<string[] | null>(null);
 
@@ -95,31 +99,52 @@ function FloatingDescribe({
   const [errorTable, setErrorTable] = useState<string | null>(null);
 
   const requestIdRef = useRef(0);
+  const [loadedCodeKey, setLoadedCodeKey] = useState<string | null>(null);
+  const [loadedTableKey, setLoadedTableKey] = useState<string | null>(null);
 
   const tableFullName = `${schema ? `${schema}.` : ''}${tableName}`;
+  const describeKey = useMemo(
+    () =>
+      [
+        projectDatabase ?? '',
+        projectUserName ?? '',
+        schema ?? '',
+        tableName,
+        columnName ?? '',
+      ].join('\u0000'),
+    [projectDatabase, projectUserName, schema, tableName, columnName]
+  );
 
   useEffect(() => {
+    if (!currentProject) {
+      setErrorCode('Project not found.');
+      setErrorTable('Project not found.');
+      setIsCodeLoading(false);
+      setDataLoadingState(SqlPartType.none);
+      return;
+    }
+
     let cancelled = false;
-    const asCode = activeTab == 'Code';
+    const asCode = activeTab === 'Code';
+    const alreadyLoaded = asCode ? loadedCodeKey === describeKey : loadedTableKey === describeKey;
+
+    if (alreadyLoaded) {
+      return;
+    }
+
+    setColumnNames(null);
+
     if (asCode) {
-      if (script) {
-        return;
-      }
       setErrorCode(null);
       setIsCodeLoading(true);
       setScript(null);
     } else {
-      if (csv) {
-        return;
-      }
       setErrorTable(null);
       setDataLoadingState(SqlPartType.sql);
       setCsv(null);
     }
+
     async function loadDescription() {
-      if (!currentProject) {
-        throw new Error('Project not found.');
-      }
       const requestId = ++requestIdRef.current;
 
       try {
@@ -127,8 +152,8 @@ function FloatingDescribe({
           schema,
           tableName,
           columnName,
-          database: currentProject.database,
-          userName: currentProject.userName,
+          database: currentProject?.database,
+          userName: currentProject?.userName,
           describeType: asCode ? DataDescribeType.code : DataDescribeType.table,
         };
         const response = await devLineageDataDescribe(dataDescribePayload);
@@ -137,10 +162,12 @@ function FloatingDescribe({
         }
         if (asCode) {
           setScript(response?.script);
+          setLoadedCodeKey(describeKey);
         } else {
           setCsv(response?.csv ?? EMPTY_NO_COLUMNS_FOUND, tableFullName);
+          setLoadedTableKey(describeKey);
         }
-        setColumnNames(response.columnNames ?? null);
+        setColumnNames(response?.columnNames ?? null);
       } catch (err) {
         if (cancelled) {
           return;
@@ -148,9 +175,11 @@ function FloatingDescribe({
         const errorMessage = err instanceof Error ? err.message : 'Failed to describe object';
         if (asCode) {
           setErrorCode(errorMessage);
+          setLoadedCodeKey(describeKey);
         } else {
           setCsv(EMPTY_NO_COLUMNS_FOUND, tableFullName);
           setErrorTable(errorMessage);
+          setLoadedTableKey(describeKey);
         }
       } finally {
         if (!cancelled) {
@@ -168,7 +197,20 @@ function FloatingDescribe({
     return () => {
       cancelled = true;
     };
-  }, [activeTab, tableName, schema, columnName]);
+  }, [
+    activeTab,
+    columnName,
+    describeKey,
+    loadedCodeKey,
+    loadedTableKey,
+    projectDatabase,
+    projectUserName,
+    schema,
+    setCsv,
+    setDataLoadingState,
+    tableFullName,
+    tableName,
+  ]);
 
   const handleTabChange = useCallback(
     (value: string) => {
@@ -262,7 +304,6 @@ function FloatingDescribe({
 
 export const openDescribeWindow = (
   manager: Pick<WindowManagerApi, 'openWindow'>,
-  isDark: boolean,
   tableName: string,
   database?: string,
   schema?: string,
@@ -281,7 +322,6 @@ export const openDescribeWindow = (
     content: (
       <DataLoadProvider>
         <FloatingDescribe
-          isDark={isDark}
           tableName={tableName}
           schema={schema}
           columnName={columnName}

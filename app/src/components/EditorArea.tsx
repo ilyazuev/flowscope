@@ -472,7 +472,7 @@ export function EditorArea({
       });
       return;
     }
-    void openSchemaExplorer(windowManager, isDark, currentProject.database, currentProject.userName);
+    void openSchemaExplorer(windowManager, currentProject.database, currentProject.userName);
   }, [currentProject]);
 
   const handleRunAction = useCallback((action: 'RunDescribe' | 'RunSqlPreview') => {
@@ -505,7 +505,7 @@ export function EditorArea({
     ) => {
       if( action == 'RunDescribe' ) {
         void openDescribeWindow(
-          windowManager, isDark, tableName, database, schema, columnName);
+          windowManager, tableName, database, schema, columnName);
       } else if( action == 'RunSqlPreview' ) {
         openFloatingSQLPreview({
           windowManager,
