@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, CopyPlus, Loader2 } from 'lucide-react';
 import { type WindowManagerApi } from './floating-window';
 import { SqlView } from './SqlView';
@@ -15,11 +15,12 @@ import { devLineageDataDescribe } from '@pondpilot/flowscope-app/src/lib/utils_b
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pondpilot/flowscope-app/src/components/ui/tabs';
 import { DataLoadProvider, useSharedDataLoad } from '@pondpilot/flowscope-app/src/components/DataLoadContext';
 import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
+import { LoadSQL, SchemaPreviewTableData } from './FloatingSQL';
 
 const EMPTY_NO_COLUMNS_FOUND = '_\nNo columns found';
 
-type DescribeTab = 'Columns' | 'Code';
-const VALID_TABS: readonly DescribeTab[] = ['Columns', 'Code'];
+type DescribeTab = 'Columns' | 'Code' | 'Data';
+const VALID_TABS: readonly DescribeTab[] = ['Columns', 'Code', 'Data'];
 function isValidTab(tab: string): tab is DescribeTab {
   return VALID_TABS.includes(tab as DescribeTab);
 }
@@ -27,7 +28,7 @@ function isValidTab(tab: string): tab is DescribeTab {
 function LoadingState({ tableFullName, isDark }: { tableFullName: string; isDark: boolean }) {
   return (
     <div className={isDark ? 'text-neutral-300' : 'text-neutral-600'}>
-      <div className="text-sm font-medium flex gap-2 center">
+      <div className="text-sm font-medium flex gap-2 center blink">
         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching description of {tableFullName}
         ...
       </div>
@@ -190,6 +191,10 @@ function FloatingDescribe({
     }
   }
 
+  const table = useMemo(() : SchemaPreviewTableData => ({
+    schema, tableName, columns: columnNames?.map(columnName=>({name: columnName}))
+  }), [schema, tableName, columnNames]);
+
   return (
     <div className="h-full w-full min-h-0">
       <Tabs
@@ -200,6 +205,7 @@ function FloatingDescribe({
         <TabsList className="shrink-0 self-start w-fit justify-start">
           <TabsTrigger value="Code">Code</TabsTrigger>
           <TabsTrigger value="Columns">Columns</TabsTrigger>
+          <TabsTrigger value="Data">Data</TabsTrigger>
         </TabsList>
         <TabsContent value="Code" className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden">
           <SqlView
@@ -238,6 +244,17 @@ function FloatingDescribe({
             <DataView settings={false}/>
           </div>
         </TabsContent>
+
+        <TabsContent
+          value="Data"
+          className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden h-full flex flex-col"
+        >
+          <LoadSQL
+            title={tableFullName}
+            table={table}
+            dialect={currentProject?.dialect ?? 'generic'}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -257,6 +274,10 @@ export const openDescribeWindow = (
   manager.openWindow({
     id: `describeWindow-${database ?? ''}-${objectFullName}`,
     title: `${database ? `${database}. ` : ''}Describe object ${objectFullName}`,
+    width: 980,
+    height: 680,
+    minWidth: 640,
+    minHeight: 420,
     content: (
       <DataLoadProvider>
         <FloatingDescribe

@@ -194,7 +194,7 @@ interface LoadSQLProps {
   dialect: Dialect;
 }
 
-function LoadSQL({ title, table, dialect }: LoadSQLProps) {
+export function LoadSQL({ title, table, dialect }: LoadSQLProps) {
   const { currentProject } = useProject();
   const [currentTable, setCurrentTable] = useState<SchemaPreviewTableData>(table);
   const [error, setError] = useState<string | null>(null);
