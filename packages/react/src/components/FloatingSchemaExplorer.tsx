@@ -13,13 +13,16 @@ import {
   ObjectType,
   objectTypes,
   DBObjectsPayload,
-  DBObject, isObjectType,
+  DBObject,
+  isObjectType,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
+  DatabasesProvider,
   devLineageLoadOwners,
   devLineageLoadDBObjects,
+  useDatabases,
 } from '@pondpilot/flowscope-app/src/lib/utils_backend';
 import { ChevronDown, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
@@ -38,6 +41,13 @@ import {
 import { Button } from '@pondpilot/flowscope-app/src/components/ui/button';
 import { FloatingDescribe } from './FloatingDescribe';
 import { DataView, PerspectiveCellMeta } from '@pondpilot/flowscope-app/src/components/DataView';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@pondpilot/flowscope-app/src/components/ui/select';
 
 interface FilterDBObjectsTextHistory {
   pattern: string;
@@ -142,7 +152,96 @@ function Loading({ message }: { message: string }) {
   );
 }
 
+function DatabaseUserSelect({
+  database,
+  userName,
+  onChange,
+}: {
+  database: string;
+  userName: string;
+  onChange: (next: { database: string; userName: string }) => void;
+}) {
+  const { databases, loading, error, refresh } = useDatabases();
+  const dbNames = Object.keys(databases).sort();
+  const users = database ? [...(databases[database] ?? [])].sort() : [];
+
+  const handleDatabaseChange = useCallback(
+    (nextDatabase: string) => {
+      onChange({
+        database: nextDatabase,
+        userName: databases[nextDatabase]?.[0] ?? '',
+      });
+    },
+    [databases, onChange]
+  );
+
+  if (error) {
+    return (
+      <div className="p-1 text-xs text-red-500 flex gap-1 items-center">
+        <RefreshCw className="size-3.5 shrink-0" onClick={() => void refresh()} />
+        <span className="truncate">Error loading databases: {error}</span>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="blink p-1 text-xs">Loading databases...</div>;
+  }
+
+  return (
+    <div className="p-1 flex flex-col gap-1">
+      <Select value={database ?? ''} onValueChange={handleDatabaseChange}>
+        <SelectTrigger className="h-7 w-full text-xs">
+          {database ? (
+            <SelectValue placeholder="Database" />
+          ) : (
+            <span className="text-red-500">DB?</span>
+          )}
+        </SelectTrigger>
+        <SelectContent className='z-999'>
+          {dbNames.map((db) => (
+            <SelectItem key={db} value={db}>
+              {db}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="flex gap-1">
+        <Select
+          value={userName ?? ''}
+          onValueChange={(nextUserName) => onChange({ database, userName: nextUserName })}
+          disabled={!database || users.length === 0}
+        >
+          <SelectTrigger className="h-7 min-w-0 flex-1 text-xs">
+            {userName ? (
+              <SelectValue placeholder="User" />
+            ) : (
+              <span className="text-red-500">User?</span>
+            )}
+          </SelectTrigger>
+          <SelectContent className='z-999'>
+            {users.map((user) => (
+              <SelectItem key={user} value={user}>
+                {user}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <RefreshCw
+          className={cn(
+            'size-3.5 shrink-0 self-center text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
+            loading && 'opacity-25'
+          )}
+          onClick={() => void refresh()}
+        />
+      </div>
+    </div>
+  );
+}
+
 function FloatingSchemaExplorer({ database, userName }: { database: string; userName: string }) {
+  const [selectedDatabase, setSelectedDatabase] = useState(database);
+  const [selectedUserName, setSelectedUserName] = useState(userName);
   const {
     loadingOwners,
     setLoadingOwners,
@@ -176,11 +275,43 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
   const [selectedDbObject, setSelectedDbObject] = useState<DBObject | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const filterDBObjectsControlRef = useRef<HTMLDivElement>(null);
+  const loadOwnersRequestIdRef = useRef(0);
   const loadDBObjectsRequestIdRef = useRef(0);
   const lastAppliedDBObjectsFilterRef = useRef<FilterDBObjectsTextHistory>({
     pattern: filterDBObjectsText,
     regExp: filterDBObjectsRegexp,
   });
+
+  const resetLoadedData = useCallback(
+    (nextUserName?: string) => {
+      loadOwnersRequestIdRef.current += 1;
+      loadDBObjectsRequestIdRef.current += 1;
+      setOwners(null);
+      setDbObjects(null);
+      setDbObjectsCsv(null);
+      setSelectedDbObject(null);
+      setOwnersError(null);
+      setDbObjectsError(null);
+      setFilterOwners(nextUserName ? [nextUserName] : []);
+    },
+    [setDbObjects, setDbObjectsCsv, setFilterOwners, setOwners]
+  );
+
+  const handleCredentialsChange = useCallback(
+    ({
+      database: nextDatabase,
+      userName: nextUserName,
+    }: {
+      database: string;
+      userName: string;
+    }) => {
+      setSelectedDatabase(nextDatabase);
+      setSelectedUserName(nextUserName);
+      resetLoadedData(nextUserName);
+      setRefreshOwnersRequest((key) => key + 1);
+    },
+    [resetLoadedData, setRefreshOwnersRequest]
+  );
 
   const handleRefreshDBObjects = useCallback(
     (nextFilter?: FilterDBObjectsTextHistory, force = true) => {
@@ -219,14 +350,28 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
   }, [setRefreshOwnersRequest, setOwners]);
 
   useEffect(() => {
-    setFilterOwners((prevState) => (prevState.length === 0 ? [userName] : prevState));
-  }, [userName, setFilterOwners]);
+    setFilterOwners((prevState) =>
+      prevState.length === 0 && selectedUserName ? [selectedUserName] : prevState
+    );
+  }, [selectedUserName, setFilterOwners]);
 
   useEffect(() => {
+    if (!selectedDatabase || !selectedUserName) {
+      setOwners(null);
+      setDbObjects(null);
+      setDbObjectsCsv(null);
+      setLoadingOwners(false);
+      setLoadingDBObjects(false);
+      return;
+    }
+
+    const requestId = loadOwnersRequestIdRef.current + 1;
+    loadOwnersRequestIdRef.current = requestId;
+
     void (async () => {
       const credentialsPayload: CredentialsPayload = {
-        database,
-        userName,
+        database: selectedDatabase,
+        userName: selectedUserName,
       };
       setOwnersError(null);
       try {
@@ -236,6 +381,9 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
           setDbObjects(null);
           setDbObjectsCsv(null);
           const ownersPayloadResponse = await devLineageLoadOwners(credentialsPayload);
+          if (loadOwnersRequestIdRef.current !== requestId) {
+            return;
+          }
           setOwners(ownersPayloadResponse.owners);
           handleRefreshDBObjects();
         }
@@ -249,15 +397,20 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
           });
         }, 200);
       } catch (e) {
+        if (loadOwnersRequestIdRef.current !== requestId) {
+          return;
+        }
         setLoadingDBObjects(false);
         setOwnersError(e instanceof Error ? e.message : String(e));
       } finally {
-        setLoadingOwners(false);
+        if (loadOwnersRequestIdRef.current === requestId) {
+          setLoadingOwners(false);
+        }
       }
     })();
   }, [
-    database,
-    userName,
+    selectedDatabase,
+    selectedUserName,
     owners,
     refreshOwnersRequest,
     setLoadingOwners,
@@ -371,7 +524,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
   );
 
   useEffect(() => {
-    if (!owners || owners.length === 0) {
+    if (!selectedDatabase || !selectedUserName || !owners || owners.length === 0) {
       return;
     }
     if (dbObjects) {
@@ -385,8 +538,8 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
         setDbObjectsError(null);
         const { pattern: normalizedPattern, regExp } = lastAppliedDBObjectsFilterRef.current;
         const dbObjectsPayload: DBObjectsPayload = {
-          database,
-          userName,
+          database: selectedDatabase,
+          userName: selectedUserName,
           objectTypes: filterObjectTypes,
           owners: filterOwners,
           pattern: normalizedPattern,
@@ -429,15 +582,29 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
     // Intentionally refresh-driven: typing into the input updates local state only.
     // Backend reload happens via handleRefreshDBObjects on Enter, blur, clear, menu select,
     // owner/type changes, or explicit refresh click.
-  }, [refreshDbObjectsRequest, owners]);
+  }, [
+    refreshDbObjectsRequest,
+    owners,
+    selectedDatabase,
+    selectedUserName,
+    filterObjectTypes,
+    filterOwners,
+    setDbObjects,
+    setDbObjectsCsv,
+    setFilterDBObjectsTextHistory,
+    setLoadingDBObjects,
+  ]);
 
   return (
     <div className="h-full w-full min-h-0" ref={rootRef}>
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel defaultSize={15} collapsible collapsedSize={0}>
           <div className="h-full w-full min-h-0 flex flex-col">
-            {/* Select databases; initial database */}
-            {/* Select userNames; initial userName */}
+            <DatabaseUserSelect
+              database={selectedDatabase}
+              userName={selectedUserName}
+              onChange={handleCredentialsChange}
+            />
             <hr />
             <div className="p-1">
               {objectTypes.map((objectType) => {
@@ -751,9 +918,11 @@ export const openSchemaExplorer = (
     minWidth: 640,
     minHeight: 420,
     content: (
-      <DataLoadProvider>
-        <FloatingSchemaExplorer database={database} userName={userName} />
-      </DataLoadProvider>
+      <DatabasesProvider>
+        <DataLoadProvider>
+          <FloatingSchemaExplorer database={database} userName={userName} />
+        </DataLoadProvider>
+      </DatabasesProvider>
     ),
   });
 };
