@@ -436,6 +436,9 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel defaultSize={15} collapsible collapsedSize={0}>
           <div className="h-full w-full min-h-0 flex flex-col">
+            {/* Select databases; initial database */}
+            {/* Select userNames; initial userName */}
+            <hr />
             <div className="p-1">
               {objectTypes.map((objectType) => {
                 const id = `FloatingSchemaExplorer-object-type-${objectType.replace(/\s/g, '-')}`;
@@ -733,14 +736,16 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
   );
 }
 
+let windowSeq = 0;
+
 export const openSchemaExplorer = (
   manager: Pick<WindowManagerApi, 'openWindow'>,
   database: string,
   userName: string
 ) => {
   manager.openWindow({
-    id: `SchemaExplorer-${database}-${userName}`,
-    title: `SchemaExplorer. ${database}: ${userName}`,
+    id: `SchemaExplorer-${Date.now()}-${++windowSeq}`,
+    title: `SchemaExplorer.`, // ${database}: ${userName}
     width: (window.innerWidth / 3) * 2,
     height: 680,
     minWidth: 640,
