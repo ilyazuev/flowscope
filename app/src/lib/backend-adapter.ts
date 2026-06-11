@@ -100,6 +100,10 @@ export const objectTypes = [
 
 export type ObjectType = typeof objectTypes[number];
 
+export const isObjectType = (value: unknown): value is ObjectType => {
+  return typeof value === 'string' && objectTypes.includes(value as ObjectType);
+};
+
 export interface DBObjectsPayload extends CredentialsPayload {
   objectTypes: ObjectType[];
   owners: string[];

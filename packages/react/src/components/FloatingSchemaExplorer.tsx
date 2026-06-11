@@ -13,7 +13,7 @@ import {
   ObjectType,
   objectTypes,
   DBObjectsPayload,
-  DBObject,
+  DBObject, isObjectType,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -37,12 +37,14 @@ import {
 } from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
 import { Button } from '@pondpilot/flowscope-app/src/components/ui/button';
 import { FloatingDescribe } from './FloatingDescribe';
-import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
+import { DataView, PerspectiveCellMeta } from '@pondpilot/flowscope-app/src/components/DataView';
 
 interface FilterDBObjectsTextHistory {
   pattern: string;
   regExp: boolean;
 }
+
+const OBJECT_NAME_HEADERS = ['OBJECT_NAME', 'TABLE_NAME', 'MVIEW_NAME', 'VIEW_NAME'];
 
 const getDBObjectKey = (dbObject: DBObject) =>
   `${dbObject.owner}.${dbObject.objectName} (${dbObject.objectType})`;
@@ -110,12 +112,25 @@ function useSchemaExplorer() {
   return ctx;
 }
 
-function DBObjectsCsvView({ csv }: { csv?: string | null }) {
+function DBObjectsCsvView({
+  csv,
+  onRowDoubleClick,
+}: {
+  csv?: string | null;
+  onRowDoubleClick?: (metas: PerspectiveCellMeta[], event: MouseEvent) => void;
+}) {
   const { setCsv } = useSharedDataLoad();
   useEffect(() => {
     setCsv(csv);
   }, [csv, setCsv]);
-  return <DataView settings={false} datagrid_editable={false} datagrid_edit_mode={'SELECT_ROW'} />;
+  return (
+    <DataView
+      settings={false}
+      datagrid_editable={false}
+      datagrid_edit_mode={'SELECT_ROW'}
+      onRowDoubleClick={onRowDoubleClick}
+    />
+  );
 }
 
 function Loading({ message }: { message: string }) {
@@ -320,6 +335,39 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
       handleRefreshDBObjects(undefined, false);
     },
     [handleRefreshDBObjects]
+  );
+
+  const handleOnRowDoubleClick = useCallback(
+    (metas: PerspectiveCellMeta[]) => {
+      let owner = null;
+      let objectName = null;
+      let objectType = filterObjectTypes.length == 1 ? filterObjectTypes[0] : null;
+      for (const meta of metas) {
+        for (const metaKey in meta) {
+          if (
+            metaKey == 'column_header' &&
+            Array.isArray(meta[metaKey]) &&
+            meta[metaKey].length > 0
+          ) {
+            if (meta[metaKey][0] === 'OWNER') {
+              owner = typeof meta.value === 'string' ? meta.value : null;
+            } else if (OBJECT_NAME_HEADERS.includes(meta[metaKey][0])) {
+              objectName = typeof meta.value === 'string' ? meta.value : null;
+            } else if (meta[metaKey][0] === 'OBJECT_TYPE') {
+              objectType = isObjectType(meta.value) ? meta.value : null;
+            }
+          }
+        }
+      }
+      if (owner && objectName && objectType) {
+        setSelectedDbObject({
+          owner,
+          objectName,
+          objectType,
+        });
+      }
+    },
+    [setSelectedDbObject]
   );
 
   useEffect(() => {
@@ -675,7 +723,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
               <Loading message={'Loading db objects...'} />
             ) : (
               <DataLoadProvider>
-                <DBObjectsCsvView csv={dbObjectsCsv} />
+                <DBObjectsCsvView csv={dbObjectsCsv} onRowDoubleClick={handleOnRowDoubleClick} />
               </DataLoadProvider>
             )}
           </div>

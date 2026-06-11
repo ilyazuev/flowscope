@@ -283,7 +283,7 @@ export function FloatingDescribe({
             </div>
           )}
           <div className="flex-1 min-h-0">
-            <DataView settings={false}/>
+            <DataView settings={false} datagrid_editable={false} datagrid_edit_mode={'SELECT_ROW'}/>
           </div>
         </TabsContent>
 

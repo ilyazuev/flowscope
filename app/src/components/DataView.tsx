@@ -31,14 +31,39 @@ type PerspectiveTable = {
   delete?: (options?: { lazy?: boolean }) => Promise<void>;
 };
 
+type RegularTableElement = HTMLElement & {
+  getMeta?: (el: Element) => unknown;
+};
+
+export type PerspectiveCellMeta = {
+  dx?: number;
+  dy?: number;
+  row_header?: unknown[];
+  size_key?: number;
+  type?: string;
+  user?: unknown;
+  value?: unknown;
+  virtual_x?: number;
+  x?: number;
+  x0?: number;
+  x1?: number;
+  y?: number;
+  y0?: number;
+  y1?: number;
+  column_header?: string[];
+  current?: boolean;
+};
+
 export function DataView({
   settings,
   datagrid_editable = true,
   datagrid_edit_mode = 'EDIT',
+  onRowDoubleClick,
 }: {
   settings: boolean;
   datagrid_editable?: boolean;
   datagrid_edit_mode?: string;
+  onRowDoubleClick?: (metas: PerspectiveCellMeta[], event: MouseEvent) => void;
 }) {
   const viewerRef = useRef<PerspectiveViewerElement | null>(null);
   const workerRef = useRef<PerspectiveWorker | null>(null);
@@ -119,6 +144,41 @@ export function DataView({
     root.appendChild(style);
   };
 
+  const attachRowDoubleClickHandler = (
+    viewer: PerspectiveViewerElement,
+    onRowDoubleClick: (metas: PerspectiveCellMeta[], event: MouseEvent) => void,
+  ) => {
+    const datagrid = viewer.getElementsByTagName('perspective-viewer-datagrid')[0];
+    const regularTable = datagrid?.shadowRoot?.querySelector(
+      'regular-table',
+    ) as RegularTableElement | null;
+    if (!regularTable) {
+      return;
+    }
+    if (regularTable.dataset.dblclickAttached === 'true') {
+      return;
+    }
+    regularTable.dataset.dblclickAttached = 'true';
+    regularTable.addEventListener('dblclick', (event) => {
+      const target = event.target as Element | null;
+      if (!target) {
+        return;
+      }
+      const cell = target.closest('td');
+      if (!cell) {
+        return;
+      }
+      const row = target.closest('tr');
+      if (!row) {
+        return;
+      }
+      const metas: PerspectiveCellMeta[]  = [...row.getElementsByTagName('td')].map(td=>(
+        {...(regularTable.getMeta?.(td) ?? {}), current: td === cell}
+      ))
+      onRowDoubleClick(metas, event as MouseEvent);
+    });
+  };
+
   const loadCsvToViewer = async (csv: string, title?: string | null) => {
     const token = ++loadTokenRef.current;
 
@@ -160,6 +220,9 @@ export function DataView({
     });
 
     hidePerspectiveThemeControl(viewer); // const themeElements = viewer.shadowRoot?.querySelectorAll('#theme_icon, #theme'); for (const themeElement of themeElements ?? []) {  //(themeElement as HTMLElement).style.display = 'none'; (themeElement as HTMLElement).remove(); }
+    if(onRowDoubleClick) {
+      attachRowDoubleClickHandler(viewer, onRowDoubleClick);
+    }
     const elements = viewer.getElementsByTagName('perspective-viewer-datagrid');
     if( elements && elements.length > 0 ){
       const tds = elements[0].shadowRoot?.querySelectorAll('regular-table > table td, regular-table > table th');
