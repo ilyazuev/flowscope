@@ -32,9 +32,13 @@ type PerspectiveTable = {
 };
 
 export function DataView({
-  settings
+  settings,
+  datagrid_editable = true,
+  datagrid_edit_mode = 'EDIT',
 }: {
-  settings: boolean
+  settings: boolean;
+  datagrid_editable?: boolean;
+  datagrid_edit_mode?: string;
 }) {
   const viewerRef = useRef<PerspectiveViewerElement | null>(null);
   const workerRef = useRef<PerspectiveWorker | null>(null);
@@ -95,6 +99,26 @@ export function DataView({
     }
   };
 
+  const hidePerspectiveThemeControl = (viewer: PerspectiveViewerElement) => {
+    const root = viewer.shadowRoot;
+    if (!root) return;
+    const styleId = 'hide-perspective-theme-control';
+    if (root.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+        #theme,
+        #theme_icon,
+        label[for="theme"],
+        select#theme {
+          display: none !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+      `;
+    root.appendChild(style);
+  };
+
   const loadCsvToViewer = async (csv: string, title?: string | null) => {
     const token = ++loadTokenRef.current;
 
@@ -130,16 +154,13 @@ export function DataView({
       settings: settings,
       title: title ?? 'no data',
       plugin_config: {
-        editable: true,
-        edit_mode: 'EDIT',
+        editable: datagrid_editable,
+        edit_mode: datagrid_edit_mode,
       },
     });
 
+    hidePerspectiveThemeControl(viewer); // const themeElements = viewer.shadowRoot?.querySelectorAll('#theme_icon, #theme'); for (const themeElement of themeElements ?? []) {  //(themeElement as HTMLElement).style.display = 'none'; (themeElement as HTMLElement).remove(); }
     const elements = viewer.getElementsByTagName('perspective-viewer-datagrid');
-    const themeElements = viewer.shadowRoot?.querySelectorAll('#theme_icon, #theme');
-    for (const themeElement of themeElements ?? []) {
-      (themeElement as HTMLElement).style.display = 'none';
-    }
     if( elements && elements.length > 0 ){
       const tds = elements[0].shadowRoot?.querySelectorAll('regular-table > table td, regular-table > table th');
       if (tds && elements.length > 0) {
@@ -232,8 +253,14 @@ export function DataView({
       {error && <pre style={{ color: 'crimson', whiteSpace: 'pre-wrap' }}>{error}</pre>}
       <perspective-viewer
         ref={(node) => {
-          node?.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
-          viewerRef.current = node as PerspectiveViewerElement | null;
+          if(node) {
+            node.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
+            const viewer = node as PerspectiveViewerElement;
+            hidePerspectiveThemeControl(viewer);
+            viewerRef.current = node as PerspectiveViewerElement | null;
+          } else {
+            viewerRef.current = null;
+          }
         }}
         style={{
           width: !error && !status ? '100%' : '0',

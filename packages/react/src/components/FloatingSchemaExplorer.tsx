@@ -1,5 +1,8 @@
 import type { WindowManagerApi } from './floating-window';
-import { DataLoadProvider } from '@pondpilot/flowscope-app/src/components/DataLoadContext';
+import {
+  DataLoadProvider,
+  useSharedDataLoad,
+} from '@pondpilot/flowscope-app/src/components/DataLoadContext';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -33,7 +36,8 @@ import {
   DropdownMenuTrigger,
 } from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
 import { Button } from '@pondpilot/flowscope-app/src/components/ui/button';
-import {FloatingDescribe} from './FloatingDescribe';
+import { FloatingDescribe } from './FloatingDescribe';
+import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
 
 interface FilterDBObjectsTextHistory {
   pattern: string;
@@ -106,13 +110,24 @@ function useSchemaExplorer() {
   return ctx;
 }
 
-function FloatingSchemaExplorer({
-  database,
-  userName,
-}: {
-  database: string;
-  userName: string;
-}) {
+function DBObjectsCsvView({ csv }: { csv?: string | null }) {
+  const { setCsv } = useSharedDataLoad();
+  useEffect(() => {
+    setCsv(csv);
+  }, [csv, setCsv]);
+  return <DataView settings={false} datagrid_editable={false} datagrid_edit_mode={'SELECT_ROW'} />;
+}
+
+function Loading({ message }: { message: string }) {
+  return (
+    <div className="flex p-1 gap-1">
+      <LoaderCircle className="h-4 w-4 animate-spin" />
+      <span className="text-xs">{message}</span>
+    </div>
+  );
+}
+
+function FloatingSchemaExplorer({ database, userName }: { database: string; userName: string }) {
   const {
     loadingOwners,
     setLoadingOwners,
@@ -299,11 +314,9 @@ function FloatingSchemaExplorer({
   const handleFilterDBObjectsTextBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const nextFocusedElement = e.relatedTarget;
-
       if (nextFocusedElement && filterDBObjectsControlRef.current?.contains(nextFocusedElement)) {
         return;
       }
-
       handleRefreshDBObjects(undefined, false);
     },
     [handleRefreshDBObjects]
@@ -400,17 +413,12 @@ function FloatingSchemaExplorer({
             <hr />
             <div className="text-xs p-1 flex gap-1">
               <RefreshCw
-                className={`size-3.5 ${loadingOwners ? 'opacity-25' : ''}`}
+                className={`size-3.5 ${loadingOwners ? 'opacity-25' : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
                 onClick={handleRefreshOwners}
               />
               <span>schemes</span>
             </div>
-            {loadingOwners && (
-              <div className="flex p-1 gap-1">
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-                <span className="text-xs">Loading schemes...</span>
-              </div>
-            )}
+            {loadingOwners && <Loading message={'Loading schemes...'} />}
             <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-owners">
               {ownersError ? (
                 <span className="text-xs text-red-500 p-1">{ownersError}</span>
@@ -453,7 +461,7 @@ function FloatingSchemaExplorer({
           <div className="h-full w-full min-h-0 flex flex-col">
             <div className="text-xs p-1 flex gap-1">
               <RefreshCw
-                className={`size-3.5 ${loadingDBObjects ? 'opacity-25' : ''}`}
+                className={`size-3.5 ${loadingDBObjects ? 'opacity-25' : 'text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
                 onClick={() => handleRefreshDBObjects()}
               />
               {filterOwners?.length === 1 && <span>{filterOwners[0]}</span>}
@@ -587,12 +595,7 @@ function FloatingSchemaExplorer({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            {loadingDBObjects && (
-              <div className="flex p-1 gap-1">
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-                <span className="text-xs">Loading db objects...</span>
-              </div>
-            )}
+            {loadingDBObjects && <Loading message={'Loading db objects...'} />}
             <div className="flex-1 overflow-auto" data-key="FloatingSchemaExplorer-dbObjects">
               {dbObjectsError ? (
                 <span className="text-xs text-red-500 p-1">{dbObjectsError}</span>
@@ -652,9 +655,9 @@ function FloatingSchemaExplorer({
               >
                 Show tables
               </Button>
-              {selectedDbObject === null && !loadingDBObjects && (
-                <span className="text-slate-500 dark:text-slate-400">Select db object</span>
-              )}
+              {/*{selectedDbObject === null && !loadingDBObjects && (*/}
+              {/*  <span className="text-slate-500 dark:text-slate-400">Select db object</span>*/}
+              {/*)}*/}
               {selectedDbObject && (
                 <div className="text-xs">
                   {`${selectedDbObject.owner}.${selectedDbObject.objectName} (${selectedDbObject.objectType})`}
@@ -668,10 +671,12 @@ function FloatingSchemaExplorer({
                   schema={selectedDbObject.owner}
                 />
               </DataLoadProvider>
+            ) : loadingDBObjects || loadingOwners ? (
+              <Loading message={'Loading db objects...'} />
             ) : (
-              <>
-                <span className="text-slate-500 dark:text-slate-400">{dbObjectsCsv}</span>
-              </>
+              <DataLoadProvider>
+                <DBObjectsCsvView csv={dbObjectsCsv} />
+              </DataLoadProvider>
             )}
           </div>
         </ResizablePanel>
@@ -688,7 +693,7 @@ export const openSchemaExplorer = (
   manager.openWindow({
     id: `SchemaExplorer-${database}-${userName}`,
     title: `SchemaExplorer. ${database}: ${userName}`,
-    width: window.innerWidth / 3 * 2,
+    width: (window.innerWidth / 3) * 2,
     height: 680,
     minWidth: 640,
     minHeight: 420,
