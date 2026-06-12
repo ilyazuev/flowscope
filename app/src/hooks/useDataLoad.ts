@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { SqlPayload, SqlPartType  } from '@/lib/backend-adapter.ts';
+import { SqlPayload, SqlPartType } from '@/lib/backend-adapter.ts';
 import { devLineageExecuteSql } from '@/lib/utils_backend.tsx';
 import { backendParsed, SqlParameters, useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
@@ -39,7 +39,8 @@ export function useDataLoad() {
     setState((prev) => ({ ...prev, parameters }));
   }, []);
 
-  const setCsv = useCallback((csv?: string | null, title?: string | null) => { // const setCsv = useCallback((csv?: string|null) => { setState((prev) => ({ ...prev, csv })); }, []);
+  const setCsv = useCallback((csv?: string | null, title?: string | null) => {
+    // const setCsv = useCallback((csv?: string|null) => { setState((prev) => ({ ...prev, csv })); }, []);
     requestIdRef.current += 1;
 
     setState((prev) => ({
@@ -61,7 +62,15 @@ export function useDataLoad() {
   }, []);
 
   const runExecuteSql = useCallback(
-    async (activeFileContent?: string, activeFilePath?: string, parameters?: SqlParameters, partType: SqlPartType = SqlPartType.sql, cteName?: string) => {
+    async (
+      activeFileContent?: string,
+      activeFilePath?: string,
+      parameters?: SqlParameters,
+      partType: SqlPartType = SqlPartType.sql,
+      cteName?: string,
+      database?: string,
+      userName?: string
+    ) => {
       setNeedParameters(false);
 
       if (!currentProject) return;
@@ -84,13 +93,13 @@ export function useDataLoad() {
         const sqlPayload: SqlPayload = {
           path: activeFilePath,
           content: activeFileContent,
-          database: currentProject.database,
-          userName: currentProject.userName,
+          database: database ?? currentProject.database,
+          userName: userName ?? currentProject.userName,
           parameters: parameters,
-          partType
+          partType,
         };
 
-        const sqlPayloadResponse = await devLineageExecuteSql(sqlPayload, currentProject);
+        const sqlPayloadResponse = await devLineageExecuteSql(sqlPayload);
 
         if (requestIdRef.current !== requestId) {
           return;
@@ -115,7 +124,10 @@ export function useDataLoad() {
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
           parameters: sqlPayloadResponse.parameters,
-          title: (partType != SqlPartType.sql ? `${SqlPartType[partType].toUpperCase()}${cteName? ` (${cteName})`:''}: ` : '' ) + activeFilePath,
+          title:
+            (partType != SqlPartType.sql
+              ? `${SqlPartType[partType].toUpperCase()}${cteName ? ` (${cteName})` : ''}: `
+              : '') + activeFilePath,
           _lastLoadAt: Date.now(),
           needParameters,
         }));
@@ -133,10 +145,7 @@ export function useDataLoad() {
         console.error(error);
       }
     },
-    [
-      currentProject,
-      startRequest,
-    ]
+    [currentProject, startRequest]
   );
 
   const clear = useCallback(() => {

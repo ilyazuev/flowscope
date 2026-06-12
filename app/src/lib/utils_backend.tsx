@@ -104,7 +104,7 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
   return analysisResponse;
 }
 
-export async function devLineageExecuteSql(payload: SqlPayload, _currentProject: Project) {
+export async function devLineageExecuteSql(payload: SqlPayload) {
   const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV, payload));
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS

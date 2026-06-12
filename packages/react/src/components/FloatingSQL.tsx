@@ -34,6 +34,8 @@ export type SchemaPreviewTableData = {
 };
 
 interface FloatingSQLProps {
+  database?: string;
+  userName?: string;
   title: string;
   initialSql: string;
   dialect: Dialect;
@@ -189,15 +191,17 @@ export function openFloatingSQLPreview({
 }
 
 interface LoadSQLProps {
+  database?: string;
+  userName?: string;
   title: string;
   table: SchemaPreviewTableData;
   dialect: Dialect;
 }
 
-export function LoadSQL({ title, table, dialect }: LoadSQLProps) {
+export function LoadSQL({ database, userName, title, table, dialect }: LoadSQLProps) {
   const { currentProject } = useProject();
-  const projectDatabase = currentProject?.database;
-  const projectUserName = currentProject?.userName;
+  const innerDatabase = database ?? currentProject?.database;
+  const innerUserName = userName ?? currentProject?.userName;
   const [currentTable, setCurrentTable] = useState<SchemaPreviewTableData>(table);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
@@ -227,8 +231,8 @@ export function LoadSQL({ title, table, dialect }: LoadSQLProps) {
         const dataDescribePayload: DataDescribePayload = {
           schema: currentTable.schema,
           tableName: currentTable.tableName,
-          database: currentProject?.database,
-          userName: currentProject?.userName,
+          database: innerDatabase,
+          userName: innerUserName,
           describeType: DataDescribeType.columns,
         };
         const response = await devLineageDataDescribe(dataDescribePayload);
@@ -257,8 +261,8 @@ export function LoadSQL({ title, table, dialect }: LoadSQLProps) {
       cancelled = true;
     };
   }, [
-    projectDatabase,
-    projectUserName,
+    innerDatabase,
+    innerUserName,
     currentTable.columns,
     currentTable.schema,
     currentTable.tableName,
@@ -266,6 +270,8 @@ export function LoadSQL({ title, table, dialect }: LoadSQLProps) {
 
   return (currentTable.columns?.length ?? 0) > 0 ? (
     <FloatingSQL
+      database={innerDatabase}
+      userName={innerUserName}
       title={title}
       initialSql={buildSchemaPreviewSql(currentTable, dialect)}
       dialect={dialect}
@@ -290,7 +296,7 @@ function FloatingSQL(props: FloatingSQLProps) {
   );
 }
 
-function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
+function FloatingSQLInner({ database, userName, title, initialSql, dialect }: FloatingSQLProps) {
   const [sql, setSql] = useState(initialSql);
   const cachedParameters = useRef<SqlParameters | null>(null);
   const foundInSqlParameters = useRef<SqlParameters | null>(null);
@@ -336,7 +342,7 @@ function FloatingSQLInner({ title, initialSql, dialect }: FloatingSQLProps) {
   const runSql = useCallback(
     (editedParameters?: SqlParameters) => {
       if ( !needParametersForSql(sql, editedParameters ) ) {
-        void runExecuteSql(sql, title, editedParameters, SqlPartType.sql);
+        void runExecuteSql(sql, title, editedParameters, SqlPartType.sql, undefined, database, userName);
       }
     },
     [runExecuteSql, sql, title]

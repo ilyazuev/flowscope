@@ -74,10 +74,14 @@ function CopyDescribedColumns({ columnNames }: { columnNames: string[] }) {
 }
 
 export function FloatingDescribe({
+  database,
+  userName,
   tableName,
   schema,
   columnName,
 }: {
+  database?: string;
+  userName?: string;
   tableName: string;
   schema?: string;
   columnName?: string;
@@ -86,8 +90,8 @@ export function FloatingDescribe({
   const isDark = resolveTheme(theme) === 'dark';
 
   const { currentProject } = useProject();
-  const projectDatabase = currentProject?.database;
-  const projectUserName = currentProject?.userName;
+  const innerDatabase = database ?? currentProject?.database;
+  const innerUserName = userName ?? currentProject?.userName;
   const [activeTab, setActiveTab] = useState<DescribeTab>('Code');
   const [columnNames, setColumnNames] = useState<string[] | null>(null);
 
@@ -106,13 +110,13 @@ export function FloatingDescribe({
   const describeKey = useMemo(
     () =>
       [
-        projectDatabase ?? '',
-        projectUserName ?? '',
+        innerDatabase ?? '',
+        innerUserName ?? '',
         schema ?? '',
         tableName,
         columnName ?? '',
       ].join('\u0000'),
-    [projectDatabase, projectUserName, schema, tableName, columnName]
+    [innerDatabase, innerUserName, schema, tableName, columnName]
   );
 
   useEffect(() => {
@@ -152,8 +156,8 @@ export function FloatingDescribe({
           schema,
           tableName,
           columnName,
-          database: currentProject?.database,
-          userName: currentProject?.userName,
+          database: innerDatabase,
+          userName: innerUserName,
           describeType: asCode ? DataDescribeType.code : DataDescribeType.table,
         };
         const response = await devLineageDataDescribe(dataDescribePayload);
@@ -203,8 +207,8 @@ export function FloatingDescribe({
     describeKey,
     loadedCodeKey,
     loadedTableKey,
-    projectDatabase,
-    projectUserName,
+    innerDatabase,
+    innerUserName,
     schema,
     setCsv,
     setDataLoadingState,
@@ -292,6 +296,8 @@ export function FloatingDescribe({
           className="flex-1 min-h-0 mt-0 p-0 data-[state=inactive]:hidden h-full flex flex-col"
         >
           <LoadSQL
+            database={innerDatabase}
+            userName={innerUserName}
             title={tableFullName}
             table={table}
             dialect={currentProject?.dialect ?? 'generic'}

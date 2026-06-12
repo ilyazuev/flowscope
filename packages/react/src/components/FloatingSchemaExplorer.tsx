@@ -885,6 +885,8 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
             {selectedDbObject ? (
               <DataLoadProvider>
                 <FloatingDescribe
+                  database={selectedDatabase}
+                  userName={selectedUserName}
                   tableName={selectedDbObject.objectName}
                   schema={selectedDbObject.owner}
                 />
