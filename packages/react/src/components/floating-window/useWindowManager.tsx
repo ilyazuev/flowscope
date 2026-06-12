@@ -17,7 +17,7 @@ import type {
   WindowItem,
   WindowManagerApi,
 } from './types';
-import { clamp, clampWindowToViewport, createWindow } from './utils';
+import { clamp, clampWindowToViewport, createWindow, getWindowViewportBounds } from './utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 function useGlobalEscape(onEscape: () => void) {
@@ -206,16 +206,13 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
         const centeredY = centerY - nextHeight / 2;
         const anchoredX = anchor ? anchor.clientX + anchor.offsetFromRight - nextWidth : centeredX;
         const anchoredY = anchor ? anchor.clientY - anchor.offsetFromTop : centeredY;
-        const maxX = Math.max(VIEWPORT_MARGIN, window.innerWidth - nextWidth - VIEWPORT_MARGIN);
-        const maxY = Math.max(VIEWPORT_MARGIN, window.innerHeight - nextHeight - VIEWPORT_MARGIN);
-
-        return {
+        return clampWindowToViewport({
           ...item,
           width: nextWidth,
           height: nextHeight,
-          x: clamp(anchoredX, VIEWPORT_MARGIN, maxX),
-          y: clamp(anchoredY, VIEWPORT_MARGIN, maxY),
-        };
+          x: anchoredX,
+          y: anchoredY,
+        });
       })
     );
   }, []);
@@ -287,12 +284,11 @@ export function useWindowManager(options: UseWindowManagerOptions): WindowManage
     ) => {
       const dx = event.clientX - state.startPointerX;
       const dy = event.clientY - state.startPointerY;
-      const maxX = Math.max(0, window.innerWidth - state.width);
-      const maxY = Math.max(0, window.innerHeight - state.height);
+      const bounds = getWindowViewportBounds(state.width);
 
       return {
-        x: Math.min(Math.max(0, state.startX + dx), maxX),
-        y: Math.min(Math.max(0, state.startY + dy), maxY),
+        x: clamp(state.startX + dx, bounds.minX, bounds.maxX),
+        y: clamp(state.startY + dy, bounds.minY, bounds.maxY),
       };
     };
 

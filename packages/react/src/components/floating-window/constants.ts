@@ -5,5 +5,6 @@ export const DEFAULT_MIN_HEIGHT = 240;
 export const WINDOW_SCALE_STEP = 0.2;
 export const HEADER_HEIGHT = 44;
 export const VIEWPORT_MARGIN = 8;
+export const MIN_VISIBLE_WINDOW_WIDTH = 120;
 export const INITIAL_Z_INDEX = 100;
 export const CASCADE_OFFSET = 28;

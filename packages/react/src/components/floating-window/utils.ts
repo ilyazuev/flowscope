@@ -5,6 +5,7 @@ import {
   DEFAULT_MIN_WIDTH,
   DEFAULT_WIDTH,
   HEADER_HEIGHT,
+  MIN_VISIBLE_WINDOW_WIDTH,
   VIEWPORT_MARGIN,
 } from './constants';
 import type { WindowDefinition, WindowItem } from './types';
@@ -24,6 +25,17 @@ export function getViewportSize() {
   };
 }
 
+export function getWindowViewportBounds(width: number) {
+  const viewport = getViewportSize();
+
+  const minX = VIEWPORT_MARGIN + MIN_VISIBLE_WINDOW_WIDTH - width;
+  const maxX = Math.max(minX, viewport.width - VIEWPORT_MARGIN - MIN_VISIBLE_WINDOW_WIDTH);
+  const minY = VIEWPORT_MARGIN;
+  const maxY = Math.max(minY, viewport.height - HEADER_HEIGHT);
+
+  return { minX, maxX, minY, maxY };
+}
+
 export function clampWindowToViewport(item: WindowItem): WindowItem {
   const viewport = getViewportSize();
   const width = clamp(
@@ -36,18 +48,14 @@ export function clampWindowToViewport(item: WindowItem): WindowItem {
     item.minHeight,
     Math.max(item.minHeight, viewport.height - VIEWPORT_MARGIN * 2)
   );
-
-  const minX = -(width - 120);
-  const maxX = viewport.width - 120;
-  const minY = VIEWPORT_MARGIN;
-  const maxY = viewport.height - HEADER_HEIGHT;
+  const bounds = getWindowViewportBounds(width);
 
   return {
     ...item,
     width,
     height,
-    x: clamp(item.x, minX, maxX),
-    y: clamp(item.y, minY, maxY),
+    x: clamp(item.x, bounds.minX, bounds.maxX),
+    y: clamp(item.y, bounds.minY, bounds.maxY),
   };
 }
 
