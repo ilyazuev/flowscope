@@ -31,10 +31,6 @@ type PerspectiveTable = {
   delete?: (options?: { lazy?: boolean }) => Promise<void>;
 };
 
-type RegularTableElement = HTMLElement & {
-  getMeta?: (el: Element) => unknown;
-};
-
 export type PerspectiveCellMeta = {
   dx?: number;
   dy?: number;
@@ -54,16 +50,55 @@ export type PerspectiveCellMeta = {
   current?: boolean;
 };
 
+type RegularTableElement = HTMLElement & {
+  getMeta?: (el: Element) => PerspectiveCellMeta;
+};
+
+const getRowMetas = (
+  regularTable: RegularTableElement,
+  row: HTMLTableRowElement,
+): PerspectiveCellMeta[] => {
+  return [...row.querySelectorAll<HTMLTableCellElement>('td')].map((td) => ({
+    ...(regularTable.getMeta?.(td) ?? {}),
+  }));
+};
+
+export const getRowValue = (
+  row: PerspectiveCellMeta[],
+  column: string,
+): unknown => {
+  return row.find(
+    (meta) => meta.column_header?.[0] === column,
+  )?.value;
+};
+
+type RowButtonConfig = {
+  column: string; // A column in which a button will be displayed in the cell.
+  label?: string; // Button text. Can be used with an icon.
+  icon?: string; // SVG markup. For example: `<svg ...>...</svg>`.
+  title?: string; // Tooltip.
+  className?: string; // Additional CSS class.
+  visible?: (row: PerspectiveCellMeta[]) => boolean; // You can dynamically hide the button for a specific row.
+  disabled?: (row: PerspectiveCellMeta[]) => boolean; // You can disable the button dynamically.
+  onClick: (
+    row: PerspectiveCellMeta[],
+    event: MouseEvent,
+    cellMeta: PerspectiveCellMeta,
+  ) => void;
+};
+
 export function DataView({
   settings,
   datagrid_editable = true,
   datagrid_edit_mode = 'EDIT',
   onRowDoubleClick,
+  rowButtons = [],
 }: {
   settings: boolean;
   datagrid_editable?: boolean;
   datagrid_edit_mode?: string;
   onRowDoubleClick?: (metas: PerspectiveCellMeta[], event: MouseEvent) => void;
+  rowButtons?: RowButtonConfig[];
 }) {
   const viewerRef = useRef<PerspectiveViewerElement | null>(null);
   const workerRef = useRef<PerspectiveWorker | null>(null);
@@ -179,6 +214,184 @@ export function DataView({
     });
   };
 
+  const createRowButtonElement = (
+    config: RowButtonConfig,
+    buttonIndex: number,
+    disabled: boolean,
+  ): HTMLButtonElement => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.perspectiveRowButton = String(buttonIndex);
+    if (config.title) {
+      button.title = config.title;
+      button.setAttribute('aria-label', config.title);
+    } else if (config.label) {
+      button.setAttribute('aria-label', config.label);
+    }
+    if (config.className) {
+      button.className = config.className;
+    }
+    button.disabled = disabled;
+    button.style.display = 'inline-flex';
+    button.style.alignItems = 'center';
+    button.style.justifyContent = 'center';
+    button.style.gap = '4px';
+    button.style.cursor = disabled ? 'default' : 'pointer';
+    button.style.padding = '2px 6px';
+    button.style.margin = '0 2px';
+    button.style.border = 'none';
+    button.style.background = 'transparent';
+    if (config.icon) {
+      const iconContainer = document.createElement('span');
+      iconContainer.dataset.rowButtonIcon = 'true';
+      iconContainer.innerHTML = config.icon;
+      button.appendChild(iconContainer);
+    }
+    if (config.label) {
+      const label = document.createElement('span');
+      label.textContent = config.label;
+      button.appendChild(label);
+    }
+    return button;
+  };
+
+  const decorateRowButtons = (
+    regularTable: RegularTableElement,
+    rowButtons: RowButtonConfig[],
+  ) => {
+    if (rowButtons.length === 0) {
+      return;
+    }
+    const cells = regularTable.querySelectorAll<HTMLTableCellElement>('td');
+    for (const cell of cells) {
+      const cellMeta = regularTable.getMeta?.(cell);
+      const columnName = cellMeta?.column_header?.[0];
+      if (!columnName) {
+        continue;
+      }
+      const matchingButtons = rowButtons
+        .map((config, index) => ({
+          config,
+          index,
+        }))
+        .filter(({ config }) => config.column === columnName);
+      if (matchingButtons.length === 0) {
+        continue;
+      }
+      const row = cell.closest('tr') as HTMLTableRowElement | null;
+      if (!row) {
+        continue;
+      }
+      const rowMetas = getRowMetas(regularTable, row);
+      // Perspective reuses DOM cells during virtual scrolling, so a simple `decorated` flag is not enough; the button container needs to be rebuilt.
+      let container = cell.querySelector<HTMLElement>(
+        ':scope > [data-perspective-row-buttons="true"]',
+      );
+      if (!container) {
+        container = document.createElement('div');
+        container.dataset.perspectiveRowButtons = 'true';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '2px';
+        container.style.width = '100%';
+        cell.replaceChildren(container);
+      } else {
+        container.replaceChildren();
+      }
+      for (const { config, index } of matchingButtons) {
+        const visible = config.visible?.(rowMetas) ?? true;
+        if (!visible) {
+          continue;
+        }
+        const disabled = config.disabled?.(rowMetas) ?? false;
+        const button = createRowButtonElement(config, index, disabled);
+        container.appendChild(button);
+      }
+    }
+  };
+
+
+  const attachRowButtons = (
+    viewer: PerspectiveViewerElement,
+    rowButtons: RowButtonConfig[],
+  ) => {
+    if (rowButtons.length === 0) {
+      return;
+    }
+    const datagrid = viewer.getElementsByTagName(
+      'perspective-viewer-datagrid',
+    )[0];
+    const regularTable = datagrid?.shadowRoot?.querySelector(
+      'regular-table',
+    ) as RegularTableElement | null;
+    if (!regularTable) {
+      return;
+    }
+    decorateRowButtons(regularTable, rowButtons);
+    // We update the current configuration. This is important if the props have changed but the listener has already been set up.
+    (
+      regularTable as RegularTableElement & {
+        __rowButtons?: RowButtonConfig[];
+      }
+    ).__rowButtons = rowButtons;
+    if (regularTable.dataset.rowButtonsAttached === 'true') {
+      return;
+    }
+    regularTable.dataset.rowButtonsAttached = 'true';
+    regularTable.addEventListener('click', (event) => {
+      const target = event.target as Element | null;
+      const button = target?.closest<HTMLButtonElement>(
+        'button[data-perspective-row-button]',
+      );
+      if (!button) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.disabled) {
+        return;
+      }
+      const buttonIndex = Number(button.dataset.perspectiveRowButton);
+      if (!Number.isInteger(buttonIndex)) {
+        return;
+      }
+      const currentButtons = (
+        regularTable as RegularTableElement & {
+          __rowButtons?: RowButtonConfig[];
+        }
+      ).__rowButtons;
+      const config = currentButtons?.[buttonIndex];
+      if (!config) {
+        return;
+      }
+      const row = button.closest('tr') as HTMLTableRowElement | null;
+      const cell = button.closest('td') as HTMLTableCellElement | null;
+      if (!row || !cell) {
+        return;
+      }
+      const rowMetas = getRowMetas(regularTable, row);
+      const cellMeta = regularTable.getMeta?.(cell) ?? {};
+      config.onClick(rowMetas, event as MouseEvent, cellMeta);
+    });
+
+    const observer = new MutationObserver(() => {
+      const currentButtons = (
+        regularTable as RegularTableElement & {
+          __rowButtons?: RowButtonConfig[];
+        }
+      ).__rowButtons;
+
+      if (currentButtons) {
+        decorateRowButtons(regularTable, currentButtons);
+      }
+    });
+
+    observer.observe(regularTable, {
+      childList: true,
+      subtree: true,
+    });
+  };
+
   const loadCsvToViewer = async (csv: string, title?: string | null) => {
     const token = ++loadTokenRef.current;
 
@@ -220,6 +433,11 @@ export function DataView({
     });
 
     hidePerspectiveThemeControl(viewer); // const themeElements = viewer.shadowRoot?.querySelectorAll('#theme_icon, #theme'); for (const themeElement of themeElements ?? []) {  //(themeElement as HTMLElement).style.display = 'none'; (themeElement as HTMLElement).remove(); }
+
+    if (rowButtons) {
+      attachRowButtons(viewer, rowButtons);
+    }
+
     if(onRowDoubleClick) {
       attachRowDoubleClickHandler(viewer, onRowDoubleClick);
     }

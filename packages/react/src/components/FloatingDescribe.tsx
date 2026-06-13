@@ -12,9 +12,17 @@ import {
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
 import { devLineageDataDescribe } from '@pondpilot/flowscope-app/src/lib/utils_backend';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pondpilot/flowscope-app/src/components/ui/tabs';
-import { DataLoadProvider, useSharedDataLoad } from '@pondpilot/flowscope-app/src/components/DataLoadContext';
-import { DataView } from '@pondpilot/flowscope-app/src/components/DataView';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@pondpilot/flowscope-app/src/components/ui/tabs';
+import {
+  DataLoadProvider,
+  useSharedDataLoad,
+} from '@pondpilot/flowscope-app/src/components/DataLoadContext';
+import { DataView, getRowValue } from '@pondpilot/flowscope-app/src/components/DataView';
 import { LoadSQL, SchemaPreviewTableData } from './FloatingSQL';
 import { resolveTheme, useThemeStore } from '@pondpilot/flowscope-app/src/lib/theme-store';
 
@@ -99,7 +107,7 @@ export function FloatingDescribe({
   const [isCodeLoading, setIsCodeLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  const {csv, setCsv, dataLoadingState, setDataLoadingState } = useSharedDataLoad();
+  const { csv, setCsv, dataLoadingState, setDataLoadingState } = useSharedDataLoad();
   const [errorTable, setErrorTable] = useState<string | null>(null);
 
   const requestIdRef = useRef(0);
@@ -109,13 +117,9 @@ export function FloatingDescribe({
   const tableFullName = `${schema ? `${schema}.` : ''}${tableName}`;
   const describeKey = useMemo(
     () =>
-      [
-        innerDatabase ?? '',
-        innerUserName ?? '',
-        schema ?? '',
-        tableName,
-        columnName ?? '',
-      ].join('\u0000'),
+      [innerDatabase ?? '', innerUserName ?? '', schema ?? '', tableName, columnName ?? ''].join(
+        '\u0000'
+      ),
     [innerDatabase, innerUserName, schema, tableName, columnName]
   );
 
@@ -237,9 +241,14 @@ export function FloatingDescribe({
     }
   }
 
-  const table = useMemo(() : SchemaPreviewTableData => ({
-    schema, tableName, columns: columnNames?.map(columnName=>({name: columnName}))
-  }), [schema, tableName, columnNames]);
+  const table = useMemo(
+    (): SchemaPreviewTableData => ({
+      schema,
+      tableName,
+      columns: columnNames?.map((columnName) => ({ name: columnName })),
+    }),
+    [schema, tableName, columnNames]
+  );
 
   return (
     <div className="h-full w-full min-h-0">
@@ -287,7 +296,26 @@ export function FloatingDescribe({
             </div>
           )}
           <div className="flex-1 min-h-0">
-            <DataView settings={false} datagrid_editable={false} datagrid_edit_mode={'SELECT_ROW'}/>
+            <DataView
+              settings={false}
+              datagrid_editable={false}
+              datagrid_edit_mode={'SELECT_ROW'}
+              rowButtons={
+                [
+                  {
+                    column: '__row_action',
+                    label: 'Test',
+                    title: 'Test row action',
+                    onClick: (row) => {
+                      const owner = getRowValue(row, 'OWNER');
+                      const objectName = getRowValue(row, 'OBJECT_NAME');
+                      const objectType = getRowValue(row, 'OBJECT_TYPE');
+                      console.log('Test row action:', owner, objectName, objectType);
+                    },
+                  },
+                ]
+              }
+            />
           </div>
         </TabsContent>
 
@@ -327,11 +355,7 @@ export const openDescribeWindow = (
     minHeight: 420,
     content: (
       <DataLoadProvider>
-        <FloatingDescribe
-          tableName={tableName}
-          schema={schema}
-          columnName={columnName}
-        />
+        <FloatingDescribe tableName={tableName} schema={schema} columnName={columnName} />
       </DataLoadProvider>
     ),
   });
