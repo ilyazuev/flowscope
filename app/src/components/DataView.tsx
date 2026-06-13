@@ -262,50 +262,83 @@ export function DataView({
     if (rowButtons.length === 0) {
       return;
     }
-    const cells = regularTable.querySelectorAll<HTMLTableCellElement>('td');
-    for (const cell of cells) {
-      const cellMeta = regularTable.getMeta?.(cell);
-      const columnName = cellMeta?.column_header?.[0];
+
+    const buttonsByColumn = new Map<
+      string,
+      Array<{ config: RowButtonConfig; index: number }>
+    >();
+
+    rowButtons.forEach((config, index) => {
+      const buttons = buttonsByColumn.get(config.column) ?? [];
+      buttons.push({ config, index });
+      buttonsByColumn.set(config.column, buttons);
+    });
+
+    // Resolve configured columns once from the rendered header instead of
+    // reading metadata from every body cell. `cellIndex` is also valid for
+    // rows that contain row-header <th> elements before data <td> elements.
+    const buttonsByCellIndex = new Map<
+      number,
+      Array<{ config: RowButtonConfig; index: number }>
+    >();
+
+    const headerCells = regularTable.querySelectorAll<HTMLTableCellElement>(
+      'thead th',
+    );
+    for (const headerCell of headerCells) {
+      const columnName = regularTable.getMeta?.(headerCell)?.column_header?.[0];
       if (!columnName) {
         continue;
       }
-      const matchingButtons = rowButtons
-        .map((config, index) => ({
-          config,
-          index,
-        }))
-        .filter(({ config }) => config.column === columnName);
-      if (matchingButtons.length === 0) {
-        continue;
+
+      const matchingButtons = buttonsByColumn.get(columnName);
+      if (matchingButtons) {
+        buttonsByCellIndex.set(headerCell.cellIndex, matchingButtons);
       }
-      const row = cell.closest('tr') as HTMLTableRowElement | null;
-      if (!row) {
-        continue;
-      }
+    }
+
+    if (buttonsByCellIndex.size === 0) {
+      return;
+    }
+
+    const rows = regularTable.querySelectorAll<HTMLTableRowElement>('tbody tr');
+    for (const row of rows) {
       const rowMetas = getRowMetas(regularTable, row);
-      // Perspective reuses DOM cells during virtual scrolling, so a simple `decorated` flag is not enough; the button container needs to be rebuilt.
-      let container = cell.querySelector<HTMLElement>(
-        ':scope > [data-perspective-row-buttons="true"]',
-      );
-      if (!container) {
-        container = document.createElement('div');
-        container.dataset.perspectiveRowButtons = 'true';
-        container.style.display = 'flex';
-        container.style.alignItems = 'center';
-        container.style.gap = '2px';
-        container.style.width = '100%';
-        cell.replaceChildren(container);
-      } else {
-        container.replaceChildren();
-      }
-      for (const { config, index } of matchingButtons) {
-        const visible = config.visible?.(rowMetas) ?? true;
-        if (!visible) {
+
+      for (const [cellIndex, matchingButtons] of buttonsByCellIndex) {
+        const cell = row.cells.item(cellIndex);
+        if (!(cell instanceof HTMLTableCellElement) || cell.tagName !== 'TD') {
           continue;
         }
-        const disabled = config.disabled?.(rowMetas) ?? false;
-        const button = createRowButtonElement(config, index, disabled);
-        container.appendChild(button);
+
+        // Perspective reuses DOM cells during virtual scrolling, so the
+        // button container must be rebuilt for the currently rendered row.
+        let container = cell.querySelector<HTMLElement>(
+          ':scope > [data-perspective-row-buttons="true"]',
+        );
+        if (!container) {
+          container = document.createElement('div');
+          container.dataset.perspectiveRowButtons = 'true';
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.gap = '2px';
+          container.style.width = '100%';
+          cell.replaceChildren(container);
+        } else {
+          container.replaceChildren();
+        }
+
+        for (const { config, index } of matchingButtons) {
+          const visible = config.visible?.(rowMetas) ?? true;
+          if (!visible) {
+            continue;
+          }
+
+          const disabled = config.disabled?.(rowMetas) ?? false;
+          container.appendChild(
+            createRowButtonElement(config, index, disabled),
+          );
+        }
       }
     }
   };
