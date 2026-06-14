@@ -237,6 +237,7 @@ export function DataView({
     button.style.justifyContent = 'center';
     button.style.gap = '4px';
     button.style.cursor = disabled ? 'default' : 'pointer';
+    button.style.color = 'inherit';
     button.style.padding = '2px 6px';
     button.style.margin = '0 2px';
     button.style.border = 'none';
@@ -327,7 +328,7 @@ export function DataView({
         } else {
           container.replaceChildren();
         }
-
+        cell.classList.remove('psp-null');
         for (const { config, index } of matchingButtons) {
           const visible = config.visible?.(rowMetas) ?? true;
           if (!visible) {
@@ -407,22 +408,39 @@ export function DataView({
       config.onClick(rowMetas, event as MouseEvent, cellMeta);
     });
 
-    const observer = new MutationObserver(() => {
+    const observerOptions: MutationObserverInit = {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      const hasExternalMutation = mutations.some((mutation) => {
+        const target = mutation.target as Element;
+        return !target.closest?.(
+          '[data-perspective-row-buttons="true"]',
+        );
+      });
+      if (!hasExternalMutation) {
+        return;
+      }
       const currentButtons = (
         regularTable as RegularTableElement & {
           __rowButtons?: RowButtonConfig[];
         }
       ).__rowButtons;
-
-      if (currentButtons) {
+      if (!currentButtons) {
+        return;
+      }
+      observer.disconnect();
+      try {
         decorateRowButtons(regularTable, currentButtons);
+      } finally {
+        observer.observe(regularTable, observerOptions);
       }
     });
-
-    observer.observe(regularTable, {
-      childList: true,
-      subtree: true,
-    });
+    observer.observe(regularTable, observerOptions);
   };
 
   const loadCsvToViewer = async (csv: string, title?: string | null) => {
