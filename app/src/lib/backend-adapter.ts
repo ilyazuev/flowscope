@@ -87,6 +87,7 @@ export interface DataDescribePayloadResponse {
   lastDdlTime?: number;
   errorMessage?: string;
   columnsInfo?: Record<string, string>;
+  columnsInfoLastModified?: number;
 }
 
 export interface OwnersPayloadResponse {

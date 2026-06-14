@@ -242,6 +242,7 @@ export function DataView({
     button.style.margin = '0 2px';
     button.style.border = 'none';
     button.style.background = 'transparent';
+    button.style.outline = 'none';
     if (config.icon) {
       const iconContainer = document.createElement('span');
       iconContainer.dataset.rowButtonIcon = 'true';
