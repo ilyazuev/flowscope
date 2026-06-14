@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, CopyPlus, Loader2 } from 'lucide-react';
-import { type WindowManagerApi } from './floating-window';
+import { useFloatingWindows, type WindowManagerApi } from './floating-window';
 import { SqlView } from './SqlView';
 import { Input } from '@pondpilot/flowscope-app/src/components/ui/input';
 import { ToolbarButton } from './ToolbarButton';
@@ -11,7 +11,7 @@ import {
   SqlPartType,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
-import { devLineageDataDescribe } from '@pondpilot/flowscope-app/src/lib/utils_backend';
+import { devLineageDataDescribe, loadGenericForms } from '@pondpilot/flowscope-app/src/lib/utils_backend';
 import {
   Tabs,
   TabsContent,
@@ -25,6 +25,8 @@ import {
 import { DataView, getRowValue } from '@pondpilot/flowscope-app/src/components/DataView';
 import { LoadSQL, SchemaPreviewTableData } from './FloatingSQL';
 import { resolveTheme, useThemeStore } from '@pondpilot/flowscope-app/src/lib/theme-store';
+import { GenericFormProvider, useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
+import ColumnInfoForm from './ColumnInfoForm';
 
 const EMPTY_NO_COLUMNS_FOUND = '_\nNo columns found';
 
@@ -107,6 +109,10 @@ export function FloatingDescribe({
   const [isCodeLoading, setIsCodeLoading] = useState(true);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
+  const [columnsInfo, setColumnsInfo] = useState<Record<string, string> | null>(null);
+  const windowManager = useFloatingWindows();
+  const {columnInfoSchema, setColumnInfoSchema} = useGenericForm();
+
   const { csv, setCsv, dataLoadingState, setDataLoadingState } = useSharedDataLoad();
   const [errorTable, setErrorTable] = useState<string | null>(null);
 
@@ -150,6 +156,7 @@ export function FloatingDescribe({
       setErrorTable(null);
       setDataLoadingState(SqlPartType.sql);
       setCsv(null);
+      setColumnsInfo(null);
     }
 
     async function loadDescription() {
@@ -173,6 +180,14 @@ export function FloatingDescribe({
           setLoadedCodeKey(describeKey);
         } else {
           setCsv(response?.csv ?? EMPTY_NO_COLUMNS_FOUND, tableFullName);
+          const columnsInfo = response?.columnsInfo ?? null;
+          if( columnsInfo && !columnInfoSchema ) {
+            const columnInfoSchemaResponse = await loadGenericForms();
+            if( columnInfoSchemaResponse ) {
+              setColumnInfoSchema(columnInfoSchemaResponse);
+            }
+          }
+          setColumnsInfo(columnsInfo);
           setLoadedTableKey(describeKey);
         }
         setColumnNames(response?.columnNames ?? null);
@@ -186,6 +201,7 @@ export function FloatingDescribe({
           setLoadedCodeKey(describeKey);
         } else {
           setCsv(EMPTY_NO_COLUMNS_FOUND, tableFullName);
+          setColumnsInfo(null);
           setErrorTable(errorMessage);
           setLoadedTableKey(describeKey);
         }
@@ -309,11 +325,19 @@ export function FloatingDescribe({
                     title: 'governance information',
                     visible: (row) => {
                       const columnName = getRowValue(row, 'COLUMN_NAME');
-                      return columnName === 'FULL_NAME';
+                      return !!columnsInfo && typeof columnName === 'string' && !!columnsInfo[columnName];
                     },
                     onClick: (row) => {
                       const columnName = getRowValue(row, 'COLUMN_NAME');
-                      console.log('columnName: ', columnName);
+                      if( !!columnsInfo && typeof columnName === 'string' && !!columnsInfo[columnName] ) {
+                        windowManager.openWindow({
+                          id: `columnInfo-${innerDatabase}:${schema}.${tableName}.${columnName}`,
+                          title: `${innerDatabase}:${schema}.${tableName}.${columnName}`,
+                          content: (
+                            <ColumnInfoForm info={columnsInfo[columnName]} columnInfoSchemas={columnInfoSchema} />
+                          ),
+                        });
+                      } // console.log('columnName: ', columnName);
                     },
                   },
                 ]
@@ -340,7 +364,7 @@ export function FloatingDescribe({
 }
 
 export const openDescribeWindow = (
-  manager: Pick<WindowManagerApi, 'openWindow'>,
+  managerManager: Pick<WindowManagerApi, 'openWindow'>,
   tableName: string,
   database?: string,
   schema?: string,
@@ -349,7 +373,7 @@ export const openDescribeWindow = (
   const tableFullName = `${schema ? `${schema}.` : ''}${tableName}`;
   const objectFullName = `${tableFullName}${columnName ? `.${columnName}` : ''}`;
 
-  manager.openWindow({
+  managerManager.openWindow({
     id: `describeWindow-${database ?? ''}-${objectFullName}`,
     title: `${database ? `${database}. ` : ''}Describe object ${objectFullName}`,
     width: 980,
@@ -358,7 +382,9 @@ export const openDescribeWindow = (
     minHeight: 420,
     content: (
       <DataLoadProvider>
-        <FloatingDescribe tableName={tableName} schema={schema} columnName={columnName} />
+        <GenericFormProvider>
+          <FloatingDescribe tableName={tableName} schema={schema} columnName={columnName} />
+        </GenericFormProvider>
       </DataLoadProvider>
     ),
   });
