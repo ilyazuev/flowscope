@@ -87,6 +87,7 @@ export interface AnalysisWorkerResponse {
   cacheHit?: boolean;
   skipResult?: boolean;
   timings?: AnalysisWorkerTimings;
+  columnsInfoLastModified?: number;
   version?: string;
   /** SQL statements for DuckDB export */
   exportSql?: string;
