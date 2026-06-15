@@ -42,21 +42,41 @@ function backendUrl<T>(backendEndpoint: string, payload?: T) {
   return `${baseBackendUrl}${backendUsecasePath(backendEndpoint, payload)}`;
 }
 
-export async function loadGenericForms() {
-  if( import.meta.env.VITE_BACKEND_ENDPOINT_LOADGENERICFORMS ) {
+let genericFormsCache: ColumnInfoSchema | null = null;
+let genericFormsRequest: Promise<ColumnInfoSchema | undefined> | null = null;
+export async function loadGenericForms(): Promise<ColumnInfoSchema | undefined> {
+  if (genericFormsCache) {
+    return genericFormsCache;
+  }
+  if (genericFormsRequest) {
+    return genericFormsRequest;
+  }
+  if (!import.meta.env.VITE_BACKEND_ENDPOINT_LOADGENERICFORMS) {
+    return undefined;
+  }
+  genericFormsRequest = (async () => {
     const res = await fetch(
-      backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADGENERICFORMS, null)
+      backendUrl(
+        import.meta.env.VITE_BACKEND_ENDPOINT_LOADGENERICFORMS,
+        null
+      )
     );
     if (!res.ok) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+      throw new Error(
+        `Failed to fetch from backend: ${res.status} ${res.statusText}`
+      );
     }
-    const columnInfoSchemaResponse: ColumnInfoSchema = await res.json();
-    if ('errorMessage' in columnInfoSchemaResponse && columnInfoSchemaResponse.errorMessage) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error(columnInfoSchemaResponse.errorMessage as string);
+    const response: ColumnInfoSchema = await res.json();
+    if ('errorMessage' in response && response.errorMessage) {
+      throw new Error(response.errorMessage as string);
     }
-    return columnInfoSchemaResponse;
+    genericFormsCache = response;
+    return response;
+  })();
+  try {
+    return await genericFormsRequest;
+  } finally {
+    genericFormsRequest = null;
   }
 }
 

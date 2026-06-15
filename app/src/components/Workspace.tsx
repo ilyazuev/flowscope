@@ -332,8 +332,8 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
 
   return (
     <SchemaExplorerProvider>
-      <FloatingWindowsProvider theme={isDark ? 'dark' : 'light'}>
-        <GenericFormProvider>
+      <GenericFormProvider>
+        <FloatingWindowsProvider theme={isDark ? 'dark' : 'light'}>
           <div className="flex flex-col h-svh">
             {/* App Header */}
             <header
@@ -538,8 +538,8 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
               <a href={"https://flowscope.pondpilot.io/"} target={"_blank"} className={"underline"}>flowscope fork</a>.
             </div>
           </div>
-        </GenericFormProvider>
-      </FloatingWindowsProvider>
+        </FloatingWindowsProvider>
+      </GenericFormProvider>
     </SchemaExplorerProvider>
   );
 }

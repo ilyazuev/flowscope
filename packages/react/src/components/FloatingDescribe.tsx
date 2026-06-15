@@ -11,7 +11,9 @@ import {
   SqlPartType,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { useProject } from '@pondpilot/flowscope-app/src/lib/project-store';
-import { devLineageDataDescribe, loadGenericForms } from '@pondpilot/flowscope-app/src/lib/utils_backend';
+import {
+  devLineageDataDescribe,
+} from '@pondpilot/flowscope-app/src/lib/utils_backend';
 import {
   Tabs,
   TabsContent,
@@ -25,7 +27,9 @@ import {
 import { DataView, getRowValue } from '@pondpilot/flowscope-app/src/components/DataView';
 import { LoadSQL, SchemaPreviewTableData } from './FloatingSQL';
 import { resolveTheme, useThemeStore } from '@pondpilot/flowscope-app/src/lib/theme-store';
-import { GenericFormProvider, useGenericForm } from '@pondpilot/flowscope-app/src/lib/generic-form-context';
+import {
+  useGenericForm,
+} from '@pondpilot/flowscope-app/src/lib/generic-form-context';
 import ColumnInfoForm from './ColumnInfoForm';
 
 const EMPTY_NO_COLUMNS_FOUND = '_\nNo columns found';
@@ -111,7 +115,7 @@ export function FloatingDescribe({
 
   const [columnsInfo, setColumnsInfo] = useState<Record<string, string> | null>(null);
   const windowManager = useFloatingWindows();
-  const {columnInfoSchema, setColumnInfoSchema} = useGenericForm();
+  const { columnInfoSchema, ensureColumnInfoSchema } = useGenericForm();
 
   const { csv, setCsv, dataLoadingState, setDataLoadingState } = useSharedDataLoad();
   const [errorTable, setErrorTable] = useState<string | null>(null);
@@ -180,14 +184,14 @@ export function FloatingDescribe({
           setLoadedCodeKey(describeKey);
         } else {
           setCsv(response?.csv ?? EMPTY_NO_COLUMNS_FOUND, tableFullName);
-          const columnsInfo = response?.columnsInfo ?? null;
-          if( columnsInfo && !columnInfoSchema ) {
-            const columnInfoSchemaResponse = await loadGenericForms();
-            if( columnInfoSchemaResponse ) {
-              setColumnInfoSchema(columnInfoSchemaResponse);
+          const nextColumnsInfo = response?.columnsInfo ?? null;
+          if (nextColumnsInfo) {
+            await ensureColumnInfoSchema();
+            if (cancelled || requestIdRef.current !== requestId) {
+              return;
             }
           }
-          setColumnsInfo(columnsInfo);
+          setColumnsInfo(nextColumnsInfo);
           setLoadedTableKey(describeKey);
         }
         setColumnNames(response?.columnNames ?? null);
@@ -234,6 +238,7 @@ export function FloatingDescribe({
     setDataLoadingState,
     tableFullName,
     tableName,
+    ensureColumnInfoSchema,
   ]);
 
   const handleTabChange = useCallback(
@@ -316,32 +321,40 @@ export function FloatingDescribe({
               settings={false}
               datagrid_editable={false}
               datagrid_edit_mode={'SELECT_ROW'}
-              rowButtons={
-                [
-                  {
-                    column: 'INFO',
-                    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sticky-note" aria-hidden="true" style="opacity: 0.7;"><path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path><path d="M15 3v5a1 1 0 0 0 1 1h5"></path></svg>',
-                    className: 'text-inherit hover:text-inherit focus:text-inherit active:text-inherit disabled:text-inherit',
-                    title: 'governance information',
-                    visible: (row) => {
-                      const columnName = getRowValue(row, 'COLUMN_NAME');
-                      return !!columnsInfo && typeof columnName === 'string' && !!columnsInfo[columnName];
-                    },
-                    onClick: (row) => {
-                      const columnName = getRowValue(row, 'COLUMN_NAME');
-                      if( !!columnsInfo && typeof columnName === 'string' && !!columnsInfo[columnName] ) {
-                        windowManager.openWindow({
-                          id: `columnInfo-${innerDatabase}:${schema}.${tableName}.${columnName}`,
-                          title: `${innerDatabase}:${schema}.${tableName}.${columnName}`,
-                          content: (
-                            <ColumnInfoForm info={columnsInfo[columnName]} columnInfoSchemas={columnInfoSchema} />
-                          ),
-                        });
-                      } // console.log('columnName: ', columnName);
-                    },
+              rowButtons={[
+                {
+                  column: 'INFO',
+                  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sticky-note" aria-hidden="true" style="opacity: 0.7;"><path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path><path d="M15 3v5a1 1 0 0 0 1 1h5"></path></svg>',
+                  className:
+                    'text-inherit hover:text-inherit focus:text-inherit active:text-inherit disabled:text-inherit',
+                  title: 'governance information',
+                  visible: (row) => {
+                    const columnName = getRowValue(row, 'COLUMN_NAME');
+                    return (
+                      !!columnsInfo && typeof columnName === 'string' && !!columnsInfo[columnName]
+                    );
                   },
-                ]
-              }
+                  onClick: (row) => {
+                    const columnName = getRowValue(row, 'COLUMN_NAME');
+                    if (
+                      !!columnsInfo &&
+                      typeof columnName === 'string' &&
+                      !!columnsInfo[columnName]
+                    ) {
+                      windowManager.openWindow({
+                        id: `columnInfo-${innerDatabase}:${schema}.${tableName}.${columnName}`,
+                        title: `${innerDatabase}:${schema}.${tableName}.${columnName}`,
+                        content: (
+                          <ColumnInfoForm
+                            info={columnsInfo[columnName]}
+                            columnInfoSchemas={columnInfoSchema}
+                          />
+                        ),
+                      });
+                    } // console.log('columnName: ', columnName);
+                  },
+                },
+              ]}
             />
           </div>
         </TabsContent>
@@ -382,9 +395,7 @@ export const openDescribeWindow = (
     minHeight: 420,
     content: (
       <DataLoadProvider>
-        <GenericFormProvider>
-          <FloatingDescribe tableName={tableName} schema={schema} columnName={columnName} />
-        </GenericFormProvider>
+        <FloatingDescribe tableName={tableName} schema={schema} columnName={columnName} />
       </DataLoadProvider>
     ),
   });
