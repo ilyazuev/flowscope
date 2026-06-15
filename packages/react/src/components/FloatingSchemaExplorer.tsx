@@ -846,8 +846,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
                             'block w-full rounded-sm px-1 py-1 text-left text-xs whitespace-nowrap',
                             'hover:bg-slate-100 focus:bg-slate-100 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
                             'dark:hover:bg-slate-700 dark:focus:bg-slate-700',
-                            selected &&
-                              'bg-blue-700 text-white hover:bg-blue-700 focus:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-700 dark:focus:bg-blue-700'
+                            selected && 'bg-blue-800 text-white hover:bg-blue-800 focus:bg-blue-800 dark:bg-blue-800 dark:hover:bg-blue-800 dark:focus:bg-blue-800'
                           )}
                         >
                           {name.join('')}

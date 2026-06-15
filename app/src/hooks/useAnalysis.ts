@@ -404,7 +404,7 @@ export function useAnalysis(backendReady: boolean, options?: UseAnalysisOptions)
         const backendParsedDialect = backendParsed(currentProject.dialect);
         const adapterPayload: AnalysisPayload = {
           files: backendParsedDialect
-            ? context.files.map((f) => ({...f, content: f.content.replace(/\r\n?/g, '\n')}))
+            ? context.files.map((f) => ({...f, content: f.content.replace(/\r?\n/g, '\n')}))
             : context.files,
           dialect: currentProject.dialect,
           schemaSQL: currentProject.schemaSQL ?? '',

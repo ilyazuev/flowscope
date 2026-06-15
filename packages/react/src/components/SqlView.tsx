@@ -13,6 +13,7 @@ import { sql } from '@codemirror/lang-sql';
 import { EditorView, Decoration, type DecorationSet, keymap } from '@codemirror/view';
 import { Compartment, StateField, StateEffect, Prec, EditorSelection } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import {
   defaultKeymap,
   history,
@@ -29,8 +30,19 @@ import {
   searchKeymap,
   searchPanelOpen,
 } from '@codemirror/search';
-import { Clipboard, Copy, Redo2, Scissors, Search, SquareDashed, Undo2, Wand, WrapText } from 'lucide-react';
-import {ToolbarButton} from './ToolbarButton'
+import {
+  ChevronDown,
+  Clipboard,
+  Copy,
+  Redo2,
+  Scissors,
+  Search,
+  SquareDashed,
+  Undo2,
+  Wand,
+  WrapText,
+} from 'lucide-react';
+import { ToolbarButton } from './ToolbarButton';
 import { toast } from 'sonner';
 
 import { useLineage } from '../store';
@@ -40,12 +52,11 @@ import { parseCteAt, type ParsedCte, sqlCteFolding } from './SqlView.SqlCteFoldi
 import { format, SqlLanguage } from 'sql-formatter';
 import { Dialect } from '@pondpilot/flowscope-core';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@pondpilot/flowscope-app/src/components/ui/select';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
+import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
 
 type HighlightRange = { from: number; to: number; className: string };
 
@@ -123,7 +134,6 @@ const baseTheme = EditorView.baseTheme({
   },
 });
 
-
 export interface SqlViewSelection {
   from: number;
   to: number;
@@ -196,8 +206,9 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         });
     }, [state.result, isControlled]);
 
-
-    const parsedCtesRef = useRef<Record<string, ParsedCte>>({});
+    const [openCteMenu, setOpenCteMenu] = useState(false);
+    const [sortCtesAlphabetically, setSortCtesAlphabetically] = useState(true);
+    const cteListRef = useRef<HTMLDivElement>(null);
 
     const editorRef = useRef<ReactCodeMirrorRef>(null);
     const [editorView, setEditorView] = useState<EditorView | null>(null);
@@ -219,32 +230,52 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       };
     });
 
-    const updateStatusState = useCallback((view: EditorView | null) => {
-      if (!view) {
-        return;
+    const parsedCtes = useMemo<Record<string, ParsedCte>>(() => {
+      const result: Record<string, ParsedCte> = {};
+      if (!sqlText) {
+        return result;
       }
-
-      const { doc, selection } = view.state;
-      const head = selection.main.head;
-      const line = doc.lineAt(head);
-      let cte = '';
-      for (const key in parsedCtesRef.current) {
-        const cteRange = parsedCtesRef.current[key];
-        if( cteRange.nameFrom <= head && head <= cteRange.bodyClose) {
-          cte = cteRange.name;
-          break;
+      const text = sqlText.replace(/\r?\n/g, '\n');
+      let lineFrom = 0;
+      let parsed: ParsedCte | null;
+      do {
+        parsed = parseCteAt(text, lineFrom);
+        if (parsed) {
+          result[parsed.name] = parsed;
+          lineFrom = parsed.bodyClose + 1;
         }
-      }
+      } while (parsed);
+      return result;
+    }, [sqlText]);
 
-      setStatusState({
-        length: doc.length,
-        lines: doc.lines,
-        line: line.number,
-        column: head - line.from + 1,
-        position: head + 1,
-        cte
-      });
-    }, []);
+    const updateStatusState = useCallback(
+      (view: EditorView | null) => {
+        if (!view) {
+          return;
+        }
+
+        const { doc, selection } = view.state;
+        const head = selection.main.head;
+        const line = doc.lineAt(head);
+        let cte = '';
+        for (const cteRange of Object.values(parsedCtes)) {
+          if (cteRange.nameFrom <= head && head <= cteRange.bodyClose) {
+            cte = cteRange.name;
+            break;
+          }
+        }
+
+        setStatusState({
+          length: doc.length,
+          lines: doc.lines,
+          line: line.number,
+          column: head - line.from + 1,
+          position: head + 1,
+          cte,
+        });
+      },
+      [parsedCtes]
+    );
 
     const updateToolbarState = useCallback(
       (view: EditorView | null) => {
@@ -276,7 +307,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       },
       focus: () => {
         editorRef.current?.view?.focus();
-      }
+      },
     }));
 
     const bookmarkExtension = useBookmarkExtension();
@@ -345,23 +376,6 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       updateStatusState(editorRef.current?.view ?? editorView);
     }, [sqlText, editorView, updateStatusState]);
 
-    useEffect(() => {
-      if( !sqlText ) {
-        parsedCtesRef.current = {};
-        return;
-      }
-      const text = sqlText.replace(/\r\n?/g, '\n');
-      let lineFrom = 0;
-      let parsed = null;
-      do{
-        parsed = parseCteAt(text, lineFrom);
-        if( parsed ) {
-          parsedCtesRef.current[parsed.name] = parsed;
-          lineFrom = parsed.bodyClose + 1;
-        }
-      } while(parsed);
-    }, [sqlText]);
-
     const handleUndo = useCallback(() => {
       const view = editorRef.current?.view ?? editorView;
       if (!view || !editable) {
@@ -385,7 +399,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     const showClipboardError = useCallback((action: 'cut' | 'copy' | 'paste', error: unknown) => {
       console.error(`Clipboard ${action} failed`, error);
       toast.error(`Failed to ${action}`, {
-          description: 'Clipboard access is unavailable or blocked by the browser.',
+        description: 'Clipboard access is unavailable or blocked by the browser.',
       });
     }, []);
 
@@ -395,7 +409,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       if (!view || !selection || selection.empty) {
         return;
       }
-        try {
+      try {
         const selectedText = view.state.sliceDoc(selection.from, selection.to);
         await navigator.clipboard.writeText(selectedText);
         view.focus();
@@ -450,9 +464,8 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       }
       const sql = view.state.sliceDoc();
       view.dispatch({
-        selection: EditorSelection.single(0, sql.replace(/\r\n?/g, '\n').length), // selection: EditorSelection.create([EditorSelection.range(0, sql.length - 1), EditorSelection.cursor(sql.length - 1) ], 1)
+        selection: EditorSelection.single(0, sql.replace(/\r?\n/g, '\n').length), // selection: EditorSelection.create([EditorSelection.range(0, sql.length - 1), EditorSelection.cursor(sql.length - 1) ], 1)
       });
-
     }, [editorView]);
 
     const handleWrapToggle = useCallback(() => {
@@ -543,37 +556,37 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
     const handlePrettify = useCallback(() => {
       const view = editorRef.current?.view ?? editorView;
-      if (!view ) {
+      if (!view) {
         return;
       }
       try {
         const sql = view.state.sliceDoc();
         console.log(dialect);
         const langMap: Record<Dialect, SqlLanguage> = {
-          'oracleBackend': 'plsql',
-          'generic': 'sql',
-          'ansi': 'sql',
-          'bigquery': 'bigquery',
-          'clickhouse': 'clickhouse',
-          'databricks': 'sql',
-          'duckdb': 'duckdb',
-          'hive': 'hive',
-          'mssql': 'sql',
-          'mysql': 'mariadb',
-          'postgres': 'postgresql',
-          'redshift': 'redshift',
-          'snowflake': 'snowflake',
-          'sqlite': 'sqlite',
-        }
+          oracleBackend: 'plsql',
+          generic: 'sql',
+          ansi: 'sql',
+          bigquery: 'bigquery',
+          clickhouse: 'clickhouse',
+          databricks: 'sql',
+          duckdb: 'duckdb',
+          hive: 'hive',
+          mssql: 'sql',
+          mysql: 'mariadb',
+          postgres: 'postgresql',
+          redshift: 'redshift',
+          snowflake: 'snowflake',
+          sqlite: 'sqlite',
+        };
         const pretty = format(sql, {
           tabWidth: 1,
           useTabs: true,
-          keywordCase: "upper",
-          indentStyle: "standard",
-          dataTypeCase: "upper",
-          functionCase: "upper",
-          language: langMap[dialect??'generic'] ?? 'sql',
-          logicalOperatorNewline: "before", // expressionWidth: number,
+          keywordCase: 'upper',
+          indentStyle: 'standard',
+          dataTypeCase: 'upper',
+          functionCase: 'upper',
+          language: langMap[dialect ?? 'generic'] ?? 'sql',
+          logicalOperatorNewline: 'before', // expressionWidth: number,
           linesBetweenQueries: 1, // denseOperators: boolean;
           newlineBeforeSemicolon: false, // params?: ParamItems | string[]; paramTypes?: ParamTypes;
         });
@@ -593,7 +606,29 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     const modKey = isMac ? '⌘' : 'Ctrl';
     const redoShortcut = isMac ? '⇧⌘Z' : 'Ctrl+Y';
 
-    const parsedCteNames = Object.keys(parsedCtesRef.current).sort();
+    const parsedCteNames = useMemo(() => {
+      const names = Object.keys(parsedCtes);
+      return sortCtesAlphabetically ? names.sort((a, b) => a.localeCompare(b)) : names;
+    }, [parsedCtes, sortCtesAlphabetically]);
+
+    useEffect(() => {
+      if (!openCteMenu || !statusState.cte) {
+        return;
+      }
+
+      const frame = requestAnimationFrame(() => {
+        const currentCteElement =
+          cteListRef.current?.querySelector<HTMLElement>(
+            `[data-cte-name="${CSS.escape(statusState.cte)}"]`,
+          );
+
+        currentCteElement?.scrollIntoView({
+          block: "center",
+        });
+      });
+
+      return () => cancelAnimationFrame(frame);
+    }, [openCteMenu, statusState.cte, sortCtesAlphabetically]);
 
     return (
       <div
@@ -637,10 +672,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             <Clipboard className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton
-            title={`Select All (${modKey} + A)`}
-            onClick={handleSelectAll}
-          >
+          <ToolbarButton title={`Select All (${modKey} + A)`} onClick={handleSelectAll}>
             <SquareDashed className="h-4 w-4" />
           </ToolbarButton>
 
@@ -713,8 +745,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           />
         </div>
 
-        <div
-          className="flex shrink-0 items-center gap-2 border-t bg-background px-2 py-1 text-[11px] leading-none text-muted-foreground">
+        <div className="flex shrink-0 items-center gap-2 border-t bg-background px-2 py-1 text-[11px] leading-none text-muted-foreground">
           <span className="shrink-0 whitespace-nowrap">Len: {statusState.length}</span>
           <span className="shrink-0 whitespace-nowrap">Lines: {statusState.lines}</span>
 
@@ -727,39 +758,72 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           <ToolbarDivider />
 
           {!!parsedCteNames.length && (
-            <Select
-              value={statusState.cte ?? ''}
-              onValueChange={(v) => {
-                const view = editorRef.current?.view || editorView;
-                if (!view) return;
-                const cte = parsedCtesRef.current[v];
-                if (!cte) {
-                  return;
-                }
-                view.dispatch({
-                  selection: EditorSelection.cursor(cte.nameFrom),
-                  scrollIntoView: true,
-                });
-                requestAnimationFrame(() => {
-                  requestAnimationFrame(() => {
-                    view.focus();
-                  });
-                });
-              }}
-            >
-              <SelectTrigger
-                className="h-7 min-w-0 flex-1 whitespace-nowrap px-3 text-xs [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
-                <SelectValue placeholder="No CTE under cursor" />
-              </SelectTrigger>
+            <DropdownMenu open={openCteMenu} onOpenChange={setOpenCteMenu}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex h-7 min-w-0 flex-1 items-center gap-2 whitespace-nowrap rounded-full border border-input bg-background px-3 text-xs shadow-sm focus:outline-hidden"
+                >
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {statusState.cte || 'No CTE under cursor'}
+                  </span>
+                  <ChevronDown className="size-4 shrink-0 opacity-50" />
+                </button>
+              </DropdownMenuTrigger>
 
-              <SelectContent>
-                {parsedCteNames.map((cte) => (
-                  <SelectItem key={cte} value={cte} className="max-w-[min(80vw,520px)]">
-                    <span className="block truncate">{cte}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <DropdownMenuContent align="start" className="max-w-[min(80vw,520px)] p-0">
+                <div className="flex items-center gap-2 border-b px-3 py-2">
+                  <Checkbox
+                    id="sortCtesAlphabetically"
+                    checked={sortCtesAlphabetically}
+                    onCheckedChange={(checked) => setSortCtesAlphabetically(checked === true)}
+                    className="shrink-0 border-muted-foreground"
+                  />
+                  <label htmlFor="sortCtesAlphabetically" className="cursor-pointer text-xs">
+                    Sort alphabetically
+                  </label>
+                </div>
+
+                <div
+                  ref={cteListRef}
+                  className="max-h-[240px] overflow-y-auto p-1"
+                >
+                  {parsedCteNames.map((cteName) => (
+                    <div
+                      key={cteName}
+                      data-cte-name={cteName}
+                      className={cn(
+                        `flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-xs hover:bg-muted/50`
+                        ,cteName === statusState.cte && 'bg-blue-800 text-white hover:bg-blue-800 focus:bg-blue-800 dark:bg-blue-800 dark:hover:bg-blue-800 dark:focus:bg-blue-800'
+                      )}
+                      onClick={() => {
+                        const view = editorRef.current?.view || editorView;
+                        const cte = parsedCtes[cteName];
+                        if (!view || !cte) return;
+
+                        setOpenCteMenu(false);
+                        view.dispatch({
+                          selection: EditorSelection.cursor(cte.nameFrom),
+                          scrollIntoView: true,
+                        });
+
+                        requestAnimationFrame(() => {
+                          setTimeout(() => {
+                            view.focus();
+                          }, 500);
+                        });
+                      }}
+                    >
+                      <span
+                        className={`block truncate ${cteName === statusState.cte ? 'font-bold' : ''}`}
+                      >
+                        {cteName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
