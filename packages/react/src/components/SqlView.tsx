@@ -362,6 +362,23 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
     const theme = useMemo(() => (isDark ? oneDark : 'light'), [isDark]);
 
+    const handleKeyDownCapture = useCallback(
+      (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key !== 'Escape') {
+          return;
+        }
+        const view = editorRef.current?.view ?? editorView;
+        if (!view || !searchPanelOpen(view.state)) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        closeSearchPanel(view);
+        view.focus();
+      },
+      [editorView]
+    );
+
     const handleChange = useCallback(
       (val: string) => {
         if (!isControlled) {
@@ -633,6 +650,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
     return (
       <div
         className={`flowscope-sql-view flex h-full w-full min-h-0 min-w-0 flex-col ${className || ''}`}
+        onKeyDownCapture={handleKeyDownCapture}
       >
         <div className="flex shrink-0 items-center gap-1 border-b bg-background px-2 py-1">
           {preToolbarElements && (
