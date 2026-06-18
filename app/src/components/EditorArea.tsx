@@ -644,13 +644,14 @@ export function EditorArea({
           return;
         }
 
-        const cte = findCteAtPosition(activeFile.content, selection.head);
+        const sqlText = activeFile.content.replace(/\r?\n/g, '\n');
+        const cte = findCteAtPosition(sqlText, selection.head);
         if (!cte) {
           setSqlExecutionError('No CTE found under cursor.');
           return;
         }
 
-        const sql = buildExecutableSqlForCte(activeFile.content, cte);
+        const sql = buildExecutableSqlForCte(sqlText, cte);
         if (!needParametersForSql(activeFile, editedParameters, sql, `CTE: ${cte.name}`)) {
           void runExecuteSql(
             sql,

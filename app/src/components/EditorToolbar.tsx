@@ -139,7 +139,8 @@ export function EditorToolbar({
                       )}
                       <span className="hidden sm:inline">Run Sql</span>
                       <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                        <span className="text-xs">{modKey()}</span>↵
+                        <span className="text-xs">{modKey()}</span>
+                        <span className="text-xs">Enter</span>
                       </kbd>
                     </Button>
                   </GraphTooltipTrigger>
@@ -170,7 +171,9 @@ export function EditorToolbar({
                   >
                     <span>Run CTE under cursor</span>
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                      <span className="text-xs">{modKey()}</span>⇧↵
+                      <span className="text-xs">{modKey()}</span>
+                      <span className="text-xs">Shift</span>
+                      <span className="text-xs">Enter</span>
                     </kbd>
                   </div>
                   <div
@@ -260,7 +263,9 @@ export function EditorToolbar({
                   <span>Run Active File Only</span>
                   <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                     <span className="text-xs">{modKey()}</span>
-                    <span className="text-xs">{optionKey()}</span>⇧↵
+                    <span className="text-xs">{optionKey()}</span>
+                    <span className="text-xs">Shift</span>
+                    <span className="text-xs">Enter</span>
                   </kbd>
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem
@@ -282,7 +287,8 @@ export function EditorToolbar({
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
                   <span className="text-xs">{modKey()}</span>
-                  <span className="text-xs">{optionKey()}</span>↵
+                  <span className="text-xs">{optionKey()}</span>
+                  <span className="text-xs">Enter</span>
                 </kbd>
                 <span className="ml-2">Run in current mode</span>
               </div>
