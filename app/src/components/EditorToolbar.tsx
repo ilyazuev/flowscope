@@ -6,6 +6,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
@@ -73,7 +74,7 @@ export function EditorToolbar({
   onOpenSchemaExplorer,
 }: EditorToolbarProps) {
   return (
-    <div className="flex items-center justify-between px-3 py-2 border-b h-[44px] shrink-0 bg-muted/30 overflow-hidden gap-2">
+    <div className="flex items-center justify-between px-3 py-2 border-b h-11 shrink-0 bg-muted/30 overflow-hidden gap-2">
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <FileSelector open={fileSelectorOpen} onOpenChange={onFileSelectorOpenChange} />
 
@@ -130,7 +131,7 @@ export function EditorToolbar({
                         !backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none
                       }
                       size="sm"
-                      className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
+                      className="h-8.5 gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3"
                     >
                       {dataLoadingState !== SqlPartType.none ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -156,18 +157,18 @@ export function EditorToolbar({
                 <DropdownMenuTrigger asChild>
                   <Button
                     size="sm"
-                    className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
+                    className="h-8.5 px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
                     disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
                   >
                     <ChevronDown className="size-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <div
-                    className={
-                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                    }
-                    onClick={onExecuteCte}
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 justify-between text-xs"
+                    onSelect={() => {
+                      onExecuteCte();
+                    }}
                   >
                     <span>Run CTE under cursor</span>
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
@@ -175,23 +176,25 @@ export function EditorToolbar({
                       <span className="text-xs">Shift</span>
                       <span className="text-xs">Enter</span>
                     </kbd>
-                  </div>
-                  <div
-                    className={
-                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                    }
-                    onClick={onRunDescribe}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 justify-between text-xs"
+                    onSelect={() => {
+                      onRunDescribe();
+                    }}
                   >
                     <span>Describe object under cursor</span>
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                       <span className="text-xs">F4</span>
                     </kbd>
-                  </div>
-                  <div
-                    className={
-                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                    }
-                    onClick={onRunSqlPreview}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 justify-between text-xs"
+                    onSelect={() => {
+                      onRunSqlPreview();
+                    }}
                   >
                     <span>Preview Sql Object under cursor</span>
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
@@ -199,24 +202,26 @@ export function EditorToolbar({
                       <span className="text-xs">Shift</span>
                       <span className="text-xs">Q</span>
                     </kbd>
-                  </div>
-                  <div
-                    className={
-                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                    }
-                    onClick={onRevealInLineage}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 justify-between text-xs"
+                    onSelect={() => {
+                      void onRevealInLineage();
+                    }}
                   >
                     <span>Reveal object under cursor in Lineage</span>
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                       <span className="text-xs">{modKey()}</span>
                       <span className="text-xs">Q</span>
                     </kbd>
-                  </div>
-                  <div
-                    className={
-                      'flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-muted/50 group text-xs'
-                    }
-                    onClick={onOpenSchemaExplorer}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 justify-between text-xs"
+                    onSelect={() => {
+                      void onOpenSchemaExplorer();
+                    }}
                   >
                     <span>Open schema explorer</span>
                     <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
@@ -224,7 +229,7 @@ export function EditorToolbar({
                       <span className="text-xs">{optionKey()}</span>
                       <span className="text-xs">R</span>
                     </kbd>
-                  </div>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
@@ -233,7 +238,7 @@ export function EditorToolbar({
             onClick={onAnalyze}
             disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
             size="sm"
-            className="h-[34px] gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3 ml-1"
+            className="h-8.5 gap-1.5 bg-brand-blue-500 hover:bg-brand-blue-700 text-white font-medium rounded-none rounded-l-full border-r border-brand-blue-400/30 px-3 ml-1"
           >
             {isAnalyzing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -246,7 +251,7 @@ export function EditorToolbar({
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="h-[34px] px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
+                className="h-8.5 px-3 bg-brand-blue-500 hover:bg-brand-blue-700 text-white rounded-none rounded-r-full border-l border-brand-blue-700/30"
                 disabled={!backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none}
               >
                 <ChevronDown className="size-3.5" />
