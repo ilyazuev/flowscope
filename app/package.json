@@ -6,8 +6,6 @@
   "description": "FlowScope web application for SQL lineage visualization",
   "scripts": {
     "dev": "vite",
-    "dev:da": "vite --mode da",
-    "dev:da_backend": "vite --mode da_backend",
     "dev:idaf": "vite --mode idaf",
     "build": "tsc && vite build",
     "buildProdBackend": "node ./scripts/build-prod-backend.mjs",

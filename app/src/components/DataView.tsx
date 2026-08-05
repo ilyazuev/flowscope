@@ -557,6 +557,9 @@ export function DataView({
   useEffect(() => {
     if (!requestId) return;
     if (dataLoadingState !== SqlPartType.none) return;
+    if (dataLoadingError) {
+      return;
+    }
     if (lastAppliedRequestIdRef.current === requestId) return; // if (!initializedRef.current) return;
 
     lastAppliedRequestIdRef.current = requestId;
