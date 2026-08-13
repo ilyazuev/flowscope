@@ -445,6 +445,7 @@ export interface Node {
   joinCondition?: string;
   comment?: string;
   info?: string;
+  icon?: string;
   dataType?: string;
   /** For column nodes: aggregation information if this column is aggregated or a grouping key */
   aggregation?: AggregationInfo;

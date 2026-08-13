@@ -47,6 +47,7 @@ export interface SerializedTableNodeData extends Record<string, unknown> {
   label: string;
   nodeType: 'table' | 'view' | 'cte' | 'virtualOutput';
   comment?: string;
+  icon?: string;
   schemaTable?: ResolvedSchemaTable;
   dialect?: Dialect;
   spans?: Span[];
@@ -377,6 +378,7 @@ function buildTableNodeData(
   return {
     label: node.label,
     comment: node.comment,
+    icon: node.icon,
     schemaTable: schemaTable || undefined,
     dialect: schemaTable ? dialect: undefined,
     spans: node.spans,
@@ -1224,6 +1226,7 @@ self.onmessage = (event: MessageEvent<GraphBuildRequest | ScriptGraphBuildReques
           : null;
 
       if (!statement) {
+        // noinspection ExceptionCaughtLocallyJS
         throw new Error('No statements provided for table graph build');
       }
 
@@ -1261,6 +1264,7 @@ self.onmessage = (event: MessageEvent<GraphBuildRequest | ScriptGraphBuildReques
       nodes = result.nodes;
       edges = result.edges;
     } else {
+      // noinspection ExceptionCaughtLocallyJS
       throw new Error(`Unknown request type: ${(request as { type: string }).type}`);
     }
 

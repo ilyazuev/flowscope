@@ -346,6 +346,7 @@ export interface TableNodeData extends Record<string, unknown> {
   /** Display name of the table, view, or CTE */
   label: string;
   comment?: string;
+  icon?: string;
   schemaTable?: ResolvedSchemaTable;
   dialect?: Dialect;
   spans?: Span[];

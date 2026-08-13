@@ -52,6 +52,7 @@ export interface Node {
   id: string;
   type: NodeType;
   label: string;
+  icon?: string;
   qualifiedName?: string;
   expression?: string;
   spans?: Span[];

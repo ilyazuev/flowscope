@@ -238,6 +238,7 @@ function buildTableNodeData(
   return {
     label: node.label,
     comment: node.comment,
+    icon: node.icon,
     nodeType,
     columns,
     isSelected: node.id === options.selectedNodeId,
