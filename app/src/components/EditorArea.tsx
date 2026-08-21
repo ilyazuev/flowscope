@@ -1,33 +1,42 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import { openSchemaExplorer, SqlViewSelection, WindowManagerApi } from '@pondpilot/flowscope-react';
 import {
-  SqlView,
-  useLineageState,
-  useFloatingWindows,
-  openDescribeWindow,
+  acquireBodyWaitCursor,
   buildExecutableSqlForCte,
   findCteAtPosition,
+  type ParsedCte,
+  openDescribeWindow,
   openFloatingSQLPreview,
-  acquireBodyWaitCursor
+  openSchemaExplorer,
+  SqlView,
+  SqlViewSelection,
+  useFloatingWindows,
+  useLineageState,
+  WindowManagerApi,
 } from '@pondpilot/flowscope-react';
-import { useThemeStore, resolveTheme } from '@/lib/theme-store';
+import { resolveTheme, useThemeStore } from '@/lib/theme-store';
 import { cn, extractKnownSqlParamsInSqlOrder } from '@/lib/utils';
-import { backendParsed, Dialect, ProjectFile, RunMode, SqlParameters } from '@/lib/project-store';
-import { useProject } from '@/lib/project-store';
+import {
+  backendParsed,
+  Dialect,
+  ProjectFile,
+  RunMode,
+  SqlParameters,
+  useProject,
+} from '@/lib/project-store';
 import { useBackend } from '@/lib/backend-context';
 import type { GlobalShortcut } from '@/hooks';
 import { useAnalysis, useDebounce, useFileNavigation, useGlobalShortcuts } from '@/hooks';
 import type { SqlViewMode } from './EditorToolbar';
 import { EditorToolbar } from './EditorToolbar';
 import { ErrorBoundary } from './ErrorBoundary';
-import { FileControlsToolbar, type FileControlsToolbarRef, } from './FileControlsToolbar';
+import { FileControlsToolbar, type FileControlsToolbarRef } from './FileControlsToolbar';
 import { DEFAULT_FILE_NAMES } from '@/lib/constants';
 import { useSharedDataLoad } from '@/components/DataLoadContext.tsx';
 import { useAnalysisStore } from '@/lib/analysis-store.ts';
 import { SqlParametersEditor } from '@/components/SqlParametersEditor.tsx';
-import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { SqlExecuteType, SqlPartType } from '@/lib/backend-adapter.ts';
 import { AnalysisRunResult } from '@/hooks/useAnalysis.ts';
 
 // Fallback component shown when SqlView encounters an error
@@ -100,9 +109,7 @@ export function EditorArea({
   const createAnalysisSnapshot = useCallback(
     (run: AnalysisRunResult): AnalysisSnapshot => ({
       projectId: activeProjectId,
-      filesBySourceName: Object.fromEntries(
-        run.files.map((file) => [file.name, file.content])
-      ),
+      filesBySourceName: Object.fromEntries(run.files.map((file) => [file.name, file.content])),
       schemaSQL: run.schemaSQL,
       dialect: run.dialect,
       hideCTEs: run.hideCTEs,
@@ -111,7 +118,6 @@ export function EditorArea({
     }),
     [activeProjectId]
   );
-
 
   // Reset view mode to 'template' when active file changes
   useEffect(() => {
@@ -136,6 +142,7 @@ export function EditorArea({
   const sqlViewRef = useRef<{
     getSelection: () => SqlViewSelection | undefined;
     focus: () => void;
+    parsedCtes: () => Record<string, ParsedCte>;
   }>(null);
 
   const focusSqlView = useCallback(() => {
@@ -220,7 +227,7 @@ export function EditorArea({
 
     if (schemaChanged || hideCTEsChanged) {
       runAnalysis(activeFile.content, activeFile.path)
-        .then((run)=>{
+        .then((run) => {
           if (run) {
             setAnalysisSnapshot(createAnalysisSnapshot(run));
           }
@@ -228,7 +235,9 @@ export function EditorArea({
         .catch((err) => {
           const reason = schemaChanged ? 'schema change' : 'CTE toggle';
           console.error(`Auto-analysis after ${reason} failed:`, err);
-          setError(err instanceof Error ? err.message : `Failed to re-run analysis after ${reason}`);
+          setError(
+            err instanceof Error ? err.message : `Failed to re-run analysis after ${reason}`
+          );
         });
     }
     // Note: currentProject is used in the guard but excluded from deps because activeFile
@@ -281,7 +290,6 @@ export function EditorArea({
     return activeFile?.content ?? '';
   }, [sqlViewMode, resolvedSql, activeFile?.content]);
 
-
   const currentSourceName = activeFile ? activeFile.path || activeFile.name : null;
 
   const analyzedActiveFileText =
@@ -309,14 +317,11 @@ export function EditorArea({
     !!analysisSnapshot &&
     !!currentProject &&
     Object.keys(analysisSnapshot.filesBySourceName).some(
-      (sourceName) =>
-        !currentProject.files.some((file) => (file.path || file.name) === sourceName)
+      (sourceName) => !currentProject.files.some((file) => (file.path || file.name) === sourceName)
     );
 
   const activeFileWasNotAnalyzed =
-    !!analysisSnapshot &&
-    !!activeFile &&
-    analyzedActiveFileText === undefined;
+    !!analysisSnapshot && !!activeFile && analyzedActiveFileText === undefined;
 
   const isGraphOutOfSync =
     !!analysisSnapshot &&
@@ -324,16 +329,14 @@ export function EditorArea({
     !!currentProject &&
     !!activeFile &&
     sqlViewMode === 'template' &&
-    (
-      analysisSnapshot.projectId !== activeProjectId ||
+    (analysisSnapshot.projectId !== activeProjectId ||
       analysisSnapshot.schemaSQL !== (currentProject.schemaSQL ?? '') ||
       analysisSnapshot.dialect !== currentProject.dialect ||
       analysisSnapshot.hideCTEs !== hideCTEs ||
       analysisSnapshot.templateMode !== currentProject.templateMode ||
       analyzedFilesChanged ||
       analyzedFileDeleted ||
-      activeFileWasNotAnalyzed
-    );
+      activeFileWasNotAnalyzed);
 
   const clearErrors = useCallback(() => {
     setError(null);
@@ -347,7 +350,7 @@ export function EditorArea({
       return;
     }
     void runAnalysis(activeFile.content, activeFile.path).then((run) => {
-      if(run) {
+      if (run) {
         setAnalysisSnapshot(createAnalysisSnapshot(run));
       }
     });
@@ -358,12 +361,11 @@ export function EditorArea({
     if (!activeFile) {
       return;
     }
-    runAnalysis(activeFile.content, activeFile.path, {runModeOverride: 'current'})
-      .then((run)=>{
-        if(run) {
-          setAnalysisSnapshot(createAnalysisSnapshot(run));
-        }
-      });
+    runAnalysis(activeFile.content, activeFile.path, { runModeOverride: 'current' }).then((run) => {
+      if (run) {
+        setAnalysisSnapshot(createAnalysisSnapshot(run));
+      }
+    });
   }, [activeFile, runAnalysis, clearErrors, createAnalysisSnapshot]);
 
   const handleRevealInLineage = useCallback(async () => {
@@ -439,11 +441,13 @@ export function EditorArea({
               });
             }
           }
-          if( buffer.length > 0 ) {
-            const sorted = buffer.map(b=>({
-              ...b,
-              diff: b.end - b.start,
-            })).sort((a, b) => a.diff - b.diff);
+          if (buffer.length > 0) {
+            const sorted = buffer
+              .map((b) => ({
+                ...b,
+                diff: b.end - b.start,
+              }))
+              .sort((a, b) => a.diff - b.diff);
             const target = sorted[0];
             if (target.selectedNodeId) {
               acquireBodyWaitCursor(2000);
@@ -455,17 +459,23 @@ export function EditorArea({
       }
     }
     setRevealInLineageError('Object not found');
-  }, [currentProject, activeFile, activeProjectId, clearErrors, onRevealInLineage, isGraphOutOfSync, getResult, hideCTEs,]);
+  }, [
+    currentProject,
+    activeFile,
+    activeProjectId,
+    clearErrors,
+    onRevealInLineage,
+    isGraphOutOfSync,
+    getResult,
+    hideCTEs,
+  ]);
 
   const handleOpenSchemaExplorer = useCallback(async () => {
     clearErrors();
-    if (
-      !currentProject ||
-      !backendParsed(currentProject.dialect)
-    ) {
+    if (!currentProject || !backendParsed(currentProject.dialect)) {
       return;
     }
-    if( !currentProject.database || !currentProject.userName ) {
+    if (!currentProject.database || !currentProject.userName) {
       toast.error('Schema Explorer', {
         description: 'Database or User Name not defined',
         duration: 5000,
@@ -475,120 +485,137 @@ export function EditorArea({
     void openSchemaExplorer(windowManager, currentProject.database, currentProject.userName);
   }, [currentProject]);
 
-  const handleRunAction = useCallback((action: 'RunDescribe' | 'RunSqlPreview') => {
-    clearErrors();
-    if (
-      !currentProject ||
-      !backendParsed(currentProject.dialect) ||
-      !activeProjectId ||
-      !activeFile ||
-      !sqlViewRef.current ||
-      !activeFile.content
-    ) {
-      return;
-    }
-    const selection = sqlViewRef.current.getSelection();
-    if (!selection) {
-      return;
-    }
-    const openActionWindow = (
-      windowManager: Pick<WindowManagerApi, 'openWindow'>,
-      isDark: boolean,
-      dialect: Dialect,
-      tableName: string,
-      database?: string,
-      schema?: string,
-      columns?: Array<{
-        name: string;
-      }>,
-      columnName?: string,
-    ) => {
-      if( action == 'RunDescribe' ) {
-        void openDescribeWindow(
-          windowManager, tableName, database, schema, columnName);
-      } else if( action == 'RunSqlPreview' ) {
-        openFloatingSQLPreview({
-          windowManager,
-          dialect,
-          table: {
-            catalog: database,
-            schema,
-            tableName,
-            columns
-          }
-        });
+  const handleRunAction = useCallback(
+    (action: 'RunDescribe' | 'RunSqlPreview') => {
+      clearErrors();
+      if (
+        !currentProject ||
+        !backendParsed(currentProject.dialect) ||
+        !activeProjectId ||
+        !activeFile ||
+        !sqlViewRef.current ||
+        !activeFile.content
+      ) {
+        return;
       }
-    } // const actionMessage = action == 'RunDescribe' ? 'describing objects' : 'preview sql'; if (isGraphOutOfSync) { setError(`Graph is stale. Re-run analysis before ${actionMessage}.`); return; }
-    const result = getResult(activeProjectId, hideCTEs); // if (!result) { setError(`No Lineage Data: need to parse SQL before ${actionMessage}.`); return; }
-    if (result?.resolvedSchema) {
-      for (const table of result.resolvedSchema.tables) {
-        if (table.spans) {
-          for (const span of table.spans) {
-            if (span.start <= selection.head && selection.head <= span.end) {
-              void openActionWindow(windowManager, isDark,
-                currentProject.dialect, table.name, currentProject.database, table.schema,
-                action == 'RunSqlPreview' ? table.columns : undefined
-              );
-              return;
+      const selection = sqlViewRef.current.getSelection();
+      if (!selection) {
+        return;
+      }
+      const openActionWindow = (
+        windowManager: Pick<WindowManagerApi, 'openWindow'>,
+        isDark: boolean,
+        dialect: Dialect,
+        tableName: string,
+        database?: string,
+        schema?: string,
+        columns?: Array<{
+          name: string;
+        }>,
+        columnName?: string
+      ) => {
+        if (action == 'RunDescribe') {
+          void openDescribeWindow(windowManager, tableName, database, schema, columnName);
+        } else if (action == 'RunSqlPreview') {
+          openFloatingSQLPreview({
+            windowManager,
+            dialect,
+            table: {
+              catalog: database,
+              schema,
+              tableName,
+              columns,
+            },
+          });
+        }
+      }; // const actionMessage = action == 'RunDescribe' ? 'describing objects' : 'preview sql'; if (isGraphOutOfSync) { setError(`Graph is stale. Re-run analysis before ${actionMessage}.`); return; }
+      const result = getResult(activeProjectId, hideCTEs); // if (!result) { setError(`No Lineage Data: need to parse SQL before ${actionMessage}.`); return; }
+      if (result?.resolvedSchema) {
+        for (const table of result.resolvedSchema.tables) {
+          if (table.spans) {
+            for (const span of table.spans) {
+              if (span.start <= selection.head && selection.head <= span.end) {
+                void openActionWindow(
+                  windowManager,
+                  isDark,
+                  currentProject.dialect,
+                  table.name,
+                  currentProject.database,
+                  table.schema,
+                  action == 'RunSqlPreview' ? table.columns : undefined
+                );
+                return;
+              }
             }
           }
-        }
-        if (table.columns) {
-          for (const column of table.columns) {
-            if (column.spans) {
-              for (const span of column.spans) {
-                if (span.start <= selection.head && selection.head <= span.end) {
-                  void openActionWindow(windowManager, isDark,
-                    currentProject.dialect, table.name, currentProject.database, table.schema,
-                    action == 'RunSqlPreview' ? table.columns : undefined,
-                    column.name);
-                  return;
+          if (table.columns) {
+            for (const column of table.columns) {
+              if (column.spans) {
+                for (const span of column.spans) {
+                  if (span.start <= selection.head && selection.head <= span.end) {
+                    void openActionWindow(
+                      windowManager,
+                      isDark,
+                      currentProject.dialect,
+                      table.name,
+                      currentProject.database,
+                      table.schema,
+                      action == 'RunSqlPreview' ? table.columns : undefined,
+                      column.name
+                    );
+                    return;
+                  }
                 }
               }
             }
           }
         }
       }
-    }
-    const buffer: string[] = [];
-    for (let i = selection.head; i >= 0 ; i--) {
-      const ch = displayContent[i];
-      if( /[A-Za-z0-9_.]/.test(ch) ) {
-        buffer.unshift(ch);
-      } else {
-        break;
+      const buffer: string[] = [];
+      for (let i = selection.head; i >= 0; i--) {
+        const ch = displayContent[i];
+        if (/[A-Za-z0-9_.]/.test(ch)) {
+          buffer.unshift(ch);
+        } else {
+          break;
+        }
       }
-    }
-    for (let i = selection.head + 1; i < displayContent.length ; i++) {
-      const ch = displayContent[i];
-      if( /[A-Za-z0-9_.]/.test(ch) ) {
-        buffer.push(ch);
-      } else {
-        break;
+      for (let i = selection.head + 1; i < displayContent.length; i++) {
+        const ch = displayContent[i];
+        if (/[A-Za-z0-9_.]/.test(ch)) {
+          buffer.push(ch);
+        } else {
+          break;
+        }
       }
-    }
-    if( buffer.length == 0 ) {
-      setError('No database object found under cursor.');
-    }
-    const text = buffer.join('');
-    const parts = text.split('.');
-    void openActionWindow(windowManager, isDark, currentProject.dialect,
-      parts.length == 1 ? parts[0] : parts[1],
-      currentProject.database,
-      parts.length == 1 ? undefined : parts[0], undefined);
-
-  }, [
-    currentProject,
-    activeFile,
-    activeProjectId,
-    clearErrors,
-    windowManager,
-    isDark,
-    isGraphOutOfSync,
-    getResult,
-    hideCTEs,
-    setError,
-  ]);
+      if (buffer.length == 0) {
+        setError('No database object found under cursor.');
+      }
+      const text = buffer.join('');
+      const parts = text.split('.');
+      void openActionWindow(
+        windowManager,
+        isDark,
+        currentProject.dialect,
+        parts.length == 1 ? parts[0] : parts[1],
+        currentProject.database,
+        parts.length == 1 ? undefined : parts[0],
+        undefined
+      );
+    },
+    [
+      currentProject,
+      activeFile,
+      activeProjectId,
+      clearErrors,
+      windowManager,
+      isDark,
+      isGraphOutOfSync,
+      getResult,
+      hideCTEs,
+      setError,
+    ]
+  );
 
   const needParametersForSql = (
     activeFile: ProjectFile,
@@ -617,10 +644,10 @@ export function EditorArea({
     return true;
   };
 
-  const lastExecuteSql = useRef(true);
+  const lastExecuteSql = useRef(SqlExecuteType.sql);
 
   const doExecuteSql = useCallback(
-    (executeSql: boolean, editedParameters?: SqlParameters) => {
+    (executeSql: SqlExecuteType, editedParameters?: SqlParameters) => {
       clearErrors();
       if (!activeFile || !activeFile.content) {
         return;
@@ -628,57 +655,59 @@ export function EditorArea({
       lastExecuteSql.current = executeSql;
       const selection = sqlViewRef.current?.getSelection();
       if (selection && selection.from < selection.to) {
-        lastExecuteSql.current = false;
+        lastExecuteSql.current = SqlExecuteType.sql;
         const sql = activeFile.content.substring(selection.from, selection.to + 1);
         if (!needParametersForSql(activeFile, editedParameters, sql, 'Selection')) {
           void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.selection);
         }
         return;
       }
-      if (executeSql) {
+      if (executeSql == SqlExecuteType.sql || executeSql == SqlExecuteType.sqlAllCteCounts) {
         if (!needParametersForSql(activeFile, editedParameters)) {
+          if (executeSql == SqlExecuteType.sqlAllCteCounts) {
+            const parsedCtes = sqlViewRef.current?.parsedCtes();
+            if (parsedCtes) {
+              const counts =
+                Object.keys(parsedCtes)
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((cteName) => {
+                    return `SELECT '${cteName}' AS cte_name, COUNT(*) AS row_cnt FROM ${cteName}`;
+                  })
+                  .join('\nUNION ALL\n') + '\nORDER BY 1';
+              const lastCteBodyClose = Math.max(...Object.values(parsedCtes).map((cte) => cte.bodyClose));
+              const sqlText = activeFile.content.replace(/\r?\n/g, '\n');
+              const sql = `${sqlText.slice(0, lastCteBodyClose)}\n)\n${counts}`;
+              void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.sql);
+            }
+            return;
+          }
           void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
         }
       } else {
         if (!selection) {
           return;
         }
-
         const sqlText = activeFile.content.replace(/\r?\n/g, '\n');
         const cte = findCteAtPosition(sqlText, selection.head);
         if (!cte) {
           setSqlExecutionError('No CTE found under cursor.');
           return;
         }
-
-        const sql = buildExecutableSqlForCte(sqlText, cte);
+        const sql = buildExecutableSqlForCte(sqlText, cte, executeSql == SqlExecuteType.cteCount);
         if (!needParametersForSql(activeFile, editedParameters, sql, `CTE: ${cte.name}`)) {
-          void runExecuteSql(
-            sql,
-            activeFile.path,
-            editedParameters,
-            SqlPartType.cte,
-            cte.name
-          );
+          void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.cte, cte.name);
         }
       }
     },
-    [
-      activeFile,
-      currentProject?.dialect,
-      runExecuteSql,
-      setSqlExecutionError,
-      clearErrors,
-    ]
+    [activeFile, currentProject?.dialect, runExecuteSql, setSqlExecutionError, clearErrors]
   );
 
-  const handleExecuteSql = useCallback(() => {
-    doExecuteSql(true);
-  }, [doExecuteSql]);
-
-  const handleExecuteCte = useCallback(() => {
-    doExecuteSql(false);
-  }, [doExecuteSql]);
+  const handleExecuteSql = useCallback(
+    (executeSql: SqlExecuteType = SqlExecuteType.sql) => {
+      doExecuteSql(executeSql);
+    },
+    [doExecuteSql]
+  );
 
   const handleUseParameters = useCallback(
     (editedParameters: SqlParameters) => {
@@ -715,7 +744,12 @@ export function EditorArea({
         key: 'Enter',
         cmdOrCtrl: true,
         shift: true,
-        handler: handleExecuteCte,
+        handler: () => handleExecuteSql(SqlExecuteType.cte),
+      },
+      {
+        key: 'Enter',
+        alt: true,
+        handler: () => handleExecuteSql(SqlExecuteType.cteCount),
       },
       {
         key: 'F4',
@@ -746,8 +780,9 @@ export function EditorArea({
     [
       handleAnalyze,
       handleAnalyzeActiveOnly,
-      handleExecuteCte,
+      handleExecuteSql,
       handleRevealInLineage,
+      handleOpenSchemaExplorer,
     ]
   );
 
@@ -766,16 +801,15 @@ export function EditorArea({
       },
       ...(fileControlsToolbar
         ? [
-          {
-            key: 'Mod-s',
-            action: () => fileControlsToolbarRef.current?.save(),
-          },
-        ]
+            {
+              key: 'Mod-s',
+              action: () => fileControlsToolbarRef.current?.save(),
+            },
+          ]
         : []),
     ],
     [handleExecuteSql, fileControlsToolbar]
   );
-
 
   if (!currentProject || !activeFile) {
     return (
@@ -809,7 +843,6 @@ export function EditorArea({
         backendReady={backendReady}
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}
-        onExecuteCte={handleExecuteCte}
         onRunDescribe={() => handleRunAction('RunDescribe')}
         onRunSqlPreview={() => handleRunAction('RunSqlPreview')}
         onRevealInLineage={handleRevealInLineage}

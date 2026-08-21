@@ -8,7 +8,11 @@ export { openDescribeWindow } from './components/FloatingDescribe';
 export { openSchemaExplorer, SchemaExplorerProvider } from './components/FloatingSchemaExplorer';
 export { openFloatingSQLPreview } from './components/FloatingSQL';
 export { acquireBodyWaitCursor } from './utils/waitCursor';
-export { buildExecutableSqlForCte, findCteAtPosition } from './components/SqlView.SqlCteFolding';
+export {
+  buildExecutableSqlForCte,
+  findCteAtPosition,
+  type ParsedCte,
+} from './components/SqlView.SqlCteFolding';
 export { IssuesPanel } from './components/IssuesPanel';
 export { LineageExplorer } from './components/LineageExplorer';
 export { SchemaView } from './components/SchemaView';

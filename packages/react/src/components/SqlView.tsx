@@ -308,6 +308,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       focus: () => {
         editorRef.current?.view?.focus();
       },
+      parsedCtes: () => parsedCtes,
     }));
 
     const bookmarkExtension = useBookmarkExtension();

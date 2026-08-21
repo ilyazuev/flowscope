@@ -13,7 +13,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileSelector } from './FileSelector';
 import { backendParsed, Dialect, RunMode } from '@/lib/project-store';
-import { SqlPartType } from '@/lib/backend-adapter.ts';
+import { SqlExecuteType, SqlPartType } from '@/lib/backend-adapter.ts';
 import { modKey, optionKey } from '@/lib/shortcuts.ts';
 import {
   GraphTooltip,
@@ -34,8 +34,7 @@ interface EditorToolbarProps {
   dataLoadingState: SqlPartType;
   backendReady: boolean;
   onAnalyze: () => void;
-  onExecuteSql: () => void;
-  onExecuteCte: () => void;
+  onExecuteSql: (executeSql: SqlExecuteType) => void;
   onRunDescribe: () => void;
   onRunSqlPreview: () => void;
   onRevealInLineage: () => Promise<void>;
@@ -59,7 +58,6 @@ export function EditorToolbar({
   backendReady,
   onAnalyze,
   onExecuteSql,
-  onExecuteCte,
   onRunDescribe,
   onRunSqlPreview,
   allFileCount,
@@ -126,7 +124,7 @@ export function EditorToolbar({
                 <GraphTooltip delayDuration={300}>
                   <GraphTooltipTrigger asChild>
                     <Button
-                      onClick={onExecuteSql}
+                      onClick={()=>onExecuteSql(SqlExecuteType.sql)}
                       disabled={
                         !backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none
                       }
@@ -167,7 +165,7 @@ export function EditorToolbar({
                   <DropdownMenuItem
                     className="flex items-center gap-2 justify-between text-xs"
                     onSelect={() => {
-                      onExecuteCte();
+                      onExecuteSql(SqlExecuteType.cte);
                     }}
                   >
                     <span>Run CTE under cursor</span>
@@ -176,6 +174,28 @@ export function EditorToolbar({
                       <span className="text-xs">Shift</span>
                       <span className="text-xs">Enter</span>
                     </kbd>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 justify-between text-xs"
+                    onSelect={() => {
+                      onExecuteSql(SqlExecuteType.cteCount);
+                    }}
+                  >
+                    <span>Count CTE under cursor</span>
+                    <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                      <span className="text-xs">{optionKey()}</span>
+                      <span className="text-xs">Enter</span>
+                    </kbd>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 justify-between text-xs"
+                    onSelect={() => {
+                      onExecuteSql(SqlExecuteType.sqlAllCteCounts);
+                    }}
+                  >
+                    <span>Count All CTEs</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem

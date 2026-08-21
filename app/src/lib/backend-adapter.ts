@@ -40,6 +40,13 @@ export interface AnalysisPayload {
 }
 
 
+export enum SqlExecuteType {
+  sql,
+  cte,
+  sqlAllCteCounts,
+  cteCount,
+}
+
 export enum SqlPartType {
   none,
   sql,

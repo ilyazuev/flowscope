@@ -406,8 +406,8 @@ export function findCteAtPosition(text: string, pos: number): CteAtPosition | nu
   return null;
 }
 
-export function buildExecutableSqlForCte(text: string, cte: CteAtPosition): string {
-  return `${text.slice(0, cte.bodyClose)}\n)\nSELECT * FROM ${cte.name}`;
+export function buildExecutableSqlForCte(text: string, cte: CteAtPosition, onlyCount?: boolean): string {
+  return `${text.slice(0, cte.bodyClose)}\n)\nSELECT ${onlyCount ? `'${cte.name}' CTE_NAME, COUNT(*) ROW_CNT` : '*'} FROM ${cte.name}`;
 }
 
 /**
