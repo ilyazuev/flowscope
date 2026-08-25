@@ -153,16 +153,7 @@ export const SHORTCUTS: ShortcutDefinition[] = [
     description: 'Open project selector (includes dialect and template settings)',
     category: 'navigation',
     context: 'global',
-  },
-  {
-    id: 'toggle-editor',
-    key: 'b',
-    cmdOrCtrl: true,
-    label: 'Toggle editor',
-    description: 'Expand or collapse editor panel',
-    category: 'navigation',
-    context: 'global',
-  },
+  }, // toggleEditorPanel collidiert with set sql comments { id: 'toggle-editor', key: 'b', cmdOrCtrl: true, label: 'Toggle editor', description: 'Expand or collapse editor panel', category: 'navigation', context: 'global', },
 
   // Navigation - Tabs
   {

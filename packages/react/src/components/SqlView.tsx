@@ -149,6 +149,73 @@ function ToolbarDivider(): JSX.Element {
   return <div className="mx-1 h-5 w-px shrink-0 bg-border" />;
 }
 
+function getSelectedLineStarts(view: EditorView): number[] {
+  const { doc, selection } = view.state;
+  const starts = new Set<number>();
+
+  for (const range of selection.ranges) {
+    // When a selection ends exactly at the beginning of the next line,
+    // don't treat that next line as selected.
+    const end =
+      !range.empty && range.to > range.from && doc.lineAt(range.to).from === range.to
+        ? range.to - 1
+        : range.to;
+
+    let line = doc.lineAt(range.from);
+    const lastLine = doc.lineAt(end);
+
+    while (line.number <= lastLine.number) {
+      starts.add(line.from);
+      if (line.number === doc.lines) {
+        break;
+      }
+      line = doc.line(line.number + 1);
+    }
+  }
+
+  return [...starts].sort((a, b) => a - b);
+}
+
+function commentSelectedLines(view: EditorView): boolean {
+  const { doc } = view.state;
+  const changes = getSelectedLineStarts(view) // .filter((from) => doc.sliceString(from, Math.min(from + 2, doc.length)) !== '--')
+    .map((from) => (
+      doc.sliceString(from, Math.min(from + 2, doc.length)) !== '--'
+      ? {
+        from,
+        insert: '--',
+      }
+      : {
+        from,
+        to: from + 2,
+        insert: '',
+      }
+    ));
+
+  if (changes.length > 0) {
+    view.dispatch({ changes });
+  }
+  return true;
+}
+
+function uncommentSelectedLines(view: EditorView): boolean {
+  const { doc } = view.state;
+  const changes = getSelectedLineStarts(view)
+    .filter((from) => doc.sliceString(from, Math.min(from + 2, doc.length)) === '--')
+    .map((from) => ({
+      from,
+      to: from + 2,
+      insert: '',
+    }));
+
+  // The key is still considered handled even if none of the selected lines
+  // are commented, so Ctrl+Shift+B doesn't bubble to the browser/app.
+  if (changes.length > 0) {
+    view.dispatch({ changes });
+  }
+  return true;
+}
+
 export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
   (
     {
@@ -330,8 +397,28 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       [shortcuts]
     );
 
+    const sqlCommentShortcutExtension = useMemo(
+      () =>
+        Prec.highest(
+          keymap.of([
+            {
+              key: 'Ctrl-b',
+              preventDefault: true,
+              run: (view) => editable && commentSelectedLines(view),
+            },
+            {
+              key: 'Ctrl-Shift-b',
+              preventDefault: true,
+              run: (view) => editable && uncommentSelectedLines(view),
+            },
+          ])
+        ),
+      [editable]
+    );
+
     const extensions = useMemo(
       () => [
+        sqlCommentShortcutExtension,
         shortcutExtension, // EditorState.lineSeparator.of('\n'),
         sql({
           upperCaseKeywords: true,
@@ -358,7 +445,14 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         bookmarkExtension,
         sqlCteFolding(),
       ],
-      [editable, bookmarkExtension, lineWrapping, updateStatusState, shortcutExtension]
+      [
+        editable,
+        bookmarkExtension,
+        lineWrapping,
+        updateStatusState,
+        shortcutExtension,
+        sqlCommentShortcutExtension,
+      ]
     );
 
     const theme = useMemo(() => (isDark ? oneDark : 'light'), [isDark]);

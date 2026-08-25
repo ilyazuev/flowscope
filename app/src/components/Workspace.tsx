@@ -192,12 +192,7 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
         key: 'p',
         cmdOrCtrl: true,
         handler: () => setProjectSelectorOpen((prev) => !prev),
-      },
-      {
-        key: 'b',
-        cmdOrCtrl: true,
-        handler: toggleEditorPanel,
-      },
+      }, // toggleEditorPanel collidiert with set sql comments { key: 'b', cmdOrCtrl: true, handler: toggleEditorPanel, },
       // Help dialog
       {
         key: '?',

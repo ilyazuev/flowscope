@@ -23,8 +23,7 @@ export const ANALYSIS_SQL_PREVIEW_LIMITS = {
 } as const;
 
 export const KEYBOARD_SHORTCUTS = {
-  RUN_ANALYSIS: { key: 'Enter', modifiers: ['metaKey', 'ctrlKey'] },
-  TOGGLE_SIDEBAR: { key: 'b', modifiers: ['metaKey', 'ctrlKey'] },
+  RUN_ANALYSIS: { key: 'Enter', modifiers: ['metaKey', 'ctrlKey'] }, // toggleEditorPanel collidiert with set sql comments TOGGLE_SIDEBAR: { key: 'b', modifiers: ['metaKey', 'ctrlKey'] },
   NEW_FILE: { key: 'n', modifiers: ['metaKey', 'ctrlKey'] },
   SAVE: { key: 's', modifiers: ['metaKey', 'ctrlKey'] },
 } as const;
