@@ -1,0 +1,753 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="BackgroundAgentGlobalSettings">
+    <option name="selectedModelId" value="gpt-5.3-codex" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="811b2d35-e0a2-480d-8fd0-0f0fd7341efc" name="Changes" comment="block comments">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/core/wasm/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/packages/core/wasm/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm.js" beforeDir="false" afterPath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm_bg.wasm" beforeDir="false" afterPath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm_bg.wasm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm_bg.wasm.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/packages/core/wasm/flowscope_wasm_bg.wasm.d.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/Users/ilya.zuev@ing.com/Workspace/tmp/json_viz/flowscope/flowscope" value="3AniVqtfaIUZdHec48osZjcYun0" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="614" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="TypeScript File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="feature/custom_forms" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ilyazuev&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ilyazuev/flowscope.git&quot;,
+    &quot;accountId&quot;: &quot;166ba570-9a14-4f06-bd86-f605e4e3aabf&quot;
+  }
+}</component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="3AniVqtfaIUZdHec48osZjcYun0" />
+  <component name="ProjectSessionTemplates">
+    <option name="panelTemplate">
+      <template>
+        <option name="modeId" value="Agent" />
+        <option name="model">
+          <model>
+            <option name="modelType" value="builtin_id" />
+            <option name="modelValue" value="gpt-5.3-codex" />
+          </model>
+        </option>
+        <option name="targetType" value="BACKGROUND" />
+      </template>
+    </option>
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;copilot.chat.legacySessionMetadata.migrated&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;git.auto.fetch.suggestion.counter&quot;: &quot;2&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ilya.zuev@ing.com/Workspace/tmp/json_viz/flowscope/flowscope/packages/core/dist/wasm&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.standard&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.standard&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
+    &quot;npm.app &gt; build.executor&quot;: &quot;Run&quot;,
+    &quot;npm.app &gt; buildProdBackend.executor&quot;: &quot;Run&quot;,
+    &quot;npm.app &gt; buildProdIdaf.executor&quot;: &quot;Run&quot;,
+    &quot;npm.app &gt; dev &gt; da.executor&quot;: &quot;Run&quot;,
+    &quot;npm.app &gt; dev &gt; da_backend.executor&quot;: &quot;Run&quot;,
+    &quot;npm.app &gt; dev.executor&quot;: &quot;Run&quot;,
+    &quot;npm.build:ts.executor&quot;: &quot;Run&quot;,
+    &quot;npm.core &gt; build.executor&quot;: &quot;Run&quot;,
+    &quot;npm.core &gt; build:ts.executor&quot;: &quot;Run&quot;,
+    &quot;npm.core &gt; copy:wasm.executor&quot;: &quot;Run&quot;,
+    &quot;npm.react &gt; build.executor&quot;: &quot;Run&quot;,
+    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;C:\\Users\\ilya.zuev@ing.com\\Workspace\\tmp\\json_viz\\flowscope\\flowscope\\node_modules\\prettier&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.javascript.linters.eslint&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\IntelliJ IDEA 2026.1.2\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;ts.rename.search.for.js.occurrences&quot;: &quot;false&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;oracle&quot;
+    ],
+    &quot;com.intellij.ide.scratch.LRUPopupBuilder$1/&quot;: [
+      &quot;Oracle&quot;,
+      &quot;H2&quot;
+    ]
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\json_viz\flowscope\flowscope\packages\core\dist\wasm" />
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\json_viz\flowscope\flowscope\app" />
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\flowscope\flowscope\packages\react\src\components" />
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\flowscope\flowscope\app\src\components" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\json_viz\flowscope\flowscope\app\src\components" />
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\json_viz\flowscope\flowscope\packages\react\src\components" />
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\json_viz\flowscope\flowscope\app\default_data" />
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\flowscope\flowscope\app" />
+      <recent name="C:\Users\ilya.zuev@ing.com\Workspace\tmp\flowscope\flowscope" />
+    </key>
+  </component>
+  <component name="RunManager" selected="npm.app &gt; build">
+    <configuration name="app &gt; build" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/app/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="build" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="app &gt; dev &gt; da_backend" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/app/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev:da_backend" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="app &gt; dev" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/app/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="build:ts" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="build:ts" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="core &gt; build:ts" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/packages/core/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="build:ts" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="core &gt; copy:wasm" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/packages/core/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="copy:wasm" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="npm.app &gt; dev &gt; da_backend" />
+      <item itemvalue="npm.core &gt; copy:wasm" />
+      <item itemvalue="npm.build:ts" />
+      <item itemvalue="npm.app &gt; build" />
+      <item itemvalue="npm.app &gt; dev" />
+      <item itemvalue="npm.core &gt; build:ts" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="npm.app &gt; build" />
+        <item itemvalue="npm.core &gt; copy:wasm" />
+        <item itemvalue="npm.core &gt; build:ts" />
+        <item itemvalue="npm.build:ts" />
+        <item itemvalue="npm.app &gt; dev" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-37e91769500f-intellij.indexing.shared.core-IU-261.24374.151" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-IU-261.24374.151" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="811b2d35-e0a2-480d-8fd0-0f0fd7341efc" name="Changes" comment="" />
+      <created>1773234761661</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1773234761661</updated>
+      <workItem from="1773234907652" duration="15412000" />
+      <workItem from="1773404873718" duration="23021000" />
+      <workItem from="1773997558367" duration="38121000" />
+      <workItem from="1774619387849" duration="85832000" />
+      <workItem from="1775659834275" duration="165685000" />
+      <workItem from="1776860188819" duration="2090000" />
+      <workItem from="1776874487858" duration="16654000" />
+      <workItem from="1777018128684" duration="1229000" />
+      <workItem from="1777025225964" duration="98625000" />
+      <workItem from="1777625553055" duration="115612000" />
+      <workItem from="1778227149287" duration="4111000" />
+      <workItem from="1778255274264" duration="397000" />
+      <workItem from="1778255704600" duration="15268000" />
+      <workItem from="1778428266404" duration="9835000" />
+      <workItem from="1778450158227" duration="20477000" />
+      <workItem from="1778573947988" duration="17128000" />
+      <workItem from="1778624607656" duration="89209000" />
+      <workItem from="1779021153713" duration="2218000" />
+      <workItem from="1779041393236" duration="325000" />
+      <workItem from="1779042469461" duration="1001000" />
+      <workItem from="1779043882682" duration="9650000" />
+      <workItem from="1779103599532" duration="27150000" />
+      <workItem from="1779263512815" duration="13899000" />
+      <workItem from="1779364655236" duration="17434000" />
+      <workItem from="1779449919270" duration="155679000" />
+      <workItem from="1780394558711" duration="135179000" />
+      <workItem from="1781270939632" duration="8000000" />
+      <workItem from="1781377348612" duration="39446000" />
+      <workItem from="1781683758395" duration="648000" />
+      <workItem from="1781697631050" duration="1371000" />
+      <workItem from="1781728890556" duration="1043000" />
+      <workItem from="1781784515370" duration="5012000" />
+      <workItem from="1781869538897" duration="1169000" />
+      <workItem from="1781871505941" duration="587000" />
+      <workItem from="1781872843562" duration="585000" />
+      <workItem from="1781887241903" duration="2209000" />
+      <workItem from="1782317406092" duration="1296000" />
+      <workItem from="1783586270359" duration="9691000" />
+      <workItem from="1783684211022" duration="1269000" />
+      <workItem from="1784038488009" duration="9583000" />
+      <workItem from="1785144237199" duration="384000" />
+      <workItem from="1785744498022" duration="10109000" />
+      <workItem from="1786522590157" duration="22572000" />
+      <workItem from="1787301013219" duration="28785000" />
+      <workItem from="1788249788781" duration="788000" />
+      <workItem from="1788250622974" duration="307000" />
+    </task>
+    <task id="LOCAL-00173" summary="Code Table object under cursor 5">
+      <option name="closed" value="true" />
+      <created>1780402821248</created>
+      <option name="number" value="00173" />
+      <option name="presentableId" value="LOCAL-00173" />
+      <option name="project" value="LOCAL" />
+      <updated>1780402821249</updated>
+    </task>
+    <task id="LOCAL-00174" summary="Code Table object under cursor 6">
+      <option name="closed" value="true" />
+      <created>1780403156296</created>
+      <option name="number" value="00174" />
+      <option name="presentableId" value="LOCAL-00174" />
+      <option name="project" value="LOCAL" />
+      <updated>1780403156296</updated>
+    </task>
+    <task id="LOCAL-00175" summary="dataLoadingState">
+      <option name="closed" value="true" />
+      <created>1780407334768</created>
+      <option name="number" value="00175" />
+      <option name="presentableId" value="LOCAL-00175" />
+      <option name="project" value="LOCAL" />
+      <updated>1780407334769</updated>
+    </task>
+    <task id="LOCAL-00176" summary="Search object in database">
+      <option name="closed" value="true" />
+      <created>1780441039643</created>
+      <option name="number" value="00176" />
+      <option name="presentableId" value="LOCAL-00176" />
+      <option name="project" value="LOCAL" />
+      <updated>1780441039643</updated>
+    </task>
+    <task id="LOCAL-00177" summary="Search object in database 2">
+      <option name="closed" value="true" />
+      <created>1780476609839</created>
+      <option name="number" value="00177" />
+      <option name="presentableId" value="LOCAL-00177" />
+      <option name="project" value="LOCAL" />
+      <updated>1780476609839</updated>
+    </task>
+    <task id="LOCAL-00178" summary="footer">
+      <option name="closed" value="true" />
+      <created>1780501863007</created>
+      <option name="number" value="00178" />
+      <option name="presentableId" value="LOCAL-00178" />
+      <option name="project" value="LOCAL" />
+      <updated>1780501863007</updated>
+    </task>
+    <task id="LOCAL-00179" summary="footer 2">
+      <option name="closed" value="true" />
+      <created>1780610622297</created>
+      <option name="number" value="00179" />
+      <option name="presentableId" value="LOCAL-00179" />
+      <option name="project" value="LOCAL" />
+      <updated>1780610622297</updated>
+    </task>
+    <task id="LOCAL-00180" summary="SchemaExplorer">
+      <option name="closed" value="true" />
+      <created>1780698520030</created>
+      <option name="number" value="00180" />
+      <option name="presentableId" value="LOCAL-00180" />
+      <option name="project" value="LOCAL" />
+      <updated>1780698520030</updated>
+    </task>
+    <task id="LOCAL-00181" summary="SchemaExplorer 2">
+      <option name="closed" value="true" />
+      <created>1780752787345</created>
+      <option name="number" value="00181" />
+      <option name="presentableId" value="LOCAL-00181" />
+      <option name="project" value="LOCAL" />
+      <updated>1780752787345</updated>
+    </task>
+    <task id="LOCAL-00182" summary="SchemaExplorer 3">
+      <option name="closed" value="true" />
+      <created>1780782811860</created>
+      <option name="number" value="00182" />
+      <option name="presentableId" value="LOCAL-00182" />
+      <option name="project" value="LOCAL" />
+      <updated>1780782811860</updated>
+    </task>
+    <task id="LOCAL-00183" summary="SchemaExplorer 4">
+      <option name="closed" value="true" />
+      <created>1780918126408</created>
+      <option name="number" value="00183" />
+      <option name="presentableId" value="LOCAL-00183" />
+      <option name="project" value="LOCAL" />
+      <updated>1780918126408</updated>
+    </task>
+    <task id="LOCAL-00184" summary="SchemaExplorer 5">
+      <option name="closed" value="true" />
+      <created>1780923828936</created>
+      <option name="number" value="00184" />
+      <option name="presentableId" value="LOCAL-00184" />
+      <option name="project" value="LOCAL" />
+      <updated>1780923828936</updated>
+    </task>
+    <task id="LOCAL-00185" summary="SchemaExplorer 6">
+      <option name="closed" value="true" />
+      <created>1780926630700</created>
+      <option name="number" value="00185" />
+      <option name="presentableId" value="LOCAL-00185" />
+      <option name="project" value="LOCAL" />
+      <updated>1780926630701</updated>
+    </task>
+    <task id="LOCAL-00186" summary="SchemaExplorer 7">
+      <option name="closed" value="true" />
+      <created>1780928076765</created>
+      <option name="number" value="00186" />
+      <option name="presentableId" value="LOCAL-00186" />
+      <option name="project" value="LOCAL" />
+      <updated>1780928076765</updated>
+    </task>
+    <task id="LOCAL-00187" summary="SchemaExplorer 8">
+      <option name="closed" value="true" />
+      <created>1780929004005</created>
+      <option name="number" value="00187" />
+      <option name="presentableId" value="LOCAL-00187" />
+      <option name="project" value="LOCAL" />
+      <updated>1780929004005</updated>
+    </task>
+    <task id="LOCAL-00188" summary="SchemaExplorer 9">
+      <option name="closed" value="true" />
+      <created>1780956447493</created>
+      <option name="number" value="00188" />
+      <option name="presentableId" value="LOCAL-00188" />
+      <option name="project" value="LOCAL" />
+      <updated>1780956447493</updated>
+    </task>
+    <task id="LOCAL-00189" summary="SchemaExplorer 10">
+      <option name="closed" value="true" />
+      <created>1780958734772</created>
+      <option name="number" value="00189" />
+      <option name="presentableId" value="LOCAL-00189" />
+      <option name="project" value="LOCAL" />
+      <updated>1780958734772</updated>
+    </task>
+    <task id="LOCAL-00190" summary="SchemaExplorer 10">
+      <option name="closed" value="true" />
+      <created>1780959472100</created>
+      <option name="number" value="00190" />
+      <option name="presentableId" value="LOCAL-00190" />
+      <option name="project" value="LOCAL" />
+      <updated>1780959472100</updated>
+    </task>
+    <task id="LOCAL-00191" summary="SchemaExplorer 11">
+      <option name="closed" value="true" />
+      <created>1781001109144</created>
+      <option name="number" value="00191" />
+      <option name="presentableId" value="LOCAL-00191" />
+      <option name="project" value="LOCAL" />
+      <updated>1781001109144</updated>
+    </task>
+    <task id="LOCAL-00192" summary="SchemaExplorer 12">
+      <option name="closed" value="true" />
+      <created>1781003034593</created>
+      <option name="number" value="00192" />
+      <option name="presentableId" value="LOCAL-00192" />
+      <option name="project" value="LOCAL" />
+      <updated>1781003034593</updated>
+    </task>
+    <task id="LOCAL-00193" summary="SchemaExplorer 13">
+      <option name="closed" value="true" />
+      <created>1781008753154</created>
+      <option name="number" value="00193" />
+      <option name="presentableId" value="LOCAL-00193" />
+      <option name="project" value="LOCAL" />
+      <updated>1781008753155</updated>
+    </task>
+    <task id="LOCAL-00194" summary="SchemaExplorer 14">
+      <option name="closed" value="true" />
+      <created>1781012787412</created>
+      <option name="number" value="00194" />
+      <option name="presentableId" value="LOCAL-00194" />
+      <option name="project" value="LOCAL" />
+      <updated>1781012787412</updated>
+    </task>
+    <task id="LOCAL-00195" summary="SchemaExplorer 15">
+      <option name="closed" value="true" />
+      <created>1781023496927</created>
+      <option name="number" value="00195" />
+      <option name="presentableId" value="LOCAL-00195" />
+      <option name="project" value="LOCAL" />
+      <updated>1781023496927</updated>
+    </task>
+    <task id="LOCAL-00196" summary="SchemaExplorer 16">
+      <option name="closed" value="true" />
+      <created>1781041752133</created>
+      <option name="number" value="00196" />
+      <option name="presentableId" value="LOCAL-00196" />
+      <option name="project" value="LOCAL" />
+      <updated>1781041752133</updated>
+    </task>
+    <task id="LOCAL-00197" summary="SchemaExplorer 17">
+      <option name="closed" value="true" />
+      <created>1781085532966</created>
+      <option name="number" value="00197" />
+      <option name="presentableId" value="LOCAL-00197" />
+      <option name="project" value="LOCAL" />
+      <updated>1781085532966</updated>
+    </task>
+    <task id="LOCAL-00198" summary="SchemaExplorer 19">
+      <option name="closed" value="true" />
+      <created>1781088047480</created>
+      <option name="number" value="00198" />
+      <option name="presentableId" value="LOCAL-00198" />
+      <option name="project" value="LOCAL" />
+      <updated>1781088047481</updated>
+    </task>
+    <task id="LOCAL-00199" summary="SchemaExplorer 20">
+      <option name="closed" value="true" />
+      <created>1781131269075</created>
+      <option name="number" value="00199" />
+      <option name="presentableId" value="LOCAL-00199" />
+      <option name="project" value="LOCAL" />
+      <updated>1781131269075</updated>
+    </task>
+    <task id="LOCAL-00200" summary="SchemaExplorer 20">
+      <option name="closed" value="true" />
+      <created>1781184617621</created>
+      <option name="number" value="00200" />
+      <option name="presentableId" value="LOCAL-00200" />
+      <option name="project" value="LOCAL" />
+      <updated>1781184617621</updated>
+    </task>
+    <task id="LOCAL-00201" summary="SchemaExplorer 21">
+      <option name="closed" value="true" />
+      <created>1781196032229</created>
+      <option name="number" value="00201" />
+      <option name="presentableId" value="LOCAL-00201" />
+      <option name="project" value="LOCAL" />
+      <updated>1781196032231</updated>
+    </task>
+    <task id="LOCAL-00202" summary="SchemaExplorer 22">
+      <option name="closed" value="true" />
+      <created>1781216558956</created>
+      <option name="number" value="00202" />
+      <option name="presentableId" value="LOCAL-00202" />
+      <option name="project" value="LOCAL" />
+      <updated>1781216558957</updated>
+    </task>
+    <task id="LOCAL-00203" summary="SchemaExplorer 23">
+      <option name="closed" value="true" />
+      <created>1781218759748</created>
+      <option name="number" value="00203" />
+      <option name="presentableId" value="LOCAL-00203" />
+      <option name="project" value="LOCAL" />
+      <updated>1781218759748</updated>
+    </task>
+    <task id="LOCAL-00204" summary="SchemaExplorer 24">
+      <option name="closed" value="true" />
+      <created>1781259612898</created>
+      <option name="number" value="00204" />
+      <option name="presentableId" value="LOCAL-00204" />
+      <option name="project" value="LOCAL" />
+      <updated>1781259612898</updated>
+    </task>
+    <task id="LOCAL-00205" summary="windowManager">
+      <option name="closed" value="true" />
+      <created>1781276536973</created>
+      <option name="number" value="00205" />
+      <option name="presentableId" value="LOCAL-00205" />
+      <option name="project" value="LOCAL" />
+      <updated>1781276536974</updated>
+    </task>
+    <task id="LOCAL-00206" summary="DataView cell buttons 1">
+      <option name="closed" value="true" />
+      <created>1781385755798</created>
+      <option name="number" value="00206" />
+      <option name="presentableId" value="LOCAL-00206" />
+      <option name="project" value="LOCAL" />
+      <updated>1781385755798</updated>
+    </task>
+    <task id="LOCAL-00207" summary="DataView cell buttons 2">
+      <option name="closed" value="true" />
+      <created>1781386826918</created>
+      <option name="number" value="00207" />
+      <option name="presentableId" value="LOCAL-00207" />
+      <option name="project" value="LOCAL" />
+      <updated>1781386826918</updated>
+    </task>
+    <task id="LOCAL-00208" summary="DataView cell buttons 3">
+      <option name="closed" value="true" />
+      <created>1781461949611</created>
+      <option name="number" value="00208" />
+      <option name="presentableId" value="LOCAL-00208" />
+      <option name="project" value="LOCAL" />
+      <updated>1781461949612</updated>
+    </task>
+    <task id="LOCAL-00209" summary="DataView cell buttons 3">
+      <option name="closed" value="true" />
+      <created>1781466254275</created>
+      <option name="number" value="00209" />
+      <option name="presentableId" value="LOCAL-00209" />
+      <option name="project" value="LOCAL" />
+      <updated>1781466254275</updated>
+    </task>
+    <task id="LOCAL-00210" summary="DataView cell buttons 4">
+      <option name="closed" value="true" />
+      <created>1781475762843</created>
+      <option name="number" value="00210" />
+      <option name="presentableId" value="LOCAL-00210" />
+      <option name="project" value="LOCAL" />
+      <updated>1781475762843</updated>
+    </task>
+    <task id="LOCAL-00211" summary="DataView cell buttons 4">
+      <option name="closed" value="true" />
+      <created>1781524615255</created>
+      <option name="number" value="00211" />
+      <option name="presentableId" value="LOCAL-00211" />
+      <option name="project" value="LOCAL" />
+      <updated>1781524615255</updated>
+    </task>
+    <task id="LOCAL-00212" summary="ctes alph sort">
+      <option name="closed" value="true" />
+      <created>1781532916456</created>
+      <option name="number" value="00212" />
+      <option name="presentableId" value="LOCAL-00212" />
+      <option name="project" value="LOCAL" />
+      <updated>1781532916456</updated>
+    </task>
+    <task id="LOCAL-00213" summary="handleKeyDownCapture">
+      <option name="closed" value="true" />
+      <created>1781560756964</created>
+      <option name="number" value="00213" />
+      <option name="presentableId" value="LOCAL-00213" />
+      <option name="project" value="LOCAL" />
+      <updated>1781560756964</updated>
+    </task>
+    <task id="LOCAL-00214" summary="ensureColumnInfoSchema">
+      <option name="closed" value="true" />
+      <created>1781563921770</created>
+      <option name="number" value="00214" />
+      <option name="presentableId" value="LOCAL-00214" />
+      <option name="project" value="LOCAL" />
+      <updated>1781563921770</updated>
+    </task>
+    <task id="LOCAL-00215" summary="presentation_2">
+      <option name="closed" value="true" />
+      <created>1781711791547</created>
+      <option name="number" value="00215" />
+      <option name="presentableId" value="LOCAL-00215" />
+      <option name="project" value="LOCAL" />
+      <updated>1781711791547</updated>
+    </task>
+    <task id="LOCAL-00216" summary="findCteAtPosition crln">
+      <option name="closed" value="true" />
+      <created>1781789189489</created>
+      <option name="number" value="00216" />
+      <option name="presentableId" value="LOCAL-00216" />
+      <option name="project" value="LOCAL" />
+      <updated>1781789189490</updated>
+    </task>
+    <task id="LOCAL-00217" summary="opened DropdownMenu blocks FloatingWindows">
+      <option name="closed" value="true" />
+      <created>1783597636447</created>
+      <option name="number" value="00217" />
+      <option name="presentableId" value="LOCAL-00217" />
+      <option name="project" value="LOCAL" />
+      <updated>1783597636447</updated>
+    </task>
+    <task id="LOCAL-00218" summary="DataView dataLoadingError">
+      <option name="closed" value="true" />
+      <created>1785942682816</created>
+      <option name="number" value="00218" />
+      <option name="presentableId" value="LOCAL-00218" />
+      <option name="project" value="LOCAL" />
+      <updated>1785942682816</updated>
+    </task>
+    <task id="LOCAL-00219" summary="icon">
+      <option name="closed" value="true" />
+      <created>1786630160705</created>
+      <option name="number" value="00219" />
+      <option name="presentableId" value="LOCAL-00219" />
+      <option name="project" value="LOCAL" />
+      <updated>1786630160706</updated>
+    </task>
+    <task id="LOCAL-00220" summary="Count CTEs; Add SqlExecuteType enum and enhance SQL execution logic for CTEs">
+      <option name="closed" value="true" />
+      <created>1787327846993</created>
+      <option name="number" value="00220" />
+      <option name="presentableId" value="LOCAL-00220" />
+      <option name="project" value="LOCAL" />
+      <updated>1787327846993</updated>
+    </task>
+    <task id="LOCAL-00221" summary="block comments">
+      <option name="closed" value="true" />
+      <created>1787677561671</created>
+      <option name="number" value="00221" />
+      <option name="presentableId" value="LOCAL-00221" />
+      <option name="project" value="LOCAL" />
+      <updated>1787677561671</updated>
+    </task>
+    <option name="localTasksCounter" value="222" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+        <option value="GitHub.CommitStatus" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="SchemaExplorer 14" />
+    <MESSAGE value="SchemaExplorer 15" />
+    <MESSAGE value="SchemaExplorer 16" />
+    <MESSAGE value="SchemaExplorer 17" />
+    <MESSAGE value="SchemaExplorer 19" />
+    <MESSAGE value="SchemaExplorer 20" />
+    <MESSAGE value="SchemaExplorer 21" />
+    <MESSAGE value="SchemaExplorer 22" />
+    <MESSAGE value="SchemaExplorer 23" />
+    <MESSAGE value="SchemaExplorer 24" />
+    <MESSAGE value="windowManager" />
+    <MESSAGE value="DataView cell buttons 1" />
+    <MESSAGE value="DataView cell buttons 2" />
+    <MESSAGE value="DataView cell buttons 3" />
+    <MESSAGE value="DataView cell buttons 4" />
+    <MESSAGE value="ctes alph sort" />
+    <MESSAGE value="handleKeyDownCapture" />
+    <MESSAGE value="ensureColumnInfoSchema" />
+    <MESSAGE value="presentation_2" />
+    <MESSAGE value="findCteAtPosition crln" />
+    <MESSAGE value="opened DropdownMenu blocks FloatingWindows" />
+    <MESSAGE value="DataView dataLoadingError" />
+    <MESSAGE value="icon" />
+    <MESSAGE value="Count CTEs; Add SqlExecuteType enum and enhance SQL execution logic for CTEs" />
+    <MESSAGE value="block comments" />
+    <option name="LAST_COMMIT_MESSAGE" value="block comments" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

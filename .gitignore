@@ -22,8 +22,6 @@ pkg/
 !packages/core/wasm/**
 
 # IDE
-.vscode/
-.idea/
 *.swp
 *.swo
 *~
