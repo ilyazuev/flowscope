@@ -225,7 +225,7 @@ export function SchemaAwareIssuesPanel({
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-foreground mb-1">{issue.message}</p>
+                  <p className="text-sm text-foreground mb-1"><pre>{issue.message}</pre></p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {issue.statementIndex !== undefined && (
                       <span>Statement {issue.statementIndex + 1}</span>
