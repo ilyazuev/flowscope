@@ -20,7 +20,7 @@ import {
   loadFileSystemHandle,
   storeFileSystemHandle,
 } from './file-system-access';
-import { DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT } from './default-projects';
+import { DEFAULT_CUSTOMERS_PROJECT /*, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT*/ } from './default-projects';
 import { useBackend } from './backend-context';
 import { useBackendFiles } from '@/hooks/useBackendFiles';
 
@@ -305,7 +305,7 @@ const loadProjectsFromStorage = (): Project[] => {
   } catch (error) {
     console.error('Failed to load projects from storage:', error);
   }
-  return [DEFAULT_CUSTOMERS_PROJECT, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT].map((p) =>
+  return [DEFAULT_CUSTOMERS_PROJECT/*, DEFAULT_PROJECT, DEFAULT_DBT_PROJECT*/].map((p) =>
     normalizeProject(p)
   );
 };
