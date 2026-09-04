@@ -15,6 +15,7 @@ import { Compartment, StateField, StateEffect, Prec, EditorSelection } from '@co
 import { oneDark } from '@codemirror/theme-one-dark';
 import { cn } from '@pondpilot/flowscope-app/src/lib/utils';
 import {
+  cursorMatchingBracket,
   defaultKeymap,
   history,
   historyKeymap,
@@ -416,9 +417,24 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       [editable]
     );
 
+    const sqlGotoMatchingBracketShortcutExtension = useMemo(
+      () =>
+        Prec.highest(
+          keymap.of([
+            {
+              key: 'Ctrl-j',
+              preventDefault: true,
+              run: cursorMatchingBracket,
+            },
+          ])
+        ),
+      []
+    );
+
     const extensions = useMemo(
       () => [
         sqlCommentShortcutExtension,
+        sqlGotoMatchingBracketShortcutExtension,
         shortcutExtension, // EditorState.lineSeparator.of('\n'),
         sql({
           upperCaseKeywords: true,
@@ -452,6 +468,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         updateStatusState,
         shortcutExtension,
         sqlCommentShortcutExtension,
+        sqlGotoMatchingBracketShortcutExtension,
       ]
     );
 
