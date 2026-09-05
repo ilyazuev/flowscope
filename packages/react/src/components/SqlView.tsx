@@ -1,4 +1,4 @@
-import {
+import React, {
   useMemo,
   useCallback,
   useEffect,
@@ -405,12 +405,12 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             {
               key: 'Ctrl-b',
               preventDefault: true,
-              run: (view) => editable && commentSelectedLines(view),
+              run: (view: EditorView) => editable && commentSelectedLines(view),
             },
             {
               key: 'Ctrl-Shift-b',
               preventDefault: true,
-              run: (view) => editable && uncommentSelectedLines(view),
+              run: (view: EditorView) => editable && uncommentSelectedLines(view),
             },
           ])
         ),
@@ -857,7 +857,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             ref={editorRef}
             value={sqlText}
             onChange={handleChange}
-            onCreateEditor={(view) => {
+            onCreateEditor={(view: EditorView) => {
               setEditorView(view);
               updateToolbarState(view);
               updateStatusState(view);
@@ -916,7 +916,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
                 <div
                   ref={cteListRef}
-                  className="max-h-[240px] overflow-y-auto p-1"
+                  className="max-h-60 overflow-y-auto p-1"
                 >
                   {parsedCteNames.map((cteName) => (
                     <div
