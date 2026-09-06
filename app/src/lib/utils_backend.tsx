@@ -139,6 +139,22 @@ export async function devLineageExecuteSql(payload: SqlPayload) {
   return sqlPayloadResponse;
 }
 
+export async function devLineageInterruptRequests() {
+  const res = await fetch(
+    backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_INTERRUPTREQUESTS)
+  );
+  if (!res.ok) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+  }
+  const interruptRequestsResponse = await res.json();
+  if ('errorMessage' in interruptRequestsResponse && interruptRequestsResponse.errorMessage) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(interruptRequestsResponse.errorMessage as string);
+  }
+  console.log('Received interrupt response from backend');
+}
+
 export async function devLineageDataDescribe(payload: DataDescribePayload) {
   const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_DATADESCRIBE, payload));
   if (!res.ok) {

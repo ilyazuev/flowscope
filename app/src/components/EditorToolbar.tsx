@@ -123,6 +123,7 @@ export function EditorToolbar({
               <GraphTooltipProvider>
                 <GraphTooltip delayDuration={300}>
                   <GraphTooltipTrigger asChild>
+                    {/* Interrupt SQL Button */}
                     <Button
                       onClick={()=>onExecuteSql(SqlExecuteType.sql)}
                       disabled={

@@ -52,6 +52,7 @@ export enum SqlPartType {
   sql,
   cte,
   selection,
+  dataLoading,
 }
 
 export interface SqlPayload {

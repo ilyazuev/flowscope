@@ -242,7 +242,7 @@ export function LoadSQL({ database, userName, title, table, dialect }: LoadSQLPr
         if (response?.columnNames?.length) {
           setCurrentTable((prev) => ({
             ...prev,
-            columns: response.columnNames?.map((name) => ({ name })),
+            columns: response.columnNames?.map((name: string) => ({ name })),
           }));
         } else {
           setError(DATABASE_OBJECT_NOT_FOUND);
@@ -332,7 +332,7 @@ function FloatingSQLInner({ database, userName, title, initialSql, dialect }: Fl
       return false;
     }
     foundInSqlParameters.current = extractKnownSqlParamsInSqlOrder(sql, cachedParameters.current, dialect);
-    if ( !foundInSqlParameters.current || Object.keys(foundInSqlParameters.current).length === 0) {
+    if (!foundInSqlParameters.current || Object.keys(foundInSqlParameters.current).length === 0) {
       return false;
     }
     setNeedParameters(true);
@@ -342,7 +342,7 @@ function FloatingSQLInner({ database, userName, title, initialSql, dialect }: Fl
   const runSql = useCallback(
     (editedParameters?: SqlParameters) => {
       if ( !needParametersForSql(sql, editedParameters ) ) {
-        void runExecuteSql(sql, title, editedParameters, SqlPartType.sql, undefined, database, userName);
+        void runExecuteSql(sql, title, editedParameters, SqlPartType.dataLoading, undefined, database, userName);
       }
     },
     [runExecuteSql, sql, title]

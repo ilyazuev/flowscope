@@ -158,7 +158,7 @@ export function FloatingDescribe({
       setScript(null);
     } else {
       setErrorTable(null);
-      setDataLoadingState(SqlPartType.sql);
+      setDataLoadingState(SqlPartType.dataLoading);
       setCsv(null);
       setColumnsInfo(null);
     }

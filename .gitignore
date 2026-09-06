@@ -26,6 +26,7 @@ pkg/
 *.swo
 *~
 .DS_Store
+.idea/workspace.xml
 
 # Test artifacts
 coverage/
