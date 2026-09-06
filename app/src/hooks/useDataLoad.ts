@@ -162,6 +162,10 @@ export function useDataLoad() {
 
     try {
       await devLineageInterruptRequests();
+      setState((prev) => ({
+        ...prev,
+        dataLoadingError: 'Request(s) interrupted',
+      }));
     } catch (error) {
       if (requestIdRef.current !== requestId) {
         return;
