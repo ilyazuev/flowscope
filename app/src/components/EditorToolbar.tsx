@@ -35,6 +35,7 @@ interface EditorToolbarProps {
   backendReady: boolean;
   onAnalyze: () => void;
   onExecuteSql: (executeSql: SqlExecuteType) => void;
+  onInterruptRequests: () => void;
   onRunDescribe: () => void;
   onRunSqlPreview: () => void;
   onRevealInLineage: () => Promise<void>;
@@ -58,6 +59,7 @@ export function EditorToolbar({
   backendReady,
   onAnalyze,
   onExecuteSql,
+  onInterruptRequests,
   onRunDescribe,
   onRunSqlPreview,
   allFileCount,
@@ -71,6 +73,9 @@ export function EditorToolbar({
   onRevealInLineage,
   onOpenSchemaExplorer,
 }: EditorToolbarProps) {
+  const isSqlRequestRunning =
+    dataLoadingState === SqlPartType.sql || dataLoadingState === SqlPartType.cte;
+
   return (
     <div className="flex items-center justify-between px-3 py-2 border-b h-11 shrink-0 bg-muted/30 overflow-hidden gap-2">
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -120,12 +125,32 @@ export function EditorToolbar({
         <div className="flex items-center rounded-full overflow-hidden shadow-xs">
           {backendParsed(dialect) && (
             <>
+              {isSqlRequestRunning && (
+                <GraphTooltipProvider>
+                  <GraphTooltip>
+                    <GraphTooltipTrigger asChild>
+                      <Button
+                        onClick={onInterruptRequests}
+                        disabled={!backendReady}
+                        size="sm"
+                        variant="outline"
+                        aria-label="Interrupt all requests"
+                        className="h-8.5 w-8.5 p-0 rounded-full border-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 mr-1"
+                      >
+                        <span className="h-2.5 w-2.5 rounded-[1px] bg-red-600" />
+                      </Button>
+                    </GraphTooltipTrigger>
+                    <GraphTooltipContent>
+                      <p>interrupt all requests</p>
+                    </GraphTooltipContent>
+                  </GraphTooltip>
+                </GraphTooltipProvider>
+              )}
               <GraphTooltipProvider>
                 <GraphTooltip delayDuration={300}>
                   <GraphTooltipTrigger asChild>
-                    {/* Interrupt SQL Button */}
                     <Button
-                      onClick={()=>onExecuteSql(SqlExecuteType.sql)}
+                      onClick={() => onExecuteSql(SqlExecuteType.sql)}
                       disabled={
                         !backendReady || isAnalyzing || dataLoadingState !== SqlPartType.none
                       }

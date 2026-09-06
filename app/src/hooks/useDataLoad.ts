@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { SqlPayload, SqlPartType } from '@/lib/backend-adapter.ts';
-import { devLineageExecuteSql } from '@/lib/utils_backend.tsx';
+import { devLineageExecuteSql, devLineageInterruptRequests } from '@/lib/utils_backend.tsx';
 import { backendParsed, SqlParameters, useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
 
@@ -148,6 +148,33 @@ export function useDataLoad() {
     [currentProject, startRequest]
   );
 
+  const runInterruptRequests = useCallback(async () => {
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+
+    setState((prev) => ({
+      ...prev,
+      requestId,
+      dataLoadingState: SqlPartType.none,
+      dataLoadingError: null,
+      needParameters: false,
+    }));
+
+    try {
+      await devLineageInterruptRequests();
+    } catch (error) {
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        dataLoadingError: error instanceof Error ? error.message : 'Failed to interrupt requests',
+      }));
+      console.error(error);
+    }
+  }, []);
+
   const clear = useCallback(() => {
     requestIdRef.current += 1;
 
@@ -163,6 +190,7 @@ export function useDataLoad() {
   return {
     ...state,
     runExecuteSql,
+    runInterruptRequests,
     setDataLoadingError,
     setDataLoadingState: setDataLoadingState,
     setNeedParameters,

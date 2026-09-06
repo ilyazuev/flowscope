@@ -10,7 +10,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from 'react
 import { runWebSocket } from '@/lib/websocket';
 import type { ColumnInfoSchema } from '@pondpilot/flowscope-core';
 
-const baseBackendUrl = window.location.hostname == 'localhost' ? 'https://localhost' : '';
+const baseBackendUrl = window.location.hostname == 'localhost' ? `https://localhost` : '';
 
 function base64UrlEncodeUtf8Json(payload: unknown): string {
   const json = JSON.stringify(payload);
@@ -140,19 +140,13 @@ export async function devLineageExecuteSql(payload: SqlPayload) {
 }
 
 export async function devLineageInterruptRequests() {
-  const res = await fetch(
-    backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_INTERRUPTREQUESTS)
-  );
-  if (!res.ok) {
-    // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
-  }
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_INTERRUPTREQUESTS)); // if (!res.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`); }
   const interruptRequestsResponse = await res.json();
   if ('errorMessage' in interruptRequestsResponse && interruptRequestsResponse.errorMessage) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(interruptRequestsResponse.errorMessage as string);
   }
-  console.log('Received interrupt response from backend');
+  console.log('Received interrupt response from backend', interruptRequestsResponse);
 }
 
 export async function devLineageDataDescribe(payload: DataDescribePayload) {

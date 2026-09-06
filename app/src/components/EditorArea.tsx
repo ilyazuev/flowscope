@@ -131,6 +131,7 @@ export function EditorArea({
     dataLoadingState,
     setDataLoadingState,
     runExecuteSql,
+    runInterruptRequests,
     parameters,
     setParameters,
     needParameters,
@@ -709,6 +710,11 @@ export function EditorArea({
     [doExecuteSql]
   );
 
+  const handleInterruptRequests = useCallback(() => {
+    clearErrors();
+    void runInterruptRequests();
+  }, [clearErrors, runInterruptRequests]);
+
   const handleUseParameters = useCallback(
     (editedParameters: SqlParameters) => {
       if (activeFile) {
@@ -843,6 +849,7 @@ export function EditorArea({
         backendReady={backendReady}
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}
+        onInterruptRequests={handleInterruptRequests}
         onRunDescribe={() => handleRunAction('RunDescribe')}
         onRunSqlPreview={() => handleRunAction('RunSqlPreview')}
         onRevealInLineage={handleRevealInLineage}
