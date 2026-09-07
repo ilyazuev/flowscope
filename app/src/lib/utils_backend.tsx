@@ -124,8 +124,19 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
   return analysisResponse;
 }
 
-export async function devLineageExecuteSql(payload: SqlPayload) {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV, payload));
+function clientInstanceHeaders(clientInstanceId?: string) {
+  if (!clientInstanceId) {
+    return undefined;
+  }
+  const headers = new Headers();
+  headers.append('clientInstanceId', clientInstanceId);
+  return headers;
+}
+
+export async function devLineageExecuteSql(payload: SqlPayload, clientInstanceId?: string) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV, payload), {
+    headers: clientInstanceHeaders(clientInstanceId),
+  });
   if (!res.ok) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
@@ -139,14 +150,31 @@ export async function devLineageExecuteSql(payload: SqlPayload) {
   return sqlPayloadResponse;
 }
 
-export async function devLineageInterruptRequests() {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_INTERRUPTREQUESTS)); // if (!res.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`); }
-  const interruptRequestsResponse = await res.json();
+export async function devLineageInterruptRequests(clientInstanceId?: string) {
+  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_INTERRUPTREQUESTS), {
+    headers: clientInstanceHeaders(clientInstanceId),
+  });
+  if (!res.ok) {
+    // noinspection ExceptionCaughtLocallyJS
+    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+  }
+  const interruptRequestsResponse: { errorMessage?: string } = await res.json();
   if ('errorMessage' in interruptRequestsResponse && interruptRequestsResponse.errorMessage) {
     // noinspection ExceptionCaughtLocallyJS
     throw new Error(interruptRequestsResponse.errorMessage as string);
   }
   console.log('Received interrupt response from backend', interruptRequestsResponse);
+}
+
+export function devLineageInterruptRequestsOnUnload(clientInstanceId?: string) {
+  void fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_INTERRUPTREQUESTS), {
+    method: 'GET',
+    cache: 'no-store',
+    keepalive: true,
+    headers: clientInstanceHeaders(clientInstanceId),
+  }).catch((error) => {
+    console.warn('Failed to send interrupt request on page unload', error);
+  });
 }
 
 export async function devLineageDataDescribe(payload: DataDescribePayload) {

@@ -1,15 +1,28 @@
 import { useCallback, useRef, useState } from 'react';
 import { SqlPayload, SqlPartType } from '@/lib/backend-adapter.ts';
-import { devLineageExecuteSql, devLineageInterruptRequests } from '@/lib/utils_backend.tsx';
+import {
+  devLineageExecuteSql,
+  devLineageInterruptRequests,
+  devLineageInterruptRequestsOnUnload,
+} from '@/lib/utils_backend.tsx';
 import { backendParsed, SqlParameters, useProject } from '@/lib/project-store.tsx';
 import { DataLoadState } from '@/types';
+
+function createClientInstanceId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 export function useDataLoad() {
   const { currentProject } = useProject();
   const requestIdRef = useRef(0);
+  const clientInstanceIdRef = useRef(createClientInstanceId());
 
   const [state, setState] = useState<DataLoadState>({
     dataLoadingState: SqlPartType.none,
+    isSqlExecutionInFlight: false,
     requestId: 0,
     csv: null,
     dataLoadingError: null,
@@ -24,6 +37,7 @@ export function useDataLoad() {
       ...prev,
       requestId,
       dataLoadingState: partType,
+      isSqlExecutionInFlight: partType === SqlPartType.sql || partType === SqlPartType.cte,
       dataLoadingError: null,
       csv: null,
       needParameters: false,
@@ -83,6 +97,7 @@ export function useDataLoad() {
         setState((prev) => ({
           ...prev,
           dataLoadingState: SqlPartType.none,
+          isSqlExecutionInFlight: false,
           dataLoadingError: 'No SQL content to execute',
         }));
         return;
@@ -99,7 +114,7 @@ export function useDataLoad() {
           partType,
         };
 
-        const sqlPayloadResponse = await devLineageExecuteSql(sqlPayload);
+        const sqlPayloadResponse = await devLineageExecuteSql(sqlPayload, clientInstanceIdRef.current);
 
         if (requestIdRef.current !== requestId) {
           return;
@@ -110,6 +125,7 @@ export function useDataLoad() {
           setState((prev) => ({
             ...prev,
             dataLoadingState: needParameters ? partType : SqlPartType.none,
+            isSqlExecutionInFlight: false,
             dataLoadingError: needParameters ? null : 'No data response',
             csv: null,
             parameters: sqlPayloadResponse.parameters,
@@ -121,6 +137,7 @@ export function useDataLoad() {
         setState((prev) => ({
           ...prev,
           dataLoadingState: SqlPartType.none,
+          isSqlExecutionInFlight: false,
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
           parameters: sqlPayloadResponse.parameters,
@@ -139,6 +156,7 @@ export function useDataLoad() {
         setState((prev) => ({
           ...prev,
           dataLoadingState: SqlPartType.none,
+          isSqlExecutionInFlight: false,
           dataLoadingError: error instanceof Error ? error.message : 'Data load failed',
         }));
 
@@ -156,12 +174,13 @@ export function useDataLoad() {
       ...prev,
       requestId,
       dataLoadingState: SqlPartType.none,
+      isSqlExecutionInFlight: false,
       dataLoadingError: null,
       needParameters: false,
     }));
 
     try {
-      await devLineageInterruptRequests();
+      await devLineageInterruptRequests(clientInstanceIdRef.current);
       setState((prev) => ({
         ...prev,
         dataLoadingError: 'Request(s) interrupted',
@@ -186,15 +205,29 @@ export function useDataLoad() {
       ...prev,
       requestId: requestIdRef.current,
       dataLoadingState: SqlPartType.none,
+      isSqlExecutionInFlight: false,
       csv: null,
       dataLoadingError: null,
     }));
   }, []);
 
+  const runInterruptRequestsOnUnload = useCallback(() => {
+    if (!state.isSqlExecutionInFlight) {
+      return;
+    }
+
+    requestIdRef.current += 1;
+    void devLineageInterruptRequestsOnUnload(clientInstanceIdRef.current);
+  }, [state.isSqlExecutionInFlight]);
+
+  const isInterruptibleSqlExecutionInFlight = state.isSqlExecutionInFlight;
+
   return {
     ...state,
+    isInterruptibleSqlExecutionInFlight,
     runExecuteSql,
     runInterruptRequests,
+    runInterruptRequestsOnUnload,
     setDataLoadingError,
     setDataLoadingState: setDataLoadingState,
     setNeedParameters,

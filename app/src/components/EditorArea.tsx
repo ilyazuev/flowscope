@@ -129,6 +129,7 @@ export function EditorArea({
   const { isAnalyzing, error, runAnalysis, setError } = useAnalysis(backendReady, { adapter });
   const {
     dataLoadingState,
+    isInterruptibleSqlExecutionInFlight,
     setDataLoadingState,
     runExecuteSql,
     runInterruptRequests,
@@ -846,6 +847,7 @@ export function EditorArea({
         onRunModeChange={(mode: RunMode) => setRunMode(currentProject.id, mode)}
         isAnalyzing={isAnalyzing}
         dataLoadingState={dataLoadingState}
+        isInterruptibleSqlExecutionInFlight={isInterruptibleSqlExecutionInFlight}
         backendReady={backendReady}
         onAnalyze={handleAnalyze}
         onExecuteSql={handleExecuteSql}

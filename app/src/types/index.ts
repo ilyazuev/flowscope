@@ -66,6 +66,7 @@ export interface AnalysisState {
 
 export interface DataLoadState {
   dataLoadingState: SqlPartType;
+  isSqlExecutionInFlight: boolean;
   requestId: number;
   title?: string | null;
   csv?: string | null;

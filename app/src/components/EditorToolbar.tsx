@@ -32,6 +32,7 @@ interface EditorToolbarProps {
   onRunModeChange: (mode: RunMode) => void;
   isAnalyzing: boolean;
   dataLoadingState: SqlPartType;
+  isInterruptibleSqlExecutionInFlight: boolean;
   backendReady: boolean;
   onAnalyze: () => void;
   onExecuteSql: (executeSql: SqlExecuteType) => void;
@@ -56,6 +57,7 @@ export function EditorToolbar({
   onRunModeChange,
   isAnalyzing,
   dataLoadingState,
+  isInterruptibleSqlExecutionInFlight,
   backendReady,
   onAnalyze,
   onExecuteSql,
@@ -73,9 +75,6 @@ export function EditorToolbar({
   onRevealInLineage,
   onOpenSchemaExplorer,
 }: EditorToolbarProps) {
-  const isSqlRequestRunning =
-    dataLoadingState === SqlPartType.sql || dataLoadingState === SqlPartType.cte;
-
   return (
     <div className="flex items-center justify-between px-3 py-2 border-b h-11 shrink-0 bg-muted/30 overflow-hidden gap-2">
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -125,7 +124,7 @@ export function EditorToolbar({
         <div className="flex items-center rounded-full overflow-hidden shadow-xs">
           {backendParsed(dialect) && (
             <>
-              {isSqlRequestRunning && (
+              {isInterruptibleSqlExecutionInFlight && (
                 <GraphTooltipProvider>
                   <GraphTooltip>
                     <GraphTooltipTrigger asChild>
