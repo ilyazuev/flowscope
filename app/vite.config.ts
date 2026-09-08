@@ -8,6 +8,13 @@ export default defineConfig({
   plugins: [react(), wasm(), topLevelAwait()],
   server: {
     port: 3000,
+    proxy: {
+      '/idaf': {
+        target: 'https://localhost',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   resolve: {
     alias: {

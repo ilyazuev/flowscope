@@ -10,7 +10,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from 'react
 import { runWebSocket } from '@/lib/websocket';
 import type { ColumnInfoSchema } from '@pondpilot/flowscope-core';
 
-const baseBackendUrl = window.location.hostname == 'localhost' ? `https://localhost` : '';
+const baseBackendUrl = import.meta.env.VITE_BACKEND_BASE_URL ?? '';
 
 function base64UrlEncodeUtf8Json(payload: unknown): string {
   const json = JSON.stringify(payload);
@@ -42,6 +42,53 @@ function backendUrl<T>(backendEndpoint: string, payload?: T) {
   return `${baseBackendUrl}${backendUsecasePath(backendEndpoint, payload)}`;
 }
 
+function backendPostRequestFromEndpoint<T>(backendEndpoint: string, payload?: T) {
+  const endpointWithPayload = backendUsecasePath(backendEndpoint, payload);
+  const [pathPart, queryPart] = endpointWithPayload.split('?', 2);
+  const body = Object.fromEntries(new URLSearchParams(queryPart ?? '').entries());
+  return {
+    url: `${baseBackendUrl}${pathPart}`,
+    body,
+  };
+}
+
+type BackendErrorResponse = {
+  errorMessage?: unknown;
+  error?: unknown;
+};
+
+function backendErrorMessage(response: BackendErrorResponse): string | undefined {
+  if (typeof response.errorMessage === 'string' && response.errorMessage.trim()) {
+    return response.errorMessage;
+  }
+  if (typeof response.error === 'string' && response.error.trim()) {
+    return response.error;
+  }
+  return undefined;
+}
+
+async function handleError(res: Response): Promise<never> {
+  const responseText = await res.text();
+  const contentType = res.headers.get('content-type') ?? '';
+  let message: string | undefined;
+
+  if (responseText) {
+    if (contentType.includes('application/json')) {
+      try {
+        message = backendErrorMessage(JSON.parse(responseText) as BackendErrorResponse) ?? responseText;
+      } catch {
+        message = responseText;
+      }
+    } else {
+      message = responseText;
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch from backend: ${res.status} ${res.statusText}${message ? `. ${message}` : ''}`
+  );
+}
+
 let genericFormsCache: ColumnInfoSchema | null = null;
 let genericFormsRequest: Promise<ColumnInfoSchema | undefined> | null = null;
 export async function loadGenericForms(): Promise<ColumnInfoSchema | undefined> {
@@ -62,9 +109,7 @@ export async function loadGenericForms(): Promise<ColumnInfoSchema | undefined> 
       )
     );
     if (!res.ok) {
-      throw new Error(
-        `Failed to fetch from backend: ${res.status} ${res.statusText}`
-      );
+      await handleError(res);
     }
     const response: ColumnInfoSchema = await res.json();
     if ('errorMessage' in response && response.errorMessage) {
@@ -112,8 +157,7 @@ export async function devLineageAnalyze(adapterPayload: AnalysisPayload, current
     backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_PARSEFORLINEAGE, analysisPayloadEx)
   );
   if (!res.ok) {
-    // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+    await handleError(res);
   }
   const analysisResponse: Awaited<ReturnType<typeof analyzeWithWorker>> = await res.json();
   if ('errorMessage' in analysisResponse && analysisResponse.errorMessage) {
@@ -134,12 +178,20 @@ function clientInstanceHeaders(clientInstanceId?: string) {
 }
 
 export async function devLineageExecuteSql(payload: SqlPayload, clientInstanceId?: string) {
-  const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV, payload), {
-    headers: clientInstanceHeaders(clientInstanceId),
+  const { url, body } = backendPostRequestFromEndpoint(
+    import.meta.env.VITE_BACKEND_ENDPOINT_TOCSV,
+    payload
+  );
+  const headers = clientInstanceHeaders(clientInstanceId) ?? new Headers();
+  headers.append('Content-Type', 'application/json');
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
-    // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+    await handleError(res);
   }
   const sqlPayloadResponse: SqlPayloadResponse = await res.json();
   if ('errorMessage' in sqlPayloadResponse && sqlPayloadResponse.errorMessage) {
@@ -155,8 +207,7 @@ export async function devLineageInterruptRequests(clientInstanceId?: string) {
     headers: clientInstanceHeaders(clientInstanceId),
   });
   if (!res.ok) {
-    // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+    await handleError(res);
   }
   const interruptRequestsResponse: { errorMessage?: string } = await res.json();
   if ('errorMessage' in interruptRequestsResponse && interruptRequestsResponse.errorMessage) {
@@ -180,8 +231,7 @@ export function devLineageInterruptRequestsOnUnload(clientInstanceId?: string) {
 export async function devLineageDataDescribe(payload: DataDescribePayload) {
   const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_DATADESCRIBE, payload));
   if (!res.ok) {
-    // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+    await handleError(res);
   }
   const dataDescribePayloadResponse: DataDescribePayloadResponse = await res.json();
   if ('errorMessage' in dataDescribePayloadResponse && dataDescribePayloadResponse.errorMessage) {
@@ -194,8 +244,7 @@ export async function devLineageDataDescribe(payload: DataDescribePayload) {
 export async function devLineageLoadOwners(payload: CredentialsPayload) {
   const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADOWNERS, payload));
   if (!res.ok) {
-    // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+    await handleError(res);
   }
   const ownersPayloadResponse: OwnersPayloadResponse = await res.json();
   if ('errorMessage' in ownersPayloadResponse && ownersPayloadResponse.errorMessage) {
@@ -208,8 +257,7 @@ export async function devLineageLoadOwners(payload: CredentialsPayload) {
 export async function devLineageLoadDBObjects(payload: DBObjectsPayload) {
   const res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADDBOBJECTS, payload));
   if (!res.ok) {
-    // noinspection ExceptionCaughtLocallyJS
-    throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+    await handleError(res);
   }
   const dbObjectsPayloadResponse: DBObjectsPayloadResponse = await res.json();
   if ('errorMessage' in dbObjectsPayloadResponse && dbObjectsPayloadResponse.errorMessage) {
@@ -231,8 +279,7 @@ async function DATABASES(): Promise<DatabaseUsers> {
   try {
     res = await fetch(backendUrl(import.meta.env.VITE_BACKEND_ENDPOINT_LOADDATABASES)); // Simulate error example: // throw new Error("Backend is down");
     if (!res.ok) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw new Error(`Failed to fetch from backend: ${res.status} ${res.statusText}`);
+      await handleError(res);
     }
     const result = await res.json();
     if ('errorMessage' in result && result.errorMessage) {
