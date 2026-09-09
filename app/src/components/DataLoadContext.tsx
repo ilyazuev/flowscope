@@ -14,7 +14,7 @@ export function DataLoadProvider({ children }: { children: React.ReactNode }) {
       }
 
       event.preventDefault();
-      event.returnValue = '';
+      event.returnValue = ''; // const unloadConfirmMessage = 'Interrupt execution?';
     };
 
     const handlePageHide = (event: PageTransitionEvent) => {

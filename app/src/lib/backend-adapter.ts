@@ -65,6 +65,8 @@ export interface SqlPayload {
 }
 
 export interface SqlPayloadResponse {
+  database?: string;
+  userName?: string;
   csv?: string;
   errorMessage?: string;
   parameters?: SqlParameters;

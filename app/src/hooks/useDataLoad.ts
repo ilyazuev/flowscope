@@ -134,6 +134,12 @@ export function useDataLoad() {
           return;
         }
 
+        const dbUser =
+          (sqlPayloadResponse.database ? `${sqlPayloadResponse.database}` : '') +
+          (sqlPayloadResponse.userName ? `@${sqlPayloadResponse.userName}` : '');
+        const queryName = partType != SqlPartType.sql
+          ? `${SqlPartType[partType].toUpperCase()}${cteName ? ` (${cteName}) ` : ''}: `
+          : ''
         setState((prev) => ({
           ...prev,
           dataLoadingState: SqlPartType.none,
@@ -141,10 +147,7 @@ export function useDataLoad() {
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
           parameters: sqlPayloadResponse.parameters,
-          title:
-            (partType != SqlPartType.sql
-              ? `${SqlPartType[partType].toUpperCase()}${cteName ? ` (${cteName})` : ''}: `
-              : '') + activeFilePath,
+          title: `${dbUser ? `${dbUser}: ` : ''}${queryName}${activeFilePath}`,
           _lastLoadAt: Date.now(),
           needParameters,
         }));
