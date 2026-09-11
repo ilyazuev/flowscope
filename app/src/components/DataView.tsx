@@ -5,6 +5,8 @@ import '@perspective-dev/viewer-datagrid';
 import '@perspective-dev/viewer-d3fc';
 import '@perspective-dev/viewer/dist/css/themes.css';
 import { resolveTheme, useThemeStore } from '@/lib/theme-store.ts';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import SERVER_WASM from '@perspective-dev/server/dist/wasm/perspective-server.wasm?url';
 import CLIENT_WASM from '@perspective-dev/viewer/dist/wasm/perspective-viewer.wasm?url';
@@ -107,7 +109,18 @@ export function DataView({
   const lastAppliedRequestIdRef = useRef(0);
   const loadTokenRef = useRef(0);
 
-  const { dataLoadingState, dataLoadingError, csv, title, requestId } = useSharedDataLoad();
+  const {
+    dataLoadingState,
+    dataLoadingError,
+    csv,
+    title,
+    requestId,
+    fetchSession,
+    isFetchActionInFlight,
+    runFetchNext,
+    runFetchAll,
+    runFetchCancel,
+  } = useSharedDataLoad();
 
   const [status, setStatus] = useState<string | null>('Initialization...');
   const [error, setError] = useState<string | null>(null);
@@ -584,25 +597,76 @@ export function DataView({
   }, [csv, requestId, dataLoadingState, title]);
 
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-col">
       {!error && status && <div style={{ marginBottom: 12 }}>{status}</div>}
       {error && <pre style={{ color: 'crimson', whiteSpace: 'pre-wrap' }}>{error}</pre>}
-      <perspective-viewer
-        ref={(node) => {
-          if(node) {
-            node.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
-            const viewer = node as PerspectiveViewerElement;
-            hidePerspectiveThemeControl(viewer);
-            viewerRef.current = node as PerspectiveViewerElement | null;
-          } else {
-            viewerRef.current = null;
-          }
-        }}
-        style={{
-          width: !error && !status ? '100%' : '0',
-          height: !error && !status ? '100%' : '0',
-        }}
-      />
-    </>
+      <div className="min-h-0 flex-1">
+        <perspective-viewer
+          ref={(node) => {
+            if(node) {
+              node.setAttribute('theme', isDark ? 'Pro Dark' : 'Pro Light');
+              const viewer = node as PerspectiveViewerElement;
+              hidePerspectiveThemeControl(viewer);
+              viewerRef.current = node as PerspectiveViewerElement | null;
+            } else {
+              viewerRef.current = null;
+            }
+          }}
+          style={{
+            width: !error && !status ? '100%' : '0',
+            height: !error && !status ? '100%' : '0',
+          }}
+        />
+      </div>
+      {fetchSession && (
+        <div className="flex shrink-0 items-center justify-center gap-2 border-t border-border bg-muted/20 px-2 py-1.5">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="fetch-cancel-pulse h-6 gap-1 rounded-full border-red-600 px-2 text-[11px] text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                  onClick={() => {
+                    void runFetchCancel();
+                  }}
+                  disabled={isFetchActionInFlight}
+                >
+                  <span className="h-2 w-2 rounded-[1px] bg-red-600" />
+                  <span>cancel fetch</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Fetching window closes after one minute and will be cancelled automatically.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-6 rounded-full px-2 text-[11px]"
+            onClick={() => {
+              void runFetchNext();
+            }}
+            disabled={isFetchActionInFlight}
+          >
+            fetch next
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="h-6 rounded-full bg-brand-blue-500 px-2 text-[11px] text-white hover:bg-brand-blue-700"
+            onClick={() => {
+              void runFetchAll();
+            }}
+            disabled={isFetchActionInFlight}
+          >
+            fetch all
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -62,6 +62,9 @@ export interface SqlPayload {
   database?: string;
   userName?: string;
   parameters?: SqlParameters;
+  fetchMode?: 'init' | 'next' | 'all' | 'cancel';
+  fetchToken?: string;
+  chunkSize?: number;
 }
 
 export interface SqlPayloadResponse {
@@ -70,6 +73,12 @@ export interface SqlPayloadResponse {
   csv?: string;
   errorMessage?: string;
   parameters?: SqlParameters;
+  fetchMode?: 'init' | 'next' | 'all' | 'cancel';
+  fetchToken?: string;
+  chunkSize?: number;
+  rowsFetched?: number;
+  hasMore?: boolean;
+  cancelled?: boolean;
 }
 
 export enum DataDescribeType {

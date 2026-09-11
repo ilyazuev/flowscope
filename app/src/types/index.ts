@@ -67,6 +67,7 @@ export interface AnalysisState {
 export interface DataLoadState {
   dataLoadingState: SqlPartType;
   isSqlExecutionInFlight: boolean;
+  isFetchActionInFlight: boolean;
   requestId: number;
   title?: string | null;
   csv?: string | null;
@@ -74,6 +75,14 @@ export interface DataLoadState {
   _lastLoadAt: number | null;
   parameters?: SqlParameters;
   needParameters: boolean;
+  fetchSession: FetchSessionState | null;
+}
+
+export interface FetchSessionState {
+  fetchToken: string;
+  chunkSize?: number;
+  rowsFetched?: number;
+  expiresAt: number;
 }
 
 export interface DataDescribeState {

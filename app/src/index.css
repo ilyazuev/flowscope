@@ -427,3 +427,17 @@
 .react-flow__node div[role=list] {
   height: auto !important;
 }
+
+.fetch-cancel-pulse {
+  animation: fetch-cancel-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes fetch-cancel-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
