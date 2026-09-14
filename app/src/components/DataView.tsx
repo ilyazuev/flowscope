@@ -30,6 +30,10 @@ type PerspectiveViewerElement = HTMLElement & {
 type PerspectiveWorker = Awaited<ReturnType<typeof perspective.worker>>;
 
 type PerspectiveTable = {
+  update?: (
+    value: string | ArrayBuffer | Record<string, unknown[]> | Record<string, unknown>[],
+    options?: { format: 'csv' | 'json' | 'columns' | 'arrow' | null; port_id: number | null },
+  ) => Promise<void>;
   delete?: (options?: { lazy?: boolean }) => Promise<void>;
 };
 
@@ -107,7 +111,9 @@ export function DataView({
   const tableRef = useRef<PerspectiveTable | null>(null);
   const initializedRef = useRef(false);
   const lastAppliedRequestIdRef = useRef(0);
+  const lastAppliedLoadAtRef = useRef(0);
   const loadTokenRef = useRef(0);
+  const csvHeaderRef = useRef<string | null>(null);
 
   const {
     dataLoadingState,
@@ -115,6 +121,8 @@ export function DataView({
     csv,
     title,
     requestId,
+    _lastLoadAt,
+    csvUpdateMode,
     fetchSession,
     isFetchActionInFlight,
     runFetchNext,
@@ -150,13 +158,13 @@ export function DataView({
       setError('Data Loading Error: ' + dataLoadingError);
     } else {
       setError(null);
-      if (dataLoadingState) {
+      if (dataLoadingState && !isFetchActionInFlight) {
         setStatus('Data loading...');
       } else {
         setStatus(null);
       }
     }
-  }, [dataLoadingState, dataLoadingError]);
+  }, [dataLoadingState, dataLoadingError, isFetchActionInFlight]);
 
 
   const safeDeleteTable = async (table: PerspectiveTable | null) => {
@@ -457,7 +465,28 @@ export function DataView({
     observer.observe(regularTable, observerOptions);
   };
 
-  const loadCsvToViewer = async (csv: string, title?: string | null) => {
+  const applyTableEnhancements = (viewer: PerspectiveViewerElement) => {
+    hidePerspectiveThemeControl(viewer);
+
+    if (rowButtons) {
+      attachRowButtons(viewer, rowButtons);
+    }
+
+    if(onRowDoubleClick) {
+      attachRowDoubleClickHandler(viewer, onRowDoubleClick);
+    }
+    const elements = viewer.getElementsByTagName('perspective-viewer-datagrid');
+    if( elements && elements.length > 0 ){
+      const tds = elements[0].shadowRoot?.querySelectorAll('regular-table > table td, regular-table > table th');
+      if (tds && elements.length > 0) {
+        for (const td of tds) {
+          (td as HTMLElement).style.boxShadow = '1px 0px var(--psp-inactive--border-color, #8b868045)';
+        }
+      }
+    }
+  };
+
+  const replaceCsvInViewer = async (csv: string, title?: string | null) => {
     const token = ++loadTokenRef.current;
 
     const viewer = viewerRef.current;
@@ -473,6 +502,8 @@ export function DataView({
     const table = await workerRef.current.table(csv, {
       format: 'csv',
     });
+    const normalizedCsv = csv.replace(/\r\n/g, '\n').trimEnd();
+    csvHeaderRef.current = normalizedCsv.length > 0 ? normalizedCsv.split('\n', 1)[0] : null;
 
     if (token !== loadTokenRef.current || viewerRef.current !== viewer) {
       await safeDeleteTable(table as PerspectiveTable);
@@ -497,27 +528,48 @@ export function DataView({
       },
     });
 
-    hidePerspectiveThemeControl(viewer); // const themeElements = viewer.shadowRoot?.querySelectorAll('#theme_icon, #theme'); for (const themeElement of themeElements ?? []) {  //(themeElement as HTMLElement).style.display = 'none'; (themeElement as HTMLElement).remove(); }
-
-    if (rowButtons) {
-      attachRowButtons(viewer, rowButtons);
-    }
-
-    if(onRowDoubleClick) {
-      attachRowDoubleClickHandler(viewer, onRowDoubleClick);
-    }
-    const elements = viewer.getElementsByTagName('perspective-viewer-datagrid');
-    if( elements && elements.length > 0 ){
-      const tds = elements[0].shadowRoot?.querySelectorAll('regular-table > table td, regular-table > table th');
-      if (tds && elements.length > 0) {
-        for (const td of tds) {
-          (td as HTMLElement).style.boxShadow = '1px 0px var(--psp-inactive--border-color, #8b868045)'; //style.boxShadow = '1px 0px var(--inactive--border-color, #8b868045)';
-        }
-      }
-      
-    }
+    applyTableEnhancements(viewer);
 
     await safeDeleteTable(prevTable); // await prevTable?.delete?.();
+  };
+
+  const appendCsvToViewer = async (csv: string, title?: string | null) => {
+    const token = ++loadTokenRef.current;
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const table = tableRef.current;
+    if (!table?.update) {
+      await replaceCsvInViewer(csv, title);
+      return;
+    }
+
+    const normalizedCsv = csv.replace(/\r\n/g, '\n').trimEnd();
+    if (!normalizedCsv) {
+      return;
+    }
+
+    const knownHeader = csvHeaderRef.current;
+    const lines = normalizedCsv.split('\n');
+    const hasHeader = !!knownHeader && lines[0] === knownHeader;
+    const chunkForUpdate = knownHeader && !hasHeader
+      ? `${knownHeader}\n${normalizedCsv}`
+      : normalizedCsv;
+
+    if (!chunkForUpdate.trim()) {
+      return;
+    }
+
+    await table.update(chunkForUpdate, {
+      format: 'csv',
+      port_id: null,
+    });
+
+    if (token !== loadTokenRef.current || viewerRef.current !== viewer) {
+      return;
+    }
+
+    applyTableEnhancements(viewer);
   };
 
   useEffect(() => {
@@ -534,7 +586,7 @@ export function DataView({
         const currentCsv = csv ?? '_\n'; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
         const currentTitle = csv ? title: null;
         if (cancelled) return;
-        await loadCsvToViewer(currentCsv, currentTitle);
+        await replaceCsvInViewer(currentCsv, currentTitle);
         setStatus(null);
         initializedRef.current = true;
       } catch (e) {
@@ -568,23 +620,47 @@ export function DataView({
   }, []);
 
   useEffect(() => {
-    if (!requestId) return;
-    if (dataLoadingState !== SqlPartType.none) return;
     if (dataLoadingError) {
       return;
     }
+    if (csvUpdateMode === 'append') {
+      if (!_lastLoadAt || lastAppliedLoadAtRef.current === _lastLoadAt) {
+        return;
+      }
+      const currentCsv = csv ?? '';
+      if (!currentCsv.trim()) {
+        return;
+      }
+      lastAppliedLoadAtRef.current = _lastLoadAt;
+      const run = async () => {
+        try {
+          await appendCsvToViewer(currentCsv, title);
+          setStatus(null);
+        } catch (e) {
+          const message = e instanceof Error ? e.message : 'Unknown error';
+          setError(message);
+          setStatus(null);
+        }
+      };
+      void run();
+      return;
+    }
+
+    if (!requestId) return;
+    if (dataLoadingState !== SqlPartType.none) return;
     if (lastAppliedRequestIdRef.current === requestId) return; // if (!initializedRef.current) return;
 
     lastAppliedRequestIdRef.current = requestId;
 
-    if (!csv?.trim()) {
+    if (csvUpdateMode === 'replace' && !csv?.trim()) {
       setError(null);
       setStatus('No data');
       return;
     }
     const run = async () => {
       try {
-        await loadCsvToViewer(csv, title);
+        const currentCsv = csv ?? '';
+        await replaceCsvInViewer(currentCsv, title);
         setStatus(null);
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown error';
@@ -594,7 +670,7 @@ export function DataView({
     };
 
     void run();
-  }, [csv, requestId, dataLoadingState, title]);
+  }, [csv, requestId, dataLoadingState, title, csvUpdateMode, _lastLoadAt, dataLoadingError]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -631,7 +707,6 @@ export function DataView({
                   onClick={() => {
                     void runFetchCancel();
                   }}
-                  disabled={isFetchActionInFlight}
                 >
                   <span className="h-2 w-2 rounded-[1px] bg-red-600" />
                   <span>cancel fetch</span>

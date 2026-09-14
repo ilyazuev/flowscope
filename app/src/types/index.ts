@@ -69,6 +69,7 @@ export interface DataLoadState {
   isSqlExecutionInFlight: boolean;
   isFetchActionInFlight: boolean;
   requestId: number;
+  csvUpdateMode: 'replace' | 'append';
   title?: string | null;
   csv?: string | null;
   dataLoadingError: string | null;

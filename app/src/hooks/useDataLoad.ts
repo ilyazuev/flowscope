@@ -17,47 +17,20 @@ function createClientInstanceId() {
 
 const FETCH_WIDGET_TIMEOUT_MS = 55_000;
 
-function normalizeCsv(csv: string): string {
-  return csv.replace(/\r\n/g, '\n').trimEnd();
-}
-
-function mergeFetchedCsv(existingCsv?: string | null, incomingCsv?: string | null): string | null {
-  if (!incomingCsv?.trim()) {
-    return existingCsv?.trim() ? existingCsv : null;
-  }
-  if (!existingCsv?.trim()) {
-    return incomingCsv;
-  }
-
-  const existing = normalizeCsv(existingCsv);
-  const incoming = normalizeCsv(incomingCsv);
-
-  if (incoming === existing || incoming.startsWith(`${existing}\n`)) {
-    return incoming;
-  }
-
-  const existingLines = existing.split('\n');
-  const incomingLines = incoming.split('\n');
-  if (existingLines[0] && incomingLines[0] && existingLines[0] === incomingLines[0]) {
-    if (incomingLines.length === 1) {
-      return existing;
-    }
-    return `${existing}\n${incomingLines.slice(1).join('\n')}`;
-  }
-  return `${existing}\n${incoming}`;
-}
-
 export function useDataLoad() {
   const { currentProject } = useProject();
   const requestIdRef = useRef(0);
   const clientInstanceIdRef = useRef(createClientInstanceId());
   const fetchRequestPayloadRef = useRef<SqlPayload | null>(null);
+  const fetchSessionRef = useRef<FetchSessionState | null>(null);
+  const fetchAllLoopTokenRef = useRef(0);
 
   const [state, setState] = useState<DataLoadState>({
     dataLoadingState: SqlPartType.none,
     isSqlExecutionInFlight: false,
     isFetchActionInFlight: false,
     requestId: 0,
+    csvUpdateMode: 'replace',
     csv: null,
     dataLoadingError: null,
     _lastLoadAt: null,
@@ -65,9 +38,14 @@ export function useDataLoad() {
     fetchSession: null,
   });
 
+  useEffect(() => {
+    fetchSessionRef.current = state.fetchSession;
+  }, [state.fetchSession]);
+
   const startRequest = useCallback((partType: SqlPartType) => {
     requestIdRef.current += 1;
     const requestId = requestIdRef.current;
+    fetchAllLoopTokenRef.current += 1;
     fetchRequestPayloadRef.current = null;
     setState((prev) => ({
       ...prev,
@@ -75,6 +53,7 @@ export function useDataLoad() {
       dataLoadingState: partType,
       isSqlExecutionInFlight: partType === SqlPartType.sql || partType === SqlPartType.cte,
       isFetchActionInFlight: false,
+      csvUpdateMode: 'replace',
       dataLoadingError: null,
       csv: null,
       needParameters: false,
@@ -98,6 +77,7 @@ export function useDataLoad() {
     setState((prev) => ({
       ...prev,
       requestId: requestIdRef.current,
+      csvUpdateMode: 'replace',
       csv,
       title: title ?? prev.title,
       dataLoadingError: null,
@@ -114,17 +94,15 @@ export function useDataLoad() {
   }, []);
 
   const runFetchAction = useCallback(
-    async (fetchMode: 'next' | 'all' | 'cancel', options?: { silentError?: boolean }) => {
+    async (fetchMode: 'next' | 'cancel', options?: { silentError?: boolean }) => {
       const fetchPayloadBase = fetchRequestPayloadRef.current;
-      const fetchSession = state.fetchSession;
+      const fetchSession = fetchSessionRef.current;
       if (!fetchPayloadBase || !fetchSession) {
         return;
       }
 
       requestIdRef.current += 1;
       const requestId = requestIdRef.current;
-      const previousCsv = state.csv;
-      const previousLoadAt = state._lastLoadAt;
       if (fetchMode === 'cancel') {
         fetchRequestPayloadRef.current = null;
       }
@@ -144,8 +122,8 @@ export function useDataLoad() {
           {
             ...fetchPayloadBase,
             fetchMode,
-            fetchToken: fetchSession.fetchToken,
-            chunkSize: fetchSession.chunkSize,
+            fetchToken: fetchPayloadBase.fetchToken ?? fetchSession.fetchToken,
+            chunkSize: fetchPayloadBase.chunkSize ?? fetchSession.chunkSize,
           },
           clientInstanceIdRef.current
         );
@@ -172,8 +150,10 @@ export function useDataLoad() {
             fetchToken: nextFetchSession.fetchToken,
             chunkSize: nextFetchSession.chunkSize,
           };
+          fetchSessionRef.current = nextFetchSession;
         } else {
           fetchRequestPayloadRef.current = null;
+          fetchSessionRef.current = null;
         }
 
         setState((prev) => ({
@@ -183,12 +163,10 @@ export function useDataLoad() {
           isSqlExecutionInFlight: false,
           isFetchActionInFlight: false,
           dataLoadingError: null,
-          csv:
-            fetchMode === 'cancel'
-              ? prev.csv
-              : mergeFetchedCsv(previousCsv, sqlPayloadResponse.csv) ?? prev.csv ?? null,
+          csvUpdateMode: fetchMode === 'cancel' ? prev.csvUpdateMode : 'append',
+          csv: fetchMode === 'cancel' ? prev.csv : (sqlPayloadResponse.csv ?? prev.csv ?? null),
           parameters: sqlPayloadResponse.parameters ?? prev.parameters,
-          _lastLoadAt: fetchMode === 'cancel' ? previousLoadAt : Date.now(),
+          _lastLoadAt: fetchMode === 'cancel' ? prev._lastLoadAt : Date.now(),
           fetchSession: nextFetchSession,
         }));
       } catch (error) {
@@ -201,6 +179,7 @@ export function useDataLoad() {
           dataLoadingState: SqlPartType.none,
           isSqlExecutionInFlight: false,
           isFetchActionInFlight: false,
+          fetchSession: fetchMode === 'cancel' ? null : prev.fetchSession,
           dataLoadingError:
             options?.silentError && fetchMode === 'cancel'
               ? prev.dataLoadingError
@@ -208,11 +187,14 @@ export function useDataLoad() {
                 ? error.message
                 : 'Data load failed',
         }));
+        if (fetchMode === 'cancel') {
+          fetchSessionRef.current = null;
+        }
 
         console.error(error);
       }
     },
-    [state.fetchSession, state.csv, state._lastLoadAt]
+    []
   );
 
   const runExecuteSql = useCallback(
@@ -279,8 +261,10 @@ export function useDataLoad() {
             fetchToken: fetchSession.fetchToken,
             chunkSize: fetchSession.chunkSize,
           };
+          fetchSessionRef.current = fetchSession;
         } else {
           fetchRequestPayloadRef.current = null;
+          fetchSessionRef.current = null;
         }
 
         if (!sqlPayloadResponse.csv) {
@@ -289,6 +273,7 @@ export function useDataLoad() {
             dataLoadingState: needParameters ? partType : SqlPartType.none,
             isSqlExecutionInFlight: false,
             isFetchActionInFlight: false,
+            csvUpdateMode: 'replace',
             dataLoadingError: needParameters ? null : 'No data response',
             csv: null,
             parameters: sqlPayloadResponse.parameters,
@@ -309,6 +294,7 @@ export function useDataLoad() {
           dataLoadingState: SqlPartType.none,
           isSqlExecutionInFlight: false,
           isFetchActionInFlight: false,
+          csvUpdateMode: 'replace',
           dataLoadingError: null,
           csv: sqlPayloadResponse.csv,
           parameters: sqlPayloadResponse.parameters,
@@ -327,10 +313,12 @@ export function useDataLoad() {
           dataLoadingState: SqlPartType.none,
           isSqlExecutionInFlight: false,
           isFetchActionInFlight: false,
+          csvUpdateMode: 'replace',
           dataLoadingError: error instanceof Error ? error.message : 'Data load failed',
           fetchSession: null,
         }));
         fetchRequestPayloadRef.current = null;
+        fetchSessionRef.current = null;
 
         console.error(error);
       }
@@ -339,15 +327,26 @@ export function useDataLoad() {
   );
 
   const runFetchNext = useCallback(async () => {
+    fetchAllLoopTokenRef.current += 1;
     await runFetchAction('next');
   }, [runFetchAction]);
 
   const runFetchAll = useCallback(async () => {
-    await runFetchAction('all');
+    const loopToken = ++fetchAllLoopTokenRef.current;
+    while (loopToken === fetchAllLoopTokenRef.current && fetchSessionRef.current) {
+      await runFetchAction('next');
+      if (loopToken !== fetchAllLoopTokenRef.current) {
+        return;
+      }
+      if (!fetchSessionRef.current) {
+        return;
+      }
+    }
   }, [runFetchAction]);
 
   const runFetchCancel = useCallback(
     async (options?: { silentError?: boolean }) => {
+      fetchAllLoopTokenRef.current += 1;
       await runFetchAction('cancel', options);
     },
     [runFetchAction]
@@ -369,7 +368,9 @@ export function useDataLoad() {
   const runInterruptRequests = useCallback(async () => {
     requestIdRef.current += 1;
     const requestId = requestIdRef.current;
+    fetchAllLoopTokenRef.current += 1;
     fetchRequestPayloadRef.current = null;
+    fetchSessionRef.current = null;
 
     setState((prev) => ({
       ...prev,
@@ -377,6 +378,7 @@ export function useDataLoad() {
       dataLoadingState: SqlPartType.none,
       isSqlExecutionInFlight: false,
       isFetchActionInFlight: false,
+      csvUpdateMode: 'replace',
       dataLoadingError: null,
       needParameters: false,
       fetchSession: null,
@@ -403,6 +405,7 @@ export function useDataLoad() {
 
   const clear = useCallback(() => {
     requestIdRef.current += 1;
+    fetchAllLoopTokenRef.current += 1;
 
     setState((prev) => ({
       ...prev,
@@ -410,11 +413,13 @@ export function useDataLoad() {
       dataLoadingState: SqlPartType.none,
       isSqlExecutionInFlight: false,
       isFetchActionInFlight: false,
+      csvUpdateMode: 'replace',
       csv: null,
       dataLoadingError: null,
       fetchSession: null,
     }));
     fetchRequestPayloadRef.current = null;
+    fetchSessionRef.current = null;
   }, []);
 
   const runInterruptRequestsOnUnload = useCallback(() => {
