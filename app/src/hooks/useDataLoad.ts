@@ -120,7 +120,9 @@ export function useDataLoad() {
       try {
         const sqlPayloadResponse = await devLineageExecuteSql(
           {
-            ...fetchPayloadBase,
+            content: '',
+            database: fetchPayloadBase.database,
+            userName: fetchPayloadBase.userName,
             fetchMode,
             fetchToken: fetchPayloadBase.fetchToken ?? fetchSession.fetchToken,
             chunkSize: fetchPayloadBase.chunkSize ?? fetchSession.chunkSize,
@@ -146,7 +148,9 @@ export function useDataLoad() {
 
         if (nextFetchSession) {
           fetchRequestPayloadRef.current = {
-            ...fetchPayloadBase,
+            content: '',
+            database: fetchPayloadBase.database,
+            userName: fetchPayloadBase.userName,
             fetchToken: nextFetchSession.fetchToken,
             chunkSize: nextFetchSession.chunkSize,
           };
@@ -257,7 +261,9 @@ export function useDataLoad() {
 
         if (fetchSession) {
           fetchRequestPayloadRef.current = {
-            ...sqlPayload,
+            content: '',
+            database: sqlPayload.database,
+            userName: sqlPayload.userName,
             fetchToken: fetchSession.fetchToken,
             chunkSize: fetchSession.chunkSize,
           };

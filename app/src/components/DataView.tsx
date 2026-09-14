@@ -572,6 +572,21 @@ export function DataView({
     applyTableEnhancements(viewer);
   };
 
+  const runCsvUpdate = async (isAppend: boolean, csvText: string, currentTitle?: string | null) => {
+    try {
+      if (isAppend) {
+        await appendCsvToViewer(csvText, currentTitle);
+      } else {
+        await replaceCsvInViewer(csvText, currentTitle);
+      }
+      setStatus(null);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      setError(message);
+      setStatus(null);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -586,8 +601,7 @@ export function DataView({
         const currentCsv = csv ?? '_\n'; // const response = await fetch('/mock/customers.csv'); if (!response.ok) { // noinspection ExceptionCaughtLocallyJS throw new Error(`Failed to load data: ${response.status}`); } const csv = await response.text();
         const currentTitle = csv ? title: null;
         if (cancelled) return;
-        await replaceCsvInViewer(currentCsv, currentTitle);
-        setStatus(null);
+        await runCsvUpdate(false, currentCsv, currentTitle);
         initializedRef.current = true;
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown error';
@@ -632,17 +646,7 @@ export function DataView({
         return;
       }
       lastAppliedLoadAtRef.current = _lastLoadAt;
-      const run = async () => {
-        try {
-          await appendCsvToViewer(currentCsv, title);
-          setStatus(null);
-        } catch (e) {
-          const message = e instanceof Error ? e.message : 'Unknown error';
-          setError(message);
-          setStatus(null);
-        }
-      };
-      void run();
+      void runCsvUpdate(true, currentCsv, title);
       return;
     }
 
@@ -657,19 +661,7 @@ export function DataView({
       setStatus('No data');
       return;
     }
-    const run = async () => {
-      try {
-        const currentCsv = csv ?? '';
-        await replaceCsvInViewer(currentCsv, title);
-        setStatus(null);
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown error';
-        setError(message);
-        setStatus(null);
-      }
-    };
-
-    void run();
+    void runCsvUpdate(false, csv ?? '', title);
   }, [csv, requestId, dataLoadingState, title, csvUpdateMode, _lastLoadAt, dataLoadingError]);
 
   return (
