@@ -132,6 +132,7 @@ export function useDataLoad() {
       setState((prev) => ({
         ...prev,
         requestId,
+        dataLoadingState: SqlPartType.dataLoading,
         isSqlExecutionInFlight: true,
         isFetchActionInFlight: true,
         dataLoadingError: null,
