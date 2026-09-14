@@ -429,7 +429,7 @@
 }
 
 .fetch-cancel-pulse {
-  animation: fetch-cancel-pulse 2.2s ease-in-out infinite;
+  animation: fetch-cancel-pulse 1.2s ease-in-out infinite;
 }
 
 @keyframes fetch-cancel-pulse {
@@ -438,6 +438,6 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.45;
+    opacity: 0.25;
   }
 }

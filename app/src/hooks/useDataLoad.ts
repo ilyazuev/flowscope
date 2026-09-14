@@ -178,12 +178,19 @@ export function useDataLoad() {
           return;
         }
 
+        const shouldCloseFetchSession = fetchMode !== 'cancel';
+        if (shouldCloseFetchSession) {
+          fetchRequestPayloadRef.current = null;
+          fetchSessionRef.current = null;
+          fetchAllLoopTokenRef.current += 1;
+        }
+
         setState((prev) => ({
           ...prev,
           dataLoadingState: SqlPartType.none,
           isSqlExecutionInFlight: false,
           isFetchActionInFlight: false,
-          fetchSession: fetchMode === 'cancel' ? null : prev.fetchSession,
+          fetchSession: shouldCloseFetchSession ? null : prev.fetchSession,
           dataLoadingError:
             options?.silentError && fetchMode === 'cancel'
               ? prev.dataLoadingError
@@ -191,7 +198,7 @@ export function useDataLoad() {
                 ? error.message
                 : 'Data load failed',
         }));
-        if (fetchMode === 'cancel') {
+        if (!shouldCloseFetchSession) {
           fetchSessionRef.current = null;
         }
 

@@ -131,6 +131,7 @@ function buildSchemaPreviewSql(
     : 'SELECT';
 
   const sql = `${selectLine}
+-- COUNT(*) AS total_rows
 \t${columns}
 FROM ${tableName}
 WHERE 1 = 1
@@ -271,7 +272,7 @@ export function LoadSQL({ database, userName, title, table, dialect }: LoadSQLPr
   return (currentTable.columns?.length ?? 0) > 0 ? (
     <FloatingSQL
       database={innerDatabase}
-      userName={`${currentTable.schema},${innerUserName}`}
+      userName={`${currentTable.schema ? currentTable.schema + ',' : ''}${innerUserName}`}
       title={title}
       initialSql={buildSchemaPreviewSql(currentTable, dialect)}
       dialect={dialect}
