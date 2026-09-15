@@ -668,7 +668,57 @@ export function DataView({
     <div className="flex h-full min-h-0 flex-col">
       {!error && status && <div style={{ marginBottom: 12 }}>{status}</div>}
       {error && <pre style={{ color: 'crimson', whiteSpace: 'pre-wrap' }}>{error}</pre>}
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
+        {fetchSession && (
+          <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2">
+            <div className="pointer-events-auto flex items-center justify-center gap-2 bg-transparent px-2 py-1.5">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="fetch-cancel-pulse h-6 gap-1 rounded-full border-red-600 px-2 text-[11px] text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                      onClick={() => {
+                        void runFetchCancel();
+                      }}
+                    >
+                      <span className="h-2 w-2 rounded-[1px] bg-red-600" />
+                      <span>cancel fetch</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Fetching window closes after one minute and will be cancelled automatically.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-6 rounded-full px-2 text-[11px]"
+                onClick={() => {
+                  void runFetchNext();
+                }}
+                disabled={isFetchActionInFlight}
+              >
+                fetch next
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-6 rounded-full bg-brand-blue-500 px-2 text-[11px] text-white hover:bg-brand-blue-700"
+                onClick={() => {
+                  void runFetchAll();
+                }}
+                disabled={isFetchActionInFlight}
+              >
+                fetch all
+              </Button>
+            </div>
+          </div>
+        )}
         <perspective-viewer
           ref={(node) => {
             if(node) {
@@ -686,54 +736,6 @@ export function DataView({
           }}
         />
       </div>
-      {fetchSession && (
-        <div className="flex shrink-0 items-center justify-center gap-2 border-t border-border bg-muted/20 px-2 py-1.5">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="fetch-cancel-pulse h-6 gap-1 rounded-full border-red-600 px-2 text-[11px] text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                  onClick={() => {
-                    void runFetchCancel();
-                  }}
-                >
-                  <span className="h-2 w-2 rounded-[1px] bg-red-600" />
-                  <span>cancel fetch</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Fetching window closes after one minute and will be cancelled automatically.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-6 rounded-full px-2 text-[11px]"
-            onClick={() => {
-              void runFetchNext();
-            }}
-            disabled={isFetchActionInFlight}
-          >
-            fetch next
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            className="h-6 rounded-full bg-brand-blue-500 px-2 text-[11px] text-white hover:bg-brand-blue-700"
-            onClick={() => {
-              void runFetchAll();
-            }}
-            disabled={isFetchActionInFlight}
-          >
-            fetch all
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
