@@ -70,10 +70,68 @@ interface SchemaExplorerCachedState {
   filterDBObjectsTextHistory: FilterDBObjectsTextHistory[];
 }
 
-const schemaExplorerStateCache = new Map<string, SchemaExplorerCachedState>();
+interface SchemaExplorerCacheEntry {
+  state: SchemaExplorerCachedState;
+  expiresAt: number;
+  lastAccessedAt: number;
+}
+
+const SCHEMA_EXPLORER_CACHE_MAX_ENTRIES = 4;
+const SCHEMA_EXPLORER_CACHE_TTL_MS = 15 * 60_000;
+
+const schemaExplorerStateCache = new Map<string, SchemaExplorerCacheEntry>();
 
 const createSchemaExplorerStateCacheKey = (database: string, userName: string) =>
   `${database}\u0000${userName}`;
+
+const pruneExpiredSchemaExplorerCacheEntries = (now: number) => {
+  for (const [key, entry] of schemaExplorerStateCache.entries()) {
+    if (entry.expiresAt <= now) {
+      schemaExplorerStateCache.delete(key);
+    }
+  }
+};
+
+const getSchemaExplorerCachedState = (cacheKey: string): SchemaExplorerCachedState | null => {
+  const now = Date.now();
+  pruneExpiredSchemaExplorerCacheEntries(now);
+  const entry = schemaExplorerStateCache.get(cacheKey);
+  if (!entry) {
+    return null;
+  }
+  entry.lastAccessedAt = now;
+  return entry.state;
+};
+
+const setSchemaExplorerCachedState = (cacheKey: string, state: SchemaExplorerCachedState) => {
+  const now = Date.now();
+  pruneExpiredSchemaExplorerCacheEntries(now);
+
+  if (!schemaExplorerStateCache.has(cacheKey)) {
+    while (schemaExplorerStateCache.size >= SCHEMA_EXPLORER_CACHE_MAX_ENTRIES) {
+      let lruKey: string | null = null;
+      let lruLastAccessedAt = Number.POSITIVE_INFINITY;
+
+      for (const [key, entry] of schemaExplorerStateCache.entries()) {
+        if (entry.lastAccessedAt < lruLastAccessedAt) {
+          lruLastAccessedAt = entry.lastAccessedAt;
+          lruKey = key;
+        }
+      }
+
+      if (!lruKey) {
+        break;
+      }
+      schemaExplorerStateCache.delete(lruKey);
+    }
+  }
+
+  schemaExplorerStateCache.set(cacheKey, {
+    state,
+    expiresAt: now + SCHEMA_EXPLORER_CACHE_TTL_MS,
+    lastAccessedAt: now,
+  });
+};
 
 function DBObjectsCsvView({
   csv,
@@ -109,10 +167,12 @@ function DatabaseUserSelect({
   database,
   userName,
   onChange,
+  onRefresh,
 }: {
   database: string;
   userName: string;
   onChange: (next: { database: string; userName: string }) => void;
+  onRefresh?: () => void;
 }) {
   const { databases, loading, error, refresh } = useDatabases();
   const dbNames = Object.keys(databases).sort();
@@ -185,7 +245,10 @@ function DatabaseUserSelect({
             'size-3.5 shrink-0 self-center text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
             loading && 'opacity-25'
           )}
-          onClick={() => void refresh()}
+          onClick={() => {
+            void refresh();
+            onRefresh?.();
+          }}
         />
       </div>
     </div>
@@ -193,22 +256,37 @@ function DatabaseUserSelect({
 }
 
 function FloatingSchemaExplorer({ database, userName }: { database: string; userName: string }) {
+  const initialCacheKey =
+    database && userName ? createSchemaExplorerStateCacheKey(database, userName) : null;
+  const initialCachedState = initialCacheKey ? getSchemaExplorerCachedState(initialCacheKey) : null;
   const [selectedDatabase, setSelectedDatabase] = useState(database);
   const [selectedUserName, setSelectedUserName] = useState(userName);
   const [refreshOwnersRequest, setRefreshOwnersRequest] = useState(0);
   const [loadingOwners, setLoadingOwners] = useState(false);
-  const [owners, setOwners] = useState<string[] | null>(null);
-  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(['TABLE']);
-  const [filterOwners, setFilterOwners] = useState<string[]>(userName ? [userName] : []);
+  const [owners, setOwners] = useState<string[] | null>(
+    initialCachedState?.owners ? [...initialCachedState.owners] : null
+  );
+  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(
+    initialCachedState ? [...initialCachedState.filterObjectTypes] : ['TABLE']
+  );
+  const [filterOwners, setFilterOwners] = useState<string[]>(
+    initialCachedState ? [...initialCachedState.filterOwners] : userName ? [userName] : []
+  );
   const [refreshDbObjectsRequest, setRefreshDbObjectsRequest] = useState(0);
   const [loadingDBObjects, setLoadingDBObjects] = useState(false);
-  const [dbObjects, setDbObjects] = useState<DBObject[] | null>(null);
-  const [dbObjectsCsv, setDbObjectsCsv] = useState<string | null>(null);
-  const [filterDBObjectsText, setFilterDBObjectsText] = useState<string>('');
-  const [filterDBObjectsRegexp, setFilterDBObjectsRegexp] = useState(false);
+  const [dbObjects, setDbObjects] = useState<DBObject[] | null>(
+    initialCachedState?.dbObjects ? initialCachedState.dbObjects.map((item) => ({ ...item })) : null
+  );
+  const [dbObjectsCsv, setDbObjectsCsv] = useState<string | null>(initialCachedState?.dbObjectsCsv ?? null);
+  const [filterDBObjectsText, setFilterDBObjectsText] = useState<string>(
+    initialCachedState?.filterDBObjectsText ?? ''
+  );
+  const [filterDBObjectsRegexp, setFilterDBObjectsRegexp] = useState(
+    initialCachedState?.filterDBObjectsRegexp ?? false
+  );
   const [filterDBObjectsTextHistory, setFilterDBObjectsTextHistory] = useState<
     FilterDBObjectsTextHistory[]
-  >([]);
+  >(initialCachedState ? initialCachedState.filterDBObjectsTextHistory.map((item) => ({ ...item })) : []);
   const [openFilterDBObjectsTextHistory, setOpenFilterDBObjectsTextHistory] = useState(false);
   const [ownersError, setOwnersError] = useState<string | null>(null);
   const [dbObjectsError, setDbObjectsError] = useState<string | null>(null);
@@ -219,15 +297,23 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
   const loadOwnersRequestIdRef = useRef(0);
   const loadDBObjectsRequestIdRef = useRef(0);
   const skipPersistForCredentialsRef = useRef<string | null>(null);
-  const lastAppliedDBObjectsFilterRef = useRef<FilterDBObjectsTextHistory>({
-    pattern: filterDBObjectsText,
-    regExp: filterDBObjectsRegexp,
-  });
   const cacheKey =
     selectedDatabase && selectedUserName
       ? createSchemaExplorerStateCacheKey(selectedDatabase, selectedUserName)
       : null;
+  const previousCacheKeyRef = useRef<string | null>(cacheKey);
+  const lastAppliedDBObjectsFilterRef = useRef<FilterDBObjectsTextHistory>({
+    pattern: initialCachedState?.filterDBObjectsText ?? '',
+    regExp: initialCachedState?.filterDBObjectsRegexp ?? false,
+  });
   const scopedId = useCallback((suffix: string) => `${domIdPrefix}-${suffix}`, [domIdPrefix]);
+
+  const handleCredentialsRefresh = useCallback(() => {
+    setRefreshOwnersRequest((key) => key + 1);
+    setOwners(null);
+  },
+  [setRefreshOwnersRequest, setOwners]
+  );
 
   const handleCredentialsChange = useCallback(
     ({
@@ -281,6 +367,10 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
   }, [setRefreshOwnersRequest, setOwners]);
 
   useEffect(() => {
+    if (previousCacheKeyRef.current === cacheKey) {
+      return;
+    }
+    previousCacheKeyRef.current = cacheKey;
     if (!cacheKey) {
       return;
     }
@@ -292,7 +382,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
     setDbObjectsError(null);
     setOpenFilterDBObjectsTextHistory(false);
 
-    const cachedState = schemaExplorerStateCache.get(cacheKey);
+    const cachedState = getSchemaExplorerCachedState(cacheKey);
     if (!cachedState) {
       setOwners(null);
       setDbObjects(null);
@@ -335,7 +425,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
       return;
     }
 
-    schemaExplorerStateCache.set(cacheKey, {
+    setSchemaExplorerCachedState(cacheKey, {
       owners: owners ? [...owners] : null,
       dbObjects: dbObjects ? dbObjects.map((item) => ({ ...item })) : null,
       dbObjectsCsv,
@@ -606,6 +696,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
               database={selectedDatabase}
               userName={selectedUserName}
               onChange={handleCredentialsChange}
+              onRefresh={handleCredentialsRefresh}
             />
             <hr />
             <div className="p-1">
@@ -765,7 +856,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
                     sideOffset={4}
                     side={'bottom'}
                     className={cn(
-                      'z-[9999] min-w-[220px] max-w-[360px] p-1',
+                      'z-9999 min-w-55 max-w-90 p-1',
                       'border border-slate-200 bg-white text-slate-900 shadow-md',
                       'dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
                     )}
