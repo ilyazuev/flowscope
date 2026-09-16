@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Keyboard, Share2 /*, Github*/ } from 'lucide-react';
 import { toast } from 'sonner';
-import { SchemaExplorerProvider, useLineageActions, useLineageState } from '@pondpilot/flowscope-react';
+import { useLineageActions, useLineageState } from '@pondpilot/flowscope-react';
 import { Button } from './ui/button';
 import { FlowScopeLogo } from './FlowScopeLogo';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui/resizable';
@@ -326,10 +326,9 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
   );
 
   return (
-    <SchemaExplorerProvider>
-      <GenericFormProvider>
-        <FloatingWindowsProvider theme={isDark ? 'dark' : 'light'}>
-          <div className="flex flex-col h-svh">
+    <GenericFormProvider>
+      <FloatingWindowsProvider theme={isDark ? 'dark' : 'light'}>
+        <div className="flex flex-col h-svh">
             {/* App Header */}
             <header
               className="flex items-center justify-between px-4 h-12 border-b border-border bg-background shrink-0"
@@ -532,9 +531,8 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
             <div className={"text-xs text-right pt-2 pb-1 text-slate-600"}>
               <a href={"https://flowscope.pondpilot.io/"} target={"_blank"} className={"underline"}>flowscope fork</a>.
             </div>
-          </div>
-        </FloatingWindowsProvider>
-      </GenericFormProvider>
-    </SchemaExplorerProvider>
+        </div>
+      </FloatingWindowsProvider>
+    </GenericFormProvider>
   );
 }

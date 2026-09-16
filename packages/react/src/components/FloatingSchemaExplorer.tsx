@@ -17,7 +17,7 @@ import {
   isObjectType,
 } from '@pondpilot/flowscope-app/src/lib/backend-adapter';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   DatabasesProvider,
   devLineageLoadOwners,
@@ -59,68 +59,21 @@ const OBJECT_NAME_HEADERS = ['OBJECT_NAME', 'TABLE_NAME', 'MVIEW_NAME', 'VIEW_NA
 const getDBObjectKey = (dbObject: DBObject) =>
   `${dbObject.owner}.${dbObject.objectName} (${dbObject.objectType})`;
 
-function useSchemaExplorerInner() {
-  const [refreshOwnersRequest, setRefreshOwnersRequest] = useState(0);
-  const [loadingOwners, setLoadingOwners] = useState(false);
-  const [owners, setOwners] = useState<string[] | null>(null);
-  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(['TABLE']);
-  const [filterOwners, setFilterOwners] = useState<string[]>([]);
-
-  const [refreshDbObjectsRequest, setRefreshDbObjectsRequest] = useState(0);
-  const [loadingDBObjects, setLoadingDBObjects] = useState(false);
-  const [dbObjects, setDbObjects] = useState<DBObject[] | null>(null);
-  const [dbObjectsCsv, setDbObjectsCsv] = useState<string | null>(null);
-  const [filterDBObjectsText, setFilterDBObjectsText] = useState<string>('');
-  const [filterDBObjectsRegexp, setFilterDBObjectsRegexp] = useState(false);
-  const [filterDBObjectsTextHistory, setFilterDBObjectsTextHistory] = useState<
-    FilterDBObjectsTextHistory[]
-  >([]);
-  const [openFilterDBObjectsTextHistory, setOpenFilterDBObjectsTextHistory] = useState(false);
-
-  return {
-    loadingOwners,
-    setLoadingOwners,
-    owners,
-    setOwners,
-    filterObjectTypes,
-    setFilterObjectTypes,
-    filterOwners,
-    setFilterOwners,
-    refreshOwnersRequest,
-    setRefreshOwnersRequest,
-    loadingDBObjects,
-    setLoadingDBObjects,
-    dbObjects,
-    setDbObjects,
-    dbObjectsCsv,
-    setDbObjectsCsv,
-    refreshDbObjectsRequest,
-    setRefreshDbObjectsRequest,
-    filterDBObjectsText,
-    setFilterDBObjectsText,
-    filterDBObjectsRegexp,
-    setFilterDBObjectsRegexp,
-    filterDBObjectsTextHistory,
-    setFilterDBObjectsTextHistory,
-    openFilterDBObjectsTextHistory,
-    setOpenFilterDBObjectsTextHistory,
-  };
+interface SchemaExplorerCachedState {
+  owners: string[] | null;
+  dbObjects: DBObject[] | null;
+  dbObjectsCsv: string | null;
+  filterObjectTypes: ObjectType[];
+  filterOwners: string[];
+  filterDBObjectsText: string;
+  filterDBObjectsRegexp: boolean;
+  filterDBObjectsTextHistory: FilterDBObjectsTextHistory[];
 }
 
-const SchemaExplorerContext = createContext<ReturnType<typeof useSchemaExplorerInner> | null>(null);
+const schemaExplorerStateCache = new Map<string, SchemaExplorerCachedState>();
 
-export function SchemaExplorerProvider({ children }: { children: React.ReactNode }) {
-  const value = useSchemaExplorerInner();
-  return <SchemaExplorerContext.Provider value={value}>{children}</SchemaExplorerContext.Provider>;
-}
-
-function useSchemaExplorer() {
-  const ctx = useContext(SchemaExplorerContext);
-  if (!ctx) {
-    throw new Error('useSchemaExplorer must be used inside SchemaExplorerProvider');
-  }
-  return ctx;
-}
+const createSchemaExplorerStateCacheKey = (database: string, userName: string) =>
+  `${database}\u0000${userName}`;
 
 function DBObjectsCsvView({
   csv,
@@ -242,60 +195,39 @@ function DatabaseUserSelect({
 function FloatingSchemaExplorer({ database, userName }: { database: string; userName: string }) {
   const [selectedDatabase, setSelectedDatabase] = useState(database);
   const [selectedUserName, setSelectedUserName] = useState(userName);
-  const {
-    loadingOwners,
-    setLoadingOwners,
-    owners,
-    setOwners,
-    filterObjectTypes,
-    setFilterObjectTypes,
-    filterOwners,
-    setFilterOwners,
-    refreshOwnersRequest,
-    setRefreshOwnersRequest,
-    loadingDBObjects,
-    setLoadingDBObjects,
-    dbObjects,
-    setDbObjects,
-    dbObjectsCsv,
-    setDbObjectsCsv,
-    refreshDbObjectsRequest,
-    setRefreshDbObjectsRequest,
-    filterDBObjectsText,
-    setFilterDBObjectsText,
-    filterDBObjectsRegexp,
-    setFilterDBObjectsRegexp,
-    filterDBObjectsTextHistory,
-    setFilterDBObjectsTextHistory,
-    openFilterDBObjectsTextHistory,
-    setOpenFilterDBObjectsTextHistory,
-  } = useSchemaExplorer();
+  const [refreshOwnersRequest, setRefreshOwnersRequest] = useState(0);
+  const [loadingOwners, setLoadingOwners] = useState(false);
+  const [owners, setOwners] = useState<string[] | null>(null);
+  const [filterObjectTypes, setFilterObjectTypes] = useState<ObjectType[]>(['TABLE']);
+  const [filterOwners, setFilterOwners] = useState<string[]>(userName ? [userName] : []);
+  const [refreshDbObjectsRequest, setRefreshDbObjectsRequest] = useState(0);
+  const [loadingDBObjects, setLoadingDBObjects] = useState(false);
+  const [dbObjects, setDbObjects] = useState<DBObject[] | null>(null);
+  const [dbObjectsCsv, setDbObjectsCsv] = useState<string | null>(null);
+  const [filterDBObjectsText, setFilterDBObjectsText] = useState<string>('');
+  const [filterDBObjectsRegexp, setFilterDBObjectsRegexp] = useState(false);
+  const [filterDBObjectsTextHistory, setFilterDBObjectsTextHistory] = useState<
+    FilterDBObjectsTextHistory[]
+  >([]);
+  const [openFilterDBObjectsTextHistory, setOpenFilterDBObjectsTextHistory] = useState(false);
   const [ownersError, setOwnersError] = useState<string | null>(null);
   const [dbObjectsError, setDbObjectsError] = useState<string | null>(null);
   const [selectedDbObject, setSelectedDbObject] = useState<DBObject | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const filterDBObjectsControlRef = useRef<HTMLDivElement>(null);
+  const domIdPrefix = useId();
   const loadOwnersRequestIdRef = useRef(0);
   const loadDBObjectsRequestIdRef = useRef(0);
+  const skipPersistForCredentialsRef = useRef<string | null>(null);
   const lastAppliedDBObjectsFilterRef = useRef<FilterDBObjectsTextHistory>({
     pattern: filterDBObjectsText,
     regExp: filterDBObjectsRegexp,
   });
-
-  const resetLoadedData = useCallback(
-    (nextUserName?: string) => {
-      loadOwnersRequestIdRef.current += 1;
-      loadDBObjectsRequestIdRef.current += 1;
-      setOwners(null);
-      setDbObjects(null);
-      setDbObjectsCsv(null);
-      setSelectedDbObject(null);
-      setOwnersError(null);
-      setDbObjectsError(null);
-      setFilterOwners(nextUserName ? [nextUserName] : []);
-    },
-    [setDbObjects, setDbObjectsCsv, setFilterOwners, setOwners]
-  );
+  const cacheKey =
+    selectedDatabase && selectedUserName
+      ? createSchemaExplorerStateCacheKey(selectedDatabase, selectedUserName)
+      : null;
+  const scopedId = useCallback((suffix: string) => `${domIdPrefix}-${suffix}`, [domIdPrefix]);
 
   const handleCredentialsChange = useCallback(
     ({
@@ -307,10 +239,9 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
     }) => {
       setSelectedDatabase(nextDatabase);
       setSelectedUserName(nextUserName);
-      resetLoadedData(nextUserName);
       setRefreshOwnersRequest((key) => key + 1);
     },
-    [resetLoadedData, setRefreshOwnersRequest]
+    [setRefreshOwnersRequest]
   );
 
   const handleRefreshDBObjects = useCallback(
@@ -350,10 +281,81 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
   }, [setRefreshOwnersRequest, setOwners]);
 
   useEffect(() => {
-    setFilterOwners((prevState) =>
-      prevState.length === 0 && selectedUserName ? [selectedUserName] : prevState
+    if (!cacheKey) {
+      return;
+    }
+    skipPersistForCredentialsRef.current = cacheKey;
+    loadOwnersRequestIdRef.current += 1;
+    loadDBObjectsRequestIdRef.current += 1;
+    setSelectedDbObject(null);
+    setOwnersError(null);
+    setDbObjectsError(null);
+    setOpenFilterDBObjectsTextHistory(false);
+
+    const cachedState = schemaExplorerStateCache.get(cacheKey);
+    if (!cachedState) {
+      setOwners(null);
+      setDbObjects(null);
+      setDbObjectsCsv(null);
+      setFilterObjectTypes(['TABLE']);
+      setFilterOwners(selectedUserName ? [selectedUserName] : []);
+      setFilterDBObjectsText('');
+      setFilterDBObjectsRegexp(false);
+      setFilterDBObjectsTextHistory([]);
+      setLoadingOwners(false);
+      setLoadingDBObjects(false);
+      lastAppliedDBObjectsFilterRef.current = { pattern: '', regExp: false };
+      return;
+    }
+
+    setOwners(cachedState.owners ? [...cachedState.owners] : null);
+    setDbObjects(cachedState.dbObjects ? cachedState.dbObjects.map((item) => ({ ...item })) : null);
+    setDbObjectsCsv(cachedState.dbObjectsCsv);
+    setFilterObjectTypes([...cachedState.filterObjectTypes]);
+    setFilterOwners([...cachedState.filterOwners]);
+    setFilterDBObjectsText(cachedState.filterDBObjectsText);
+    setFilterDBObjectsRegexp(cachedState.filterDBObjectsRegexp);
+    setFilterDBObjectsTextHistory(
+      cachedState.filterDBObjectsTextHistory.map((item) => ({ ...item }))
     );
-  }, [selectedUserName, setFilterOwners]);
+    setLoadingOwners(false);
+    setLoadingDBObjects(false);
+    lastAppliedDBObjectsFilterRef.current = {
+      pattern: cachedState.filterDBObjectsText,
+      regExp: cachedState.filterDBObjectsRegexp,
+    };
+  }, [cacheKey, selectedUserName]);
+
+  useEffect(() => {
+    if (!cacheKey) {
+      return;
+    }
+    if (skipPersistForCredentialsRef.current === cacheKey) {
+      skipPersistForCredentialsRef.current = null;
+      return;
+    }
+
+    schemaExplorerStateCache.set(cacheKey, {
+      owners: owners ? [...owners] : null,
+      dbObjects: dbObjects ? dbObjects.map((item) => ({ ...item })) : null,
+      dbObjectsCsv,
+      filterObjectTypes: [...filterObjectTypes],
+      filterOwners: [...filterOwners],
+      filterDBObjectsText,
+      filterDBObjectsRegexp,
+      filterDBObjectsTextHistory: filterDBObjectsTextHistory.map((item) => ({ ...item })),
+    });
+  }, [
+    cacheKey,
+    owners,
+    dbObjects,
+    dbObjectsCsv,
+    filterObjectTypes,
+    filterOwners,
+    filterDBObjectsText,
+    filterDBObjectsRegexp,
+    filterDBObjectsTextHistory,
+  ]);
 
   useEffect(() => {
     if (!selectedDatabase || !selectedUserName) {
@@ -608,7 +610,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
             <hr />
             <div className="p-1">
               {objectTypes.map((objectType) => {
-                const id = `FloatingSchemaExplorer-object-type-${objectType.replace(/\s/g, '-')}`;
+                const id = scopedId(`object-type-${objectType.replace(/\s/g, '-')}`);
                 return (
                   <div
                     key={objectType}
@@ -647,7 +649,7 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
                 ) : (
                   <div className="p-1">
                     {owners.map((owner) => {
-                      const id = `FloatingSchemaExplorer-scheme-${owner.replace(/\s/g, '-')}`;
+                      const id = scopedId(`scheme-${owner.replace(/\s/g, '-')}`);
                       return (
                         <div key={owner} className="flex gap-1 items-center text-nowrap">
                           <Checkbox
@@ -797,12 +799,12 @@ function FloatingSchemaExplorer({ database, userName }: { database: string; user
                   <TooltipTrigger asChild>
                     <span className="flex gap-1 items-center">
                       <Checkbox
-                        id="FloatingSchemaExplorer-FilterDBObjectsRegexp"
+                        id={scopedId('filter-db-objects-regexp')}
                         checked={filterDBObjectsRegexp}
                         onCheckedChange={handleFilterDBObjectsRegexp}
                         className="shrink-0 border-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
-                      <label htmlFor="FloatingSchemaExplorer-FilterDBObjectsRegexp">
+                      <label htmlFor={scopedId('filter-db-objects-regexp')}>
                         {filterDBObjectsRegexp ? 'R' : 'W'}
                       </label>
                     </span>
