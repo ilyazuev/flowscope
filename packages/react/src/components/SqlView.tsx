@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from '@pondpilot/flowscope-app/src/components/ui/dropdown-menu';
 import { Checkbox } from '@pondpilot/flowscope-app/src/components/ui/checkbox';
+import { isMac, modKey } from '@pondpilot/flowscope-app/src/lib/shortcuts';
 
 type HighlightRange = { from: number; to: number; className: string };
 
@@ -210,7 +211,7 @@ function uncommentSelectedLines(view: EditorView): boolean {
     }));
 
   // The key is still considered handled even if none of the selected lines
-  // are commented, so Ctrl+Shift+B doesn't bubble to the browser/app.
+  // are commented, so the shortcut doesn't bubble to the browser/app.
   if (changes.length > 0) {
     view.dispatch({ changes });
   }
@@ -297,6 +298,9 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         cte: '',
       };
     });
+    const modKeyLabel = modKey();
+    const codeMirrorModKey = isMac() ? 'Cmd' : modKeyLabel;
+    const redoShortcut = isMac() ? '⇧⌘Z' : `${modKeyLabel}+Y`;
 
     const parsedCtes = useMemo<Record<string, ParsedCte>>(() => {
       const result: Record<string, ParsedCte> = {};
@@ -403,18 +407,23 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         Prec.highest(
           keymap.of([
             {
-              key: 'Ctrl-b',
+              key: `${codeMirrorModKey}-b`,
               preventDefault: true,
               run: (view: EditorView) => editable && commentSelectedLines(view),
             },
             {
-              key: 'Ctrl-Shift-b',
+              key: `${codeMirrorModKey}-Shift-b`,
               preventDefault: true,
               run: (view: EditorView) => editable && uncommentSelectedLines(view),
             },
+            {
+              key: `${codeMirrorModKey}-Shift-c`,
+              preventDefault: true,
+              run: (view: EditorView) => editable && commentSelectedLines(view),
+            },
           ])
         ),
-      [editable]
+      [codeMirrorModKey, editable]
     );
 
     const sqlGotoMatchingBracketShortcutExtension = useMemo(
@@ -422,13 +431,13 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
         Prec.highest(
           keymap.of([
             {
-              key: 'Ctrl-j',
+              key: `${codeMirrorModKey}-j`,
               preventDefault: true,
               run: cursorMatchingBracket,
             },
           ])
         ),
-      []
+      [codeMirrorModKey]
     );
 
     const extensions = useMemo(
@@ -731,10 +740,6 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
       }
     }, [editorView]);
 
-    const isMac = /mac/i.test(navigator.userAgent);
-    const modKey = isMac ? '⌘' : 'Ctrl';
-    const redoShortcut = isMac ? '⇧⌘Z' : 'Ctrl+Y';
-
     const parsedCteNames = useMemo(() => {
       const names = Object.keys(parsedCtes);
       return sortCtesAlphabetically ? names.sort((a, b) => a.localeCompare(b)) : names;
@@ -773,7 +778,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           )}
 
           <ToolbarButton
-            title={`Cut (${modKey} + X)`}
+            title={`Cut (${modKeyLabel} + X)`}
             onClick={() => {
               void handleCut();
             }}
@@ -783,7 +788,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           </ToolbarButton>
 
           <ToolbarButton
-            title={`Copy to clipboard (${modKey} + C)`}
+            title={`Copy to clipboard (${modKeyLabel} + C)`}
             onClick={() => {
               void handleCopy();
             }}
@@ -793,7 +798,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           </ToolbarButton>
 
           <ToolbarButton
-            title={`Paste (${modKey} + V)`}
+            title={`Paste (${modKeyLabel} + V)`}
             onClick={() => {
               void handlePaste();
             }}
@@ -802,7 +807,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
             <Clipboard className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton title={`Select All (${modKey} + A)`} onClick={handleSelectAll}>
+          <ToolbarButton title={`Select All (${modKeyLabel} + A)`} onClick={handleSelectAll}>
             <SquareDashed className="h-4 w-4" />
           </ToolbarButton>
 
@@ -817,7 +822,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
           </ToolbarButton>
 
           <ToolbarButton
-            title={`Undo (${modKey} + Z)`}
+            title={`Undo (${modKeyLabel} + Z)`}
             onClick={handleUndo}
             disabled={!toolbarState.canUndo}
           >
@@ -836,7 +841,7 @@ export const SqlView = forwardRef<SqlViewRef, SqlViewProps>(
 
           <ToolbarDivider />
 
-          <ToolbarButton title={`Find / replace (${modKey} + F)`} onClick={handleFind}>
+          <ToolbarButton title={`Find / replace (${modKeyLabel} + F)`} onClick={handleFind}>
             <Search className="h-4 w-4" />
           </ToolbarButton>
 
