@@ -272,7 +272,7 @@ export function LoadSQL({ database, userName, title, table, dialect }: LoadSQLPr
   return (currentTable.columns?.length ?? 0) > 0 ? (
     <FloatingSQL
       database={innerDatabase}
-      userName={`${currentTable.schema ? currentTable.schema + ',' : ''}${innerUserName}`}
+      userName={`${innerUserName}${currentTable.schema ? ',' + currentTable.schema : ''}`}
       title={title}
       initialSql={buildSchemaPreviewSql(currentTable, dialect)}
       dialect={dialect}
