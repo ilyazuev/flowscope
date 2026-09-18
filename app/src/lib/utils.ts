@@ -207,12 +207,6 @@ export function extractSqlParams(sql: string, dialect?: Dialect): Set<string> {
         continue;
       }
 
-      if (mysql && char === '#') {
-        state = 'line';
-        i++;
-        continue;
-      }
-
       if (char === '/' && next === '*') {
         state = 'block';
         blockDepth = 1;
@@ -282,14 +276,19 @@ export function extractSqlParams(sql: string, dialect?: Dialect): Set<string> {
         }
       }
 
-      // #PARAM_1# and #GROUP_1.PARAM_1# are intentionally disabled for MySQL,
-      // because '#' is a MySQL line-comment introducer.
-      if (!mysql && char === '#') {
+      // #PARAM_1# and #GROUP_1.PARAM_1#
+      if (char === '#') {
         const ident = readDottedIdent(i + 1);
 
         if (ident && sql[ident.end] === '#') {
           params.add(`#${ident.value}#`);
           i = ident.end + 1;
+          continue;
+        }
+
+        if (mysql) {
+          state = 'line';
+          i++;
           continue;
         }
       }
@@ -330,6 +329,17 @@ export function extractSqlParams(sql: string, dialect?: Dialect): Set<string> {
       if (char === "'" && next === "'") {
         i += 2;
         continue;
+      }
+
+      // Datastage SQL blocks allow #...# placeholders inside single-quoted strings.
+      if (char === '#') {
+        const ident = readDottedIdent(i + 1);
+
+        if (ident && sql[ident.end] === '#') {
+          params.add(`#${ident.value}#`);
+          i = ident.end + 1;
+          continue;
+        }
       }
 
       if (char === "'") {
