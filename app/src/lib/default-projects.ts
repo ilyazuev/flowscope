@@ -13,7 +13,7 @@ const DEFAULT_CUSTOMERS_SCHEMA = import.meta.env.VITE_DEFAULT_USERNAME
 // noinspection SqlNoDataSourceInspection
 export const DEFAULT_CUSTOMERS_PROJECT: Project = {
   id: 'default-customers-project',
-  name: `Lineage Example Project`,
+  name: `Graph Example Project`,
   activeFileId: 'sql-file-1',
   dialect: import.meta.env.VITE_DEFAULT_SQL_DIALECT,
   database: import.meta.env.VITE_DEFAULT_DATABASE || 'Autodetect',

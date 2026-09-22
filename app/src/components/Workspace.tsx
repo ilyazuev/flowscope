@@ -329,208 +329,216 @@ export function Workspace({ backendReady, error, onRetry, isRetrying }: Workspac
     <GenericFormProvider>
       <FloatingWindowsProvider theme={isDark ? 'dark' : 'light'}>
         <div className="flex flex-col h-svh">
-            {/* App Header */}
-            <header
-              className="flex items-center justify-between px-4 h-12 border-b border-border bg-background shrink-0"
-              data-testid="app-header"
-            >
-              <div className="flex items-center gap-2">
-                {/* Logo */}
-                <div className="flex items-center gap-3">
-                  <FlowScopeLogo /> {/*className="w-8 h-8 text-foreground/30 dark:text-white/30"*/}
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-lg font-semibold text-foreground">
-                      {import.meta.env.VITE_APP_NAME}
-                    </span>
-                    <TooltipProvider delayDuration={300}>
+          {/* App Header */}
+          <header
+            className="flex items-center justify-between px-4 h-12 border-b border-border bg-background shrink-0"
+            data-testid="app-header"
+          >
+            <div className="flex items-center gap-2">
+              {/* Logo */}
+              <div className="flex items-center gap-3">
+                <FlowScopeLogo /> {/*className="w-8 h-8 text-foreground/30 dark:text-white/30"*/}
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-semibold text-foreground">
+                    {import.meta.env.VITE_APP_NAME}
+                  </span>
+                  <span className="text-sm text-foreground/70">
+                    {import.meta.env.VITE_APP_SUB_NAME}
+                  </span>
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger className="text-sm text-foreground/70">
+                        {import.meta.env.VITE_APP_VERSION}
+                      </TooltipTrigger>
+                      <TooltipContent>{import.meta.env.VITE_APP_BUILT_ON}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span className="text-xs font-mono text-muted-foreground"></span>
+                </div>
+              </div>
+
+              {/* Project Selector */}
+              <ProjectSelector open={projectSelectorOpen} onOpenChange={setProjectSelectorOpen} />
+            </div>
+
+            {/* Header Actions */}
+            <div className="flex items-center gap-1">
+              {currentProject && (
+                <>
+                  <ExportDialog
+                    result={result}
+                    projectName={currentProject.name}
+                    graphRef={graphContainerRef}
+                  />
+                  {/* Hide Share button in serve mode - files come from CLI */}
+                  {!isBackendMode && (
+                    <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger> {import.meta.env.VITE_APP_VERSION}</TooltipTrigger>
-                        <TooltipContent>{import.meta.env.VITE_APP_BUILT_ON}</TooltipContent>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setShareDialogOpen(true)}
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="flex items-center gap-2">
+                            Share project
+                            <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border font-mono">
+                              {getShortcutDisplay('share')}
+                            </kbd>
+                          </p>
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    <span className="text-xs font-mono text-muted-foreground"></span>
-                  </div>
-                </div>
+                  )}
+                </>
+              )}
 
-                {/* Project Selector */}
-                <ProjectSelector open={projectSelectorOpen} onOpenChange={setProjectSelectorOpen} />
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleExecuteCommand('help')}
+                    >
+                      <Keyboard className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Keyboard Shortcuts</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-              {/* Header Actions */}
-              <div className="flex items-center gap-1">
-                {currentProject && (
-                  <>
-                    <ExportDialog
-                      result={result}
-                      projectName={currentProject.name}
-                      graphRef={graphContainerRef}
-                    />
-                    {/* Hide Share button in serve mode - files come from CLI */}
-                    {!isBackendMode && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setShareDialogOpen(true)}
-                            >
-                              <Share2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="flex items-center gap-2">
-                              Share project
-                              <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border font-mono">
-                                {getShortcutDisplay('share')}
-                              </kbd>
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </>
-                )}
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleExecuteCommand('help')}
-                      >
-                          <Keyboard className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Keyboard Shortcuts
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <ThemeToggle />
-
-              </div>
-            </header>
-
-            {/* Share Dialog */}
-            {currentProject && (
-              <ShareDialog
-                open={shareDialogOpen}
-                onOpenChange={setShareDialogOpen}
-                project={currentProject}
-              />
-            )}
-
-            {/* Keyboard Shortcuts Help Dialog */}
-            <KeyboardShortcutsDialog
-              open={shortcutsDialogOpen}
-              onOpenChange={setShortcutsDialogOpen}
-              activeTab={currentActiveTab}
-            />
-
-            {/* Command Palette */}
-            <CommandPalette
-              open={commandPaletteOpen}
-              onOpenChange={setCommandPaletteOpen}
-              onExecuteCommand={handleExecuteCommand}
-            />
-
-            {/* Global Error Banner */}
-            {error && (
-              <div
-                className="px-4 py-2 bg-destructive/10 text-destructive text-xs font-medium border-b border-destructive/20 flex items-center justify-center gap-3"
-                data-testid="error-banner"
-              >
-                <span>System Error: {error}</span>
-                {onRetry && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onRetry}
-                    disabled={isRetrying}
-                    className="h-6 text-xs"
-                    data-testid="retry-btn"
-                  >
-                    {isRetrying ? 'Retrying...' : 'Retry'}
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Main Split View - 2 columns */}
-            <NavigationProvider projectId={activeProjectId} onNavigateToEditor={handleNavigateToEditor}>
-              <FocusRegistryProvider>
-                <DataLoadProvider>
-                  <div className="flex-1 overflow-hidden">
-                    <ResizablePanelGroup direction="vertical">
-                      <ResizablePanel
-                        defaultSize={TOP_PANEL_DEFAULT_SIZE}
-                        minSize={30}
-                        collapsible
-                        collapsedSize={0}
-                        data-testid="main-panel"
-                      >
-                        <ResizablePanelGroup direction="horizontal">
-                          {/* Left: Editor */}
-                          <ResizablePanel
-                            ref={editorPanelRef}
-                            defaultSize={EDITOR_PANEL_DEFAULT_SIZE}
-                            minSize={25}
-                            collapsible
-                            collapsedSize={0}
-                            data-testid="editor-panel"
-                          >
-                            <EditorArea
-                              backendReady={backendReady}
-                              fileSelectorOpen={fileSelectorOpen}
-                              onFileSelectorOpenChange={setFileSelectorOpen}
-                              onRevealInLineage={handleRevealInLineage}
-                            />
-                          </ResizablePanel>
-
-                          <ResizableHandle withHandle />
-
-                          {/* Right: Visualization */}
-                          <ResizablePanel
-                            defaultSize={ANALYSIS_VIEW_PANEL_DEFAULT_SIZE}
-                            minSize={30}
-                            collapsible
-                            collapsedSize={0}
-                            data-testid="analysis-panel"
-                          >
-                            <AnalysisView
-                              graphContainerRef={graphContainerRef}
-                              editorFocusNodeId={editorFocusNodeId}
-                              editorSelectedNodeId={editorSelectedNodeId}
-                              editorFocusRequestKey={editorFocusRequestKey}
-                            />
-                          </ResizablePanel>
-                        </ResizablePanelGroup>
-                      </ResizablePanel>
-
-                      <ResizableHandle withHandleHoriz />
-
-                      <ResizablePanel
-                        defaultSize={Data_View_PANEL_DEFAULT_SIZE}
-                        minSize={10}
-                        collapsible
-                        collapsedSize={0}
-                        data-testid="analysis-panel"
-                      >
-                        <DataView settings={true}/>
-                      </ResizablePanel>
-                    </ResizablePanelGroup>
-                  </div>
-                </DataLoadProvider>
-              </FocusRegistryProvider>
-            </NavigationProvider>
-            <div className={"text-xs text-right pt-2 pb-1 text-slate-600"}>
-              <a href={"https://flowscope.pondpilot.io/"} target={"_blank"} className={"underline"}>flowscope fork</a>.
+              <ThemeToggle />
             </div>
+          </header>
+
+          {/* Share Dialog */}
+          {currentProject && (
+            <ShareDialog
+              open={shareDialogOpen}
+              onOpenChange={setShareDialogOpen}
+              project={currentProject}
+            />
+          )}
+
+          {/* Keyboard Shortcuts Help Dialog */}
+          <KeyboardShortcutsDialog
+            open={shortcutsDialogOpen}
+            onOpenChange={setShortcutsDialogOpen}
+            activeTab={currentActiveTab}
+          />
+
+          {/* Command Palette */}
+          <CommandPalette
+            open={commandPaletteOpen}
+            onOpenChange={setCommandPaletteOpen}
+            onExecuteCommand={handleExecuteCommand}
+          />
+
+          {/* Global Error Banner */}
+          {error && (
+            <div
+              className="px-4 py-2 bg-destructive/10 text-destructive text-xs font-medium border-b border-destructive/20 flex items-center justify-center gap-3"
+              data-testid="error-banner"
+            >
+              <span>System Error: {error}</span>
+              {onRetry && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRetry}
+                  disabled={isRetrying}
+                  className="h-6 text-xs"
+                  data-testid="retry-btn"
+                >
+                  {isRetrying ? 'Retrying...' : 'Retry'}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Main Split View - 2 columns */}
+          <NavigationProvider
+            projectId={activeProjectId}
+            onNavigateToEditor={handleNavigateToEditor}
+          >
+            <FocusRegistryProvider>
+              <DataLoadProvider>
+                <div className="flex-1 overflow-hidden">
+                  <ResizablePanelGroup direction="vertical">
+                    <ResizablePanel
+                      defaultSize={TOP_PANEL_DEFAULT_SIZE}
+                      minSize={30}
+                      collapsible
+                      collapsedSize={0}
+                      data-testid="main-panel"
+                    >
+                      <ResizablePanelGroup direction="horizontal">
+                        {/* Left: Editor */}
+                        <ResizablePanel
+                          ref={editorPanelRef}
+                          defaultSize={EDITOR_PANEL_DEFAULT_SIZE}
+                          minSize={25}
+                          collapsible
+                          collapsedSize={0}
+                          data-testid="editor-panel"
+                        >
+                          <EditorArea
+                            backendReady={backendReady}
+                            fileSelectorOpen={fileSelectorOpen}
+                            onFileSelectorOpenChange={setFileSelectorOpen}
+                            onRevealInLineage={handleRevealInLineage}
+                          />
+                        </ResizablePanel>
+
+                        <ResizableHandle withHandle />
+
+                        {/* Right: Visualization */}
+                        <ResizablePanel
+                          defaultSize={ANALYSIS_VIEW_PANEL_DEFAULT_SIZE}
+                          minSize={30}
+                          collapsible
+                          collapsedSize={0}
+                          data-testid="analysis-panel"
+                        >
+                          <AnalysisView
+                            graphContainerRef={graphContainerRef}
+                            editorFocusNodeId={editorFocusNodeId}
+                            editorSelectedNodeId={editorSelectedNodeId}
+                            editorFocusRequestKey={editorFocusRequestKey}
+                          />
+                        </ResizablePanel>
+                      </ResizablePanelGroup>
+                    </ResizablePanel>
+
+                    <ResizableHandle withHandleHoriz />
+
+                    <ResizablePanel
+                      defaultSize={Data_View_PANEL_DEFAULT_SIZE}
+                      minSize={10}
+                      collapsible
+                      collapsedSize={0}
+                      data-testid="analysis-panel"
+                    >
+                      <DataView settings={true} />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </div>
+              </DataLoadProvider>
+            </FocusRegistryProvider>
+          </NavigationProvider>
+          <div className={'text-xs text-right pt-2 pb-1 text-slate-600'}>
+            <a href={'https://flowscope.pondpilot.io/'} target={'_blank'} className={'underline'}>
+              flowscope fork
+            </a>
+            .
+          </div>
         </div>
       </FloatingWindowsProvider>
     </GenericFormProvider>

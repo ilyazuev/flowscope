@@ -178,7 +178,7 @@ export function EditorArea({
   // Show error toast when error occurs
   useEffect(() => {
     if (revealInLineageError) {
-      toast.error('Reveal in Lineage Error', {
+      toast.error('Reveal in Graph Error', {
         description: revealInLineageError,
         duration: 5000,
       });
@@ -392,7 +392,7 @@ export function EditorArea({
     const result = getResult(activeProjectId, hideCTEs);
     if (!result) {
       setRevealInLineageError(
-        'No Lineage Data: need to parse SQL before reveal object in Lineage.'
+        'No Graph Data: need to parse SQL before reveal object in Graph.'
       );
       return;
     }
@@ -675,10 +675,16 @@ export function EditorArea({
                   .map((cteName) => {
                     return `SELECT '${cteName}' AS cte_name, COUNT(*) AS row_cnt FROM ${cteName}`;
                   })
-                  .join('\nUNION ALL\n') + '\nORDER BY 1';
-              const lastCteBodyClose = Math.max(...Object.values(parsedCtes).map((cte) => cte.bodyClose));
+                  .join('\nUNION ALL\n');
+              const lastCteBodyClose =
+                Math.max(...Object.values(parsedCtes).map((cte) => cte.bodyClose)) + 1;
               const sqlText = activeFile.content.replace(/\r?\n/g, '\n');
-              const sql = `${sqlText.slice(0, lastCteBodyClose)}\n)\n${counts}`;
+              const outputName = `OUTPUT_${Date.now()}`;
+              const sql = `${sqlText.slice(0, lastCteBodyClose)}
+,${outputName} AS (\n${sqlText.slice(lastCteBodyClose + 1)}\n)
+SELECT ' OUTPUT' AS cte_name, COUNT(*) AS row_cnt FROM ${outputName}
+UNION ALL\n${counts}
+ORDER BY 1`;
               void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.sql);
             }
             return;

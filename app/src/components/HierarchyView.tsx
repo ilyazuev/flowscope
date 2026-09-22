@@ -646,11 +646,11 @@ export const HierarchyView = forwardRef<HierarchyViewRef, HierarchyViewProps>(
               tabIndex={0}
               onKeyDown={handleKeyDown}
               role="tree"
-              aria-label="Lineage tree"
+              aria-label="Graph tree"
             >
               {!hasContent ? (
                 <div className="text-sm text-muted-foreground text-center py-10">
-                  {filter ? 'No matches found' : 'No lineage data available'}
+                  {filter ? 'No matches found' : 'No Graph data available'}
                 </div>
               ) : (
                 <div className="py-1 text-xs">
@@ -829,13 +829,13 @@ function NodeActionButtons({ nodeId, nodeName, scripts, size = 'sm' }: NodeActio
               onNavigateToLineage(nodeId);
             }}
             onKeyDown={(e) => handleKeyDown(e, () => onNavigateToLineage(nodeId))}
-            aria-label="Show in Lineage"
+            aria-label="Show in Graph"
           >
             <Eye className={iconClass} />
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          Show in Lineage
+          Show in Graph
         </TooltipContent>
       </Tooltip>
       <Tooltip>

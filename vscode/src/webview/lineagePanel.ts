@@ -34,7 +34,7 @@ export class LineagePanel {
       return;
     }
 
-    const panel = vscode.window.createWebviewPanel(LineagePanel.viewType, 'SQL Lineage', column, {
+    const panel = vscode.window.createWebviewPanel(LineagePanel.viewType, 'SQL Graph', column, {
       enableScripts: true,
       retainContextWhenHidden: true,
       localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'dist')],
@@ -219,7 +219,7 @@ export class LineagePanel {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} data:; font-src ${webview.cspSource};">
-  <title>SQL Lineage</title>
+  <title>SQL Graph</title>
   ${cssUri ? `<link rel="stylesheet" href="${cssUri}">` : ''}
   <style>
     html, body, #root {

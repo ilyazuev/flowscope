@@ -356,7 +356,7 @@ export function AnalysisView({
         <div className="p-6 text-center">
           <h3 className="font-semibold mb-2">No Analysis Results</h3>
           <p className="text-sm max-w-xs mx-auto">
-            Run analysis on your SQL script to see lineage and schema details here.
+            Run analysis on your SQL script to see graph and schema details here.
           </p>
         </div>
       </div>
@@ -372,7 +372,7 @@ export function AnalysisView({
       >
         <div className="px-4 py-2 border-b flex items-center justify-between bg-muted/10 h-[44px] shrink-0">
           <TabsList>
-            <TabsTrigger value="lineage">Lineage</TabsTrigger>
+            <TabsTrigger value="lineage">Graph</TabsTrigger>
             <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
             <TabsTrigger value="matrix">Matrix</TabsTrigger>
             <TabsTrigger value="schema">Schema</TabsTrigger>

@@ -47,7 +47,7 @@ export function WelcomeModal({ onClose }: WelcomeModalProps) {
           <div className="flex items-start gap-3">
             <Database className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-sm">SQL Lineage Analysis</p>
+              <p className="font-medium text-sm">SQL Graph Analysis</p>
               <p className="text-sm text-muted-foreground">
                 Visualize how data flows through your queries across tables, CTEs, and columns.
               </p>

@@ -95,7 +95,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Show welcome message
   if (isWasmInitialized()) {
     vscode.window.showInformationMessage(
-      `FlowScope SQL Lineage is ready! Engine v${getEngineVersion()}`
+      `FlowScope SQL Graph is ready! Engine v${getEngineVersion()}`
     );
   }
 
