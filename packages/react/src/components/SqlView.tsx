@@ -179,20 +179,24 @@ function getSelectedLineStarts(view: EditorView): number[] {
 }
 
 function commentSelectedLines(view: EditorView): boolean {
+  const lineCommentPrefix = '--';
   const { doc } = view.state;
-  const changes = getSelectedLineStarts(view) // .filter((from) => doc.sliceString(from, Math.min(from + 2, doc.length)) !== '--')
-    .map((from) => (
-      doc.sliceString(from, Math.min(from + 2, doc.length)) !== '--'
-      ? {
+  const lineStarts = getSelectedLineStarts(view);
+  const allLinesCommented = lineStarts.every(
+    (from) =>
+      doc.sliceString(from, Math.min(from + lineCommentPrefix.length, doc.length)) ===
+      lineCommentPrefix
+  );
+  const changes = allLinesCommented
+    ? lineStarts.map((from) => ({
         from,
-        insert: '--',
-      }
-      : {
-        from,
-        to: from + 2,
+        to: from + lineCommentPrefix.length,
         insert: '',
-      }
-    ));
+      }))
+    : lineStarts.map((from) => ({
+        from,
+        insert: lineCommentPrefix,
+      }));
 
   if (changes.length > 0) {
     view.dispatch({ changes });
@@ -201,12 +205,17 @@ function commentSelectedLines(view: EditorView): boolean {
 }
 
 function uncommentSelectedLines(view: EditorView): boolean {
+  const lineCommentPrefix = '--';
   const { doc } = view.state;
   const changes = getSelectedLineStarts(view)
-    .filter((from) => doc.sliceString(from, Math.min(from + 2, doc.length)) === '--')
+    .filter(
+      (from) =>
+        doc.sliceString(from, Math.min(from + lineCommentPrefix.length, doc.length)) ===
+        lineCommentPrefix
+    )
     .map((from) => ({
       from,
-      to: from + 2,
+      to: from + lineCommentPrefix.length,
       insert: '',
     }));
 
