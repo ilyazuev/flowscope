@@ -41,6 +41,7 @@ interface EditorToolbarProps {
   onRunSqlPreview: () => void;
   onRevealInLineage: () => Promise<void>;
   onOpenSchemaExplorer: () => Promise<void>;
+  onRunCTEUnderCursor: () => Promise<void>;
   allFileCount: number;
   selectedCount: number;
   fileSelectorOpen: boolean;
@@ -74,6 +75,7 @@ export function EditorToolbar({
   hasResolvedSql = false,
   onRevealInLineage,
   onOpenSchemaExplorer,
+  onRunCTEUnderCursor,
 }: EditorToolbarProps) {
   return (
     <div className="flex items-center justify-between px-3 py-2 border-b h-11 shrink-0 bg-muted/30 overflow-hidden gap-2">
@@ -342,6 +344,20 @@ export function EditorToolbar({
                 </kbd>
                 <span className="ml-2">Run in current mode</span>
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="flex items-center gap-2 justify-between text-xs"
+                onSelect={() => {
+                  void onRunCTEUnderCursor();
+                }}
+              >
+                <span>Run CTE under cursor</span>
+                <kbd className="ml-4 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs">{optionKey()}</span>
+                  <span className="text-xs">Shift</span>
+                  <span className="text-xs">Enter</span>
+                </kbd>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -358,12 +358,22 @@ export function EditorArea({
     });
   }, [activeFile, runAnalysis, clearErrors, createAnalysisSnapshot]);
 
-  const handleAnalyzeActiveOnly = useCallback(() => {
+  const handleAnalyzeActiveOnly = useCallback((cteUnderCursor: boolean = false) => {
     clearErrors();
     if (!activeFile) {
       return;
     }
-    runAnalysis(activeFile.content, activeFile.path, { runModeOverride: 'current' }).then((run) => {
+    let content: string;
+    if (cteUnderCursor) {
+      const sqlCte = getCteSqlUnderCursor(activeFile, false, sqlViewRef.current?.getSelection());
+      if (!sqlCte) {
+        return;
+      }
+      content = sqlCte.sql;
+    } else {
+      content = activeFile.content;
+    }
+    runAnalysis(content, activeFile.path, { runModeOverride: 'current' }).then((run) => {
       if (run) {
         setAnalysisSnapshot(createAnalysisSnapshot(run));
       }
@@ -692,22 +702,33 @@ ORDER BY 1`;
           void runExecuteSql(activeFile.content, activeFile.path, editedParameters);
         }
       } else {
-        if (!selection) {
+        const sqlCte = getCteSqlUnderCursor(activeFile, executeSql == SqlExecuteType.cteCount, selection);
+        if (!sqlCte) {
           return;
         }
-        const sqlText = activeFile.content.replace(/\r?\n/g, '\n');
-        const cte = findCteAtPosition(sqlText, selection.head);
-        if (!cte) {
-          setSqlExecutionError('No CTE found under cursor.');
-          return;
-        }
-        const sql = buildExecutableSqlForCte(sqlText, cte, executeSql == SqlExecuteType.cteCount);
-        if (!needParametersForSql(activeFile, editedParameters, sql, `CTE: ${cte.name}`)) {
-          void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.cte, cte.name);
+        if (!needParametersForSql(activeFile, editedParameters, sqlCte.sql, `CTE: ${sqlCte.name}`)) {
+           void runExecuteSql(sqlCte.sql, activeFile.path, editedParameters, SqlPartType.cte, sqlCte.name);
         }
       }
     },
     [activeFile, currentProject?.dialect, runExecuteSql, setSqlExecutionError, clearErrors]
+  );
+
+  const getCteSqlUnderCursor = useCallback(
+    (activeFile: ProjectFile, onlyCount: boolean, selection?: SqlViewSelection): {sql: string, name: string} | null => {
+      if (!selection) {
+        return null;
+      }
+      const sqlText = activeFile.content.replace(/\r?\n/g, '\n');
+      const cte = findCteAtPosition(sqlText, selection.head);
+      if (!cte) {
+        setSqlExecutionError('No CTE found under cursor.');
+        return null;
+      }
+      const sql = buildExecutableSqlForCte(sqlText, cte, onlyCount);
+      return { sql, name: cte.name };
+    },
+    [setSqlExecutionError]
   );
 
   const handleExecuteSql = useCallback(
@@ -751,7 +772,13 @@ ORDER BY 1`;
         cmdOrCtrl: true,
         alt: true,
         shift: true,
-        handler: handleAnalyzeActiveOnly,
+        handler: () => handleAnalyzeActiveOnly(false),
+      },
+      {
+        key: 'Enter',
+        alt: true,
+        shift: true,
+        handler: () => handleAnalyzeActiveOnly(true),
       },
       {
         key: 'Enter',
@@ -862,6 +889,7 @@ ORDER BY 1`;
         onRunSqlPreview={() => handleRunAction('RunSqlPreview')}
         onRevealInLineage={handleRevealInLineage}
         onOpenSchemaExplorer={handleOpenSchemaExplorer}
+        onRunCTEUnderCursor={async () => handleAnalyzeActiveOnly(true)}
         allFileCount={allFileCount}
         selectedCount={selectedCount}
         fileSelectorOpen={fileSelectorOpen}
