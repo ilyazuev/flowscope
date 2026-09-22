@@ -873,6 +873,7 @@ export function EditorArea({
       >
         <ErrorBoundary fallback={<SqlViewFallback />}>
           <SqlView
+            key={activeFile.id}
             ref={sqlViewRef}
             dialect={currentProject.dialect}
             value={displayContent}

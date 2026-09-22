@@ -332,7 +332,7 @@ export function createLineageStore(
         collapsedNodeIds: new Set(),
       }),
 
-    highlightSpan: (span) => (span.start < span.end) && set({ highlightedSpan: span }),
+    highlightSpan: (span) => span && (span.start < span.end) && set({ highlightedSpan: span }),
 
     setSearchTerm: (term) => set({ searchTerm: term }),
 

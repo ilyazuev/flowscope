@@ -966,7 +966,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       for (const input of fileInputs) {
         const isProjectFileImport = !(input instanceof File) && 'file' in input;
         const file = isProjectFileImport ? input.file : input;
-        const content = await file.text();
+        let content = await file.text();
+        content = content.replace(/\r?\n/g, '\n');
         // Use an explicit import path first, then webkitRelativePath from folder upload, then filename.
         const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
         const path = isProjectFileImport
