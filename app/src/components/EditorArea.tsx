@@ -668,7 +668,9 @@ export function EditorArea({
       const selection = sqlViewRef.current?.getSelection();
       if (selection && selection.from < selection.to) {
         lastExecuteSql.current = SqlExecuteType.sql;
-        const sql = activeFile.content.substring(selection.from, selection.to + 1);
+        const sql = activeFile.content
+          .replace(/\r?\n/g, '\n')
+          .substring(selection.from, selection.to); //  + 1
         if (!needParametersForSql(activeFile, editedParameters, sql, 'Selection')) {
           void runExecuteSql(sql, activeFile.path, editedParameters, SqlPartType.selection);
         }
